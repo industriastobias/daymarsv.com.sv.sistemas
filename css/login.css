@@ -37,3 +37,5 @@ body{margin:0}
  .lg-hero{border-radius:0 0 28px 28px;padding-bottom:48px}
 }
 @media(max-width:380px){.lbox2{padding:22px 16px}.lbox2 h2{font-size:24px}}
+
+.lbox2 .inv{margin:18px 0 0;text-align:center;font-size:13px;color:var(--mute);background:var(--chip);border-radius:10px;padding:10px 12px}
