@@ -34,7 +34,7 @@ function filtrados(){
  if(S.orden==="gasto")L=L.slice().sort((a,b)=>st(b).t-st(a).t);else if(S.orden==="deuda")L=L.filter(c=>st(c).deuda>0).sort((a,b)=>st(b).deuda-st(a).deuda);else if(S.orden==="reciente")L=L.slice().sort((a,b)=>(st(b).u||"").localeCompare(st(a).u||""));
  return L}
 const waUrl=(c,s)=>{let t=String(c.telefono||"").replace(/\D/g,"");if(t.length===8)t="503"+t;if(t.length<8)return "";
- const m=`Hola ${c.nombre}, te escribimos de DAYMAR-SHOP.`+(s&&s.deuda>0?` Tienes un saldo pendiente de ${$$(s.deuda)}.`:"");return "https://wa.me/"+t+"?text="+encodeURIComponent(m)};
+ const m=`Hola ${c.nombre}, te escribimos de DAYMARSV.`+(s&&s.deuda>0?` Tienes un saldo pendiente de ${$$(s.deuda)}.`:"");return "https://wa.me/"+t+"?text="+encodeURIComponent(m)};
 function pintar(){
  const act=S.C.filter(c=>S.stats[c.id].n>0).length,tot=S.C.reduce((s,c)=>s+S.stats[c.id].t,0),deu=S.C.reduce((s,c)=>s+S.stats[c.id].deuda,0);
  $("cK").innerHTML=`<div><span>Clientes</span><b>${S.C.length}</b></div><div><span>Con compras</span><b>${act}</b></div><div><span>Vendido a clientes</span><b>${$$(tot)}</b></div><div><span>Por cobrar</span><b class="${deu>0?"neg":""}">${$$(deu)}</b><small>${S.C.filter(c=>S.stats[c.id].deuda>0).length} cliente(s)</small></div>`;

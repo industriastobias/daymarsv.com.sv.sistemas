@@ -111,7 +111,7 @@ function abonar(r){
  d.q("#aM").addEventListener("keydown",e=>{if(e.key==="Enter")go(parseFloat(d.q("#aM").value))})}
 function whatsapp(r){
  let t=String(r.telefono||"").replace(/\D/g,"");if(t.length===8)t="503"+t;if(!t)return toast("Esta reserva no tiene teléfono");
- const s=saldo(r),msg=`Hola ${r.cliente_nombre}, te escribimos de DAYMAR-SHOP sobre tu reserva de ${r.producto}. Total ${$$(r.precio_total)}, abonado ${$$(r.monto_pagado)}`+(s>0?` y el saldo pendiente es ${$$(s)}`+(r.vence?` (fecha límite: ${fdate(r.vence)}).`:"."):". ¡Ya está completamente pagada! Gracias por tu compra.");
+ const s=saldo(r),msg=`Hola ${r.cliente_nombre}, te escribimos de DAYMARSV sobre tu reserva de ${r.producto}. Total ${$$(r.precio_total)}, abonado ${$$(r.monto_pagado)}`+(s>0?` y el saldo pendiente es ${$$(s)}`+(r.vence?` (fecha límite: ${fdate(r.vence)}).`:"."):". ¡Ya está completamente pagada! Gracias por tu compra.");
  window.open("https://wa.me/"+t+"?text="+encodeURIComponent(msg),"_blank","noopener")}
 async function eliminar(r){
  if(!await confirmar(`Se eliminará la reserva de <b>${esc(r.cliente_nombre)}</b> (${esc(r.producto)}). No se puede deshacer.`,{titulo:"Eliminar reserva",ok:"Eliminar",peligro:true}))return;

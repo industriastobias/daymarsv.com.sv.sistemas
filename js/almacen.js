@@ -294,7 +294,7 @@ async function abrirTicket(v,nuevo){
   if(!f)return;
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Ticket #"+v.numero,text:"Ticket de tu compra en "+(cf.nombre||"DAYMAR-SHOP")});return}catch(e){if(e&&e.name==="AbortError")return}}
   const a=document.createElement("a");a.download=f.name;a.href=URL.createObjectURL(f);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
-  window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("Hola, te comparto el ticket de tu compra en "+(cf.nombre||"DAYMAR-SHOP")+" (venta #"+v.numero+"). Adjunto el PDF."),"_blank");
+  window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("Hola, te comparto el ticket de tu compra en DAYMARSV (venta #"+v.numero+"). Adjunto el PDF."),"_blank");
   toast("PDF descargado: adjúntalo en el chat de WhatsApp")}}
 async function ticketUltima(){if(LS("dms_ticket")==="0")return;
  try{const {data}=await db.from("ventas").select(TK_SEL).eq("usuario_id",me.id).order("created_at",{ascending:false}).limit(1);if(data&&data[0])abrirTicket(data[0],true)}catch(e){}}
