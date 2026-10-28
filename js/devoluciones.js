@@ -51,7 +51,8 @@ async function elegirVenta(){
 async function formDev(v){
  const ya=await espera(async()=>{const ids=(v.venta_items||[]).map(i=>i.id);const {data,error}=await db.from("devolucion_items").select("venta_item_id,cantidad").eq("direccion","entra").in("venta_item_id",ids);if(error)throw new Error(error.message);return data});if(!ya)return;
  const P=await espera(()=>fetchAll(()=>db.from("productos").select("id,nombre,codigo,precio_venta,descuento_pct,stock").eq("activo",true).gt("stock",0).order("nombre")));if(!P)return;
- try{const cv=await fetchAll(()=>db.from("producto_variantes").select("producto_id"));const sv=new Set(cv.map(x=>x.producto_id));P.splice(0,P.length,...P.filter(p=>!sv.has(p.id)))}catch(e){}
+ try{const cv=await fetchAll(()=>db.from("producto_variantes").select("id,producto_id,nombre,stock,orden").order("orden"));const vm={};cv.forEach(x=>(vm[x.producto_id]=vm[x.producto_id]||[]).push(x));
+  const R=[];P.forEach(p=>{const vs=vm[p.id];if(!vs)R.push({...p,pid:p.id,vid:null});else vs.filter(x=>+x.stock>0).forEach(x=>R.push({...p,id:p.id+":"+x.id,pid:p.id,vid:x.id,nombre:p.nombre+" – "+x.nombre,stock:+x.stock}))});P.splice(0,P.length,...R)}catch(e){P.forEach(p=>{p.pid=p.id;p.vid=null})}
  const f=1-(+v.descuento_pct||0)/100,rest={};(v.venta_items||[]).forEach(i=>{rest[i.id]=i.cantidad-ya.filter(x=>x.venta_item_id===i.id).reduce((s,x)=>s+x.cantidad,0)});
  if(!Object.values(rest).some(n=>n>0)){toast("Esta venta ya fue devuelta por completo.");return}
  let modo="dev",nuevos=new Map();
@@ -84,7 +85,7 @@ async function formDev(v){
  m.q("#dvOk").onclick=async()=>{const {L,df}=calc(),E=m.q("#dvE");E.textContent="";
   if(!L.length){E.textContent="Pon la cantidad que el cliente devuelve.";return}
   if(modo==="cam"&&!nuevos.size){E.textContent="Elige el producto que se lleva a cambio, o cambia a “Solo devolver”.";return}
-  const ok=await espera(async()=>{await rpc("registrar_devolucion",{p_venta:v.id,p_items:L,p_motivo:m.q("#dvM").value,p_metodo:m.q("#dvMe").value,p_nuevos:modo==="cam"?[...nuevos].map(([producto_id,cantidad])=>({producto_id,cantidad})):[]});return true},"Registrando…");
+  const ok=await espera(async()=>{await rpc("registrar_devolucion",{p_venta:v.id,p_items:L,p_motivo:m.q("#dvM").value,p_metodo:m.q("#dvMe").value,p_nuevos:modo==="cam"?[...nuevos].map(([k,cantidad])=>{const o=P.find(x=>x.id===k);return {producto_id:o.pid,variante_id:o.vid,cantidad}}):[]});return true},"Registrando…");
   if(ok){m.close();toast(modo==="cam"?"Cambio registrado":"Devolución registrada");await recargar()}}}
 $("dNew").onclick=elegirVenta;
 /* ---------- arranque ---------- */
