@@ -29,7 +29,7 @@
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main>
 <div class="top"><div><h1 id="gr">Hola</h1><small id="dt"></small></div>
-<div class="who"><button class="btn g" id="th" style="min-height:38px;padding:4px 12px">Tema</button><button class="av" id="av" title="Cerrar sesión" aria-label="Cerrar sesión">?</button></div></div>
+<div class="who"><button class="av" id="av" title="Configuración" aria-label="Configuración">?</button></div></div>
 <div class="kp"><a href="sistema.html#rep"><div class="c"><b id="s1">—</b><span>Ventas de hoy</span></div></a><a href="sistema.html#inv"><div class="c w"><b id="s2">—</b><span>Productos con stock bajo</span></div></a></div>
 <div id="mods"></div>
 </main></div><div id="toast" role="status"></div>
@@ -39,13 +39,12 @@
 (async()=>{const {db,esc,$$,ymd,toast,logout,requireSession,toggleTheme,GRUPOS,svg,visibles,enlace,mountSide}=DAY,$=i=>document.getElementById(i);
 const me=await requireSession();if(!me)return;
 $("app").classList.remove("hidden");
-const hr=new Date().getHours();$("gr").textContent=(hr<12?"Buenos días":hr<19?"Buenas tardes":"Buenas noches")+", "+me.nombre;
+const hr=new Date().getHours(),saludo=()=>{$("gr").textContent=(hr<12?"Buenos días":hr<19?"Buenas tardes":"Buenas noches")+", "+DAY.me.nombre;$("av").innerHTML=DAY.me.avatar?`<img src="${esc(DAY.me.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:esc((DAY.me.nombre||"?").charAt(0).toUpperCase())};saludo();addEventListener("day:perfil",saludo);
 $("dt").textContent=new Date().toLocaleDateString("es-SV",{weekday:"long",day:"numeric",month:"long"});
-$("av").textContent=(me.nombre||"?").charAt(0).toUpperCase();
 $("mods").innerHTML=GRUPOS.map(g=>`<div class="gt">${g.t}</div><div class="tiles">${visibles(g,me.rol).map(x=>enlace(x,"tile")).join("")}</div>`).join("");
 mountSide($("side"),"menu",me.rol);
 document.addEventListener("click",e=>{const a=e.target.closest("#mods [data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
-$("av").onclick=()=>{if(confirm("¿Cerrar sesión?"))logout()};$("th").onclick=toggleTheme;
+$("av").onclick=DAY.abrirConfig;
 try{const [v,p]=await Promise.all([db.from("vista_ventas_diarias").select("total").eq("fecha",ymd(new Date())),db.from("productos").select("stock,stock_minimo").eq("activo",true)]);
  $("s1").textContent=$$((v.data||[]).reduce((a,x)=>a+(+x.total||0),0));$("s2").textContent=(p.data||[]).filter(x=>x.stock<=x.stock_minimo).length}catch(e){}
 })();
