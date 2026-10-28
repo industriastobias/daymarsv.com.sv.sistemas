@@ -129,7 +129,7 @@ function filtrar(keep){
  pintarInv()}
 const sIcon=p=>p.stock<=0?"zero":p.stock<=p.stock_minimo?"low":"";
 const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(p.foto_url)}" alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
-const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
+const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>DAY.colorDot(v.vnom)+esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
 const selQ=p=>p.vars?p.vars.reduce((s,v)=>s+(S.sel.get(v.id)||0),0):(S.sel.get(p.id)||0);
 function chk(p){return S.multi?`<label class="mchk"><input type="checkbox" data-a="sel" data-id="${p.id}" ${selQ(p)?"checked":""} ${p.stock<1?"disabled":""}> Vender${selQ(p)?` <b data-qs="${p.id}" class="qb">×${selQ(p)}</b>`:""}</label>`:""}
 function btns(p){return `<button class="btn sm" data-a="sell" data-id="${p.id}" title="Vender">Vender</button>`+(ADM?`<button class="btn g sm" data-a="price" data-id="${p.id}" title="Editar precio">Precio</button><button class="btn g sm" data-a="stock" data-id="${p.id}" title="Editar stock">Stock</button>`:"")}
@@ -306,7 +306,7 @@ async function tras(o,t,lines){ /* refresco local tras una venta */
 
 /* ---------- venta de un producto ---------- */
 function elegirColor(p,cb){
- const m=modal("Elige el color",`<p style="margin:0 0 8px"><b>${esc(p.nombre)}</b></p><div id="clL">${p.vars.map((v,i)=>`<button type="button" class="sv" data-c="${i}" ${v.stock<1?"disabled":""} style="width:100%;text-align:left;cursor:pointer;${v.stock<1?"opacity:.5":""}"><div class="ti"><b>${esc(v.vnom)}</b><small>${v.stock<1?"Agotado":"Disponibles: "+v.stock}</small></div></button>`).join("")}</div>`,{foot:`<button class="btn g" data-x>Cancelar</button>`});
+ const m=modal("Elige el color",`<p style="margin:0 0 8px"><b>${esc(p.nombre)}</b></p><div id="clL">${p.vars.map((v,i)=>`<button type="button" class="sv" data-c="${i}" ${v.stock<1?"disabled":""} style="width:100%;text-align:left;cursor:pointer;${v.stock<1?"opacity:.5":""}"><div class="ti"><b>${DAY.colorDot(v.vnom)}${esc(v.vnom)}</b><small>${v.stock<1?"Agotado":"Disponibles: "+v.stock}</small></div></button>`).join("")}</div>`,{foot:`<button class="btn g" data-x>Cancelar</button>`});
  m.q("#clL").addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(!b||b.disabled)return;const v=p.vars[+b.dataset.c];m.close();cb(v)})}
 function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
  if(S.multi){addSel(p.id);return}

@@ -54,7 +54,7 @@ function tarjeta(p){
  <div class="kb"><span class="ct">${esc(p.cat)}</span><h3>${esc(p.nombre)}</h3>
  <div class="pr">${$$(p.fin)}${p.desc>0?`<s>${$$(p.base)}</s>`:""}</div><div class="pl">${esc(enLetras(p.fin))}</div>
  <div class="st"><span class="bd ${p.stk>0?(p.stk<=3?"wa":"ok"):"or"}">${p.stk>0?"Stock "+p.stk:"Agotado"}</span>${p.codigo_barras?`<small style="color:var(--mute)">${esc(p.codigo_barras)}</small>`:""}</div>
- ${p.vars.length?`<div class="cl">${p.vars.map(v=>`<span>${esc(v.nombre)}${+v.stock>0?"":" (0)"}</span>`).join("")}</div>`:""}
+ ${p.vars.length?`<div class="cl">${p.vars.map(v=>`<span>${DAY.colorDot(v.nombre)}${esc(v.nombre)}${+v.stock>0?"":" (0)"}</span>`).join("")}</div>`:""}
  ${barras&&p.codigo_barras?`<svg class="bc" data-c="${esc(p.codigo_barras)}"></svg>`:""}</div></div>`}
 function galeria(p){
  const m=modal(esc(p.nombre),`<div class="kgal"><img class="main" id="gM" src="${esc(p.fotos[0].url)}" alt=""><div class="th">${p.fotos.map((f,i)=>`<img src="${esc(f.th)}" data-u="${esc(f.url)}" class="${i?"":"on"}" alt="">`).join("")}</div><div><b>${$$(p.fin)}</b> · ${esc(enLetras(p.fin))}${p.descripcion?`<br><small>${esc(p.descripcion)}</small>`:""}</div></div>`,{big:true,foot:'<button class="btn g" data-x>Cerrar</button>'});

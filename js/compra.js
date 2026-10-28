@@ -78,14 +78,14 @@ $("lotQuantity").addEventListener("input",lotStock);$("unitsPerLot").addEventLis
 /* ---------- colores / variantes ---------- */
 let VARS=[],VARS_DB=[];
 function varRender(){const on=VARS.length>0;$("varPanel").classList.toggle("hidden",!on);$("varTog").classList.toggle("hidden",on);
- $("varRows").innerHTML=VARS.map((v,i)=>`<div class="vr" data-i="${i}"><input data-f="nombre" placeholder="Color (ej. Rosado)" maxlength="40" value="${esc(v.nombre||"")}"><input data-f="cantidad" type="number" min="0" step="1" inputmode="numeric" placeholder="Cant." value="${v.cantidad===""||v.cantidad==null?"":v.cantidad}"><input class="vb" data-f="codigo_barras" placeholder="Código de barras (automático si lo dejas vacío)" value="${esc(v.codigo_barras||"")}"><button type="button" class="btn g" data-x="${i}" aria-label="Quitar color">×</button></div>`).join("");
+ $("varRows").innerHTML=VARS.map((v,i)=>`<div class="vr" data-i="${i}"><span class="vn">${DAY.colorDot(v.nombre)}<input data-f="nombre" placeholder="Color (ej. Rosado)" maxlength="40" value="${esc(v.nombre||"")}"></span><input data-f="cantidad" type="number" min="0" step="1" inputmode="numeric" placeholder="Cant." value="${v.cantidad===""||v.cantidad==null?"":v.cantidad}"><input class="vb" data-f="codigo_barras" placeholder="Código de barras (automático si lo dejas vacío)" value="${esc(v.codigo_barras||"")}"><button type="button" class="btn g" data-x="${i}" aria-label="Quitar color">×</button></div>`).join("");
  varSuma()}
 function varSuma(){if(!VARS.length){$("quantity").readOnly=esLote&&!edit;$("quantity").required=true;return}
  $("quantity").value=VARS.reduce((s,v)=>s+Math.max(0,Math.trunc(num(v.cantidad))),0);$("quantity").readOnly=true;$("quantity").required=false}
 function varSet(L){VARS=L.map(v=>({...v}));varRender()}
 $("varTog").onclick=()=>{VARS=[{nombre:"",cantidad:""},{nombre:"",cantidad:""}];varRender();$("varRows").querySelector("input").focus()};
 $("varAdd").onclick=()=>{VARS.push({nombre:"",cantidad:""});varRender();const r=$("varRows").querySelectorAll(".vr");r[r.length-1].querySelector("input").focus()};
-$("varRows").addEventListener("input",e=>{const r=e.target.closest(".vr");if(!r)return;VARS[+r.dataset.i][e.target.dataset.f]=e.target.value;varSuma()});
+$("varRows").addEventListener("input",e=>{const r=e.target.closest(".vr");if(!r)return;VARS[+r.dataset.i][e.target.dataset.f]=e.target.value;if(e.target.dataset.f==="nombre"){const w=e.target.parentNode,d=DAY.colorDot(e.target.value),o=w.querySelector(".cdot");if(o)o.remove();if(d)w.insertAdjacentHTML("afterbegin",d)}varSuma()});
 $("varRows").addEventListener("click",e=>{const b=e.target.closest("[data-x]");if(!b)return;VARS.splice(+b.dataset.x,1);varRender()});
 function setTab(t){esLote=t==="lote";document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
  $("lotQuantityGroup").classList.toggle("hidden",!esLote);$("unitsPerLotGroup").classList.toggle("hidden",!esLote);
