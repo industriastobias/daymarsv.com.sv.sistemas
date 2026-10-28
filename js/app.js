@@ -87,6 +87,27 @@ async function respaldo(){
   const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="respaldo-daymar-"+fch.slice(0,10)+".zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
   try{localStorage.setItem("dms_backup",fch)}catch(e){}toast("Respaldo descargado")}
  catch(e){await say("No se pudo crear el respaldo: "+e.message)}}
+async function vaciarDatos(){
+ const OPC=[["productos","Productos e inventario","incluye fotos, descuentos y códigos promo; exige borrar también las ventas"],["ventas","Ventas, devoluciones, facturas y cierres de caja","la numeración vuelve a #1"],["clientes","Clientes",""],["proveedores","Proveedores",""],["finanzas","Finanzas","movimientos, cuentas por cobrar y pagar, banco y capital"],["historial","Historial de Actividad e inicios de sesión",""]];
+ dlgCss();const d=document.createElement("dialog");d.className="dday";
+ d.innerHTML=`<h2 class="dd-h" style="color:var(--bad)">Vaciar datos de prueba</h2><div class="dd-b"><p style="margin:0 0 8px">Marca lo que quieres <b>borrar para siempre</b>. No se puede deshacer. <b>No se borran</b> usuarios, invitaciones, categorías ni los datos de tu negocio.</p>
+  ${OPC.map(o=>`<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0;text-align:left"><input type="checkbox" data-k="${o[0]}" checked style="width:20px;height:20px;flex:none;margin-top:2px"><span><b>${o[1]}</b>${o[2]?`<br><small style="color:var(--mute)">${o[2]}</small>`:""}</span></label>`).join("")}
+  <p style="margin:12px 0 4px">Para confirmar, escribe <b>BORRAR TODO</b>:</p><input type="text" id="vcT" autocomplete="off" placeholder="BORRAR TODO"><div class="err" id="vcE" role="alert"></div></div>
+  <div class="dd-f"><button type="button" data-n>Cancelar</button><button type="button" class="dg" id="vcOk">Borrar</button></div>`;
+ document.body.appendChild(d);const q=s=>d.querySelector(s),cerrar=()=>{try{d.close()}catch(e){}d.remove()};
+ const sync=()=>{if(q('[data-k=productos]').checked){q('[data-k=ventas]').checked=true;q('[data-k=ventas]').disabled=true}else q('[data-k=ventas]').disabled=false};
+ d.addEventListener("change",sync);sync();q("[data-n]").onclick=cerrar;d.addEventListener("cancel",e=>{e.preventDefault();cerrar()});
+ q("#vcOk").onclick=async()=>{const op={};d.querySelectorAll("[data-k]").forEach(c=>op[c.dataset.k]=c.checked);
+  if(!Object.values(op).some(Boolean)){q("#vcE").textContent="No marcaste nada.";return}
+  if(q("#vcT").value.trim()!=="BORRAR TODO"){q("#vcE").textContent="Escribe exactamente BORRAR TODO.";return}
+  q("#vcOk").disabled=true;q("#vcE").textContent="Borrando…";
+  try{
+   if(op.productos){let paths=[];for(let f=0;;f+=1000){const r=await db.from("producto_imagenes").select("path,thumb_path").range(f,f+999);if(r.error)throw new Error(r.error.message);r.data.forEach(x=>{if(x.path)paths.push(x.path);if(x.thumb_path)paths.push(x.thumb_path)});if(r.data.length<1000)break}
+    for(let i=0;i<paths.length;i+=50){const e=await db.storage.from("productos").remove(paths.slice(i,i+50));if(e.error)throw new Error(e.error.message)}}
+   const r=await db.rpc("reiniciar_datos",{p_opciones:op,p_confirmacion:"BORRAR TODO"});if(r.error)throw new Error(r.error.message);
+   cerrar();await say("Listo. Los datos que marcaste se borraron. Ya puedes empezar con los reales.");location.reload()}
+  catch(e){q("#vcOk").disabled=false;q("#vcE").textContent="No se pudo borrar: "+e.message}}
+ d.showModal()}
 function abrirConfig(){
  if(document.querySelector("dialog.cfgd"))return;
  const me=DAY.me||{nombre:"",avatar:null};let foto=me.avatar||null,quitar=false,nueva=false;
@@ -97,6 +118,7 @@ function abrirConfig(){
   <h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select>
   <h3>Menú</h3><label class="cf-c"><input type="checkbox" id="cfS"> Ocultar el menú lateral (computadora)</label><label class="cf-c"><input type="checkbox" id="cfB"> Ocultar el nombre DAYMAR-SHOP</label>
   ${me.rol==="admin"?`<h3>Respaldo</h3><p class="cf-m" id="cfBkT" style="margin:0 0 8px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button>`:""}
+  <div id="cfDz"></div>
   <h3>Cuenta</h3><p class="cf-m" style="margin:0">${esc(DAY.email||"")}</p><div class="err" id="cfE" role="alert"></div></div>
   <div class="cf-f"><button type="button" class="btn g" id="cfOut">Cerrar sesión</button><span style="flex:1"></span><button type="button" class="btn g" data-x>Cancelar</button><button type="button" class="btn" id="cfOk">Guardar</button></div>`;
  document.body.appendChild(d);
@@ -118,6 +140,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  ["pointerup","pointercancel"].forEach(n=>cv.addEventListener(n,()=>{dr=null}));
  const bk=q("#cfBk");if(bk){const t=()=>{let u=null;try{u=localStorage.getItem("dms_backup")}catch(e){}q("#cfBkT").textContent=u?"Último respaldo en este dispositivo: "+new Date(u).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"}):"Aún no has descargado un respaldo desde este dispositivo."};t();
   bk.onclick=async()=>{bk.disabled=true;try{await respaldo();t()}finally{bk.disabled=false}}}
+ db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3 style="color:var(--bad)">Zona peligrosa</h3><p class="cf-m" style="margin:0 0 8px">Vaciar los datos de prueba para empezar con los reales. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()}}},()=>{});
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
