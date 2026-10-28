@@ -71,14 +71,10 @@ dialog{max-width:calc(100vw - 16px)}
 img,canvas,video,svg{max-width:100%}
 
 /* Modo kiosco (todas las páginas) */
-body.kiosco .side{display:none!important}
-body.kiosco .shell{display:block!important}
-body.kiosco main{padding-left:16px!important}
 body.kiosco .btn{min-height:48px}
 body.kiosco input,body.kiosco select{min-height:48px}
 body.kiosco .hact .btn{font-size:16px}
 #kSal{position:fixed;bottom:12px;right:12px;z-index:60;min-height:40px;font-size:14px;box-shadow:0 2px 10px rgba(0,0,0,.2)}
-body.kiosco .back{display:inline-block!important}
 
 /* Configuración (rediseño) */
 .cf-h{padding:16px 20px}.cf-h h2{font-size:20px;margin:0}.cf-h small{color:var(--mute);font-size:12px}
