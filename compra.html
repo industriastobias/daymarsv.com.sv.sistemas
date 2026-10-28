@@ -3,8 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Compra</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610281046">
-<link rel="stylesheet" href="css/compra.css?v=202610281046"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202610281101">
+<link rel="stylesheet" href="css/compra.css?v=202610281101"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -49,9 +49,7 @@
      <div class="full"><label for="barcode">Código de barras</label><div class="bcg"><input id="barcode" placeholder="Automático, o escanea / escribe"><button type="button" class="btn g" id="bAuto">Generar</button></div><canvas id="barcodeCanvas"></canvas></div>
      <div class="full"><label for="fechaCompra">Fecha de compra</label><input id="fechaCompra" type="date"></div>
      <div class="full"><label for="description">Descripción</label><textarea id="description" rows="3" placeholder="Describe las características…"></textarea></div></div></details>
-    <div class="full pago" id="pagoBox"><label class="chk"><input type="checkbox" id="chkPago" checked> Registrar esta compra en Finanzas</label>
-     <div class="fg" id="pagoCampos"><div><label for="pagoMet">Pagado con</label><select id="pagoMet"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option></select></div><div><label for="pagoProv">Proveedor <small>(opcional)</small></label><select id="pagoProv"><option value="">—</option></select></div>
-     <div class="full"><small class="h" id="pagoTot"></small></div></div></div>
+    
    </div>
    <div class="autosave" id="autoInd">Borrador guardado</div>
    <div class="acts"><button class="btn" id="bSave" type="submit">Guardar producto</button><button class="btn g" type="button" id="bReset">Limpiar</button><button class="btn g hidden" type="button" id="bCancelEdit2">Cancelar edición</button></div>
@@ -88,15 +86,6 @@
    <input type="file" id="importFile" accept=".zip" class="hidden"><input type="file" id="pdfFile" accept=".pdf" class="hidden">
    <button class="btn dg" id="bVaciaInv" type="button" style="width:100%;margin-top:14px">Enviar todo el inventario a la papelera</button></div>
  </div>
-</dialog>
-
-<!-- Pago de la compra (carga por lote) -->
-<dialog id="dgPago">
- <div class="dh"><h2>Registrar la compra</h2><button class="x" data-x="dgPago" aria-label="Cerrar">×</button></div>
- <div class="db"><p id="pgTxt" style="margin-top:0"></p>
-  <label class="chk"><input type="checkbox" id="pgChk" checked> Registrar esta compra en Finanzas</label>
-  <div class="fg" id="pgCampos"><div><label for="pgMet">Pagado con</label><select id="pgMet"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option></select></div><div><label for="pgProv">Proveedor <small>(opcional)</small></label><select id="pgProv"><option value="">—</option></select></div></div></div>
- <div class="df"><button class="btn g" id="pgNo" type="button">Cancelar</button><button class="btn" id="pgSi" type="button">Guardar lote</button></div>
 </dialog>
 
 <!-- Editor de lote -->
@@ -155,6 +144,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<script src="js/app.js?v=202610281046"></script>
-<script src="js/compra.js?v=202610281046"></script>
+<script src="js/app.js?v=202610281101"></script>
+<script src="js/compra.js?v=202610281101"></script>
 </body></html>
