@@ -456,37 +456,6 @@ async function accionPend(a,id){
   const ok=await espera(async()=>{await rpc("anular_venta",{p_venta:id});return true});
   if(ok){toast("Pedido eliminado y stock devuelto");snd("ok");await Promise.all([cargarPend(),cargarProductos()]);pintarPend();filtrar(true)}}}
 
-/* ---------- WhatsApp (API oficial de Meta, con plantilla e imagen) ---------- */
-const PLANTILLA_WA="Hola {{1}}, te saludamos de {{2}}. Te recordamos que tienes un saldo pendiente por tu compra: {{3}}.\n\nPrecio original: {{4}}\nAbonado: {{5}}\nSaldo pendiente: {{6}}\nCompra realizada el: {{7}}\n\nCuando puedas, realiza tu pago. ¡Gracias por tu preferencia!";
-async function configWA(){
- const r=await db.rpc("obtener_whatsapp");const c=r.data||{};
- const m=modal("Configurar WhatsApp",`<p class="pw" style="margin-top:0">Los recordatorios salen con la <b>API oficial de WhatsApp Business (Meta)</b>. Haz esto una sola vez:</p>
-  <ol class="pw" style="padding-left:18px;line-height:1.6"><li>En <b>developers.facebook.com</b> crea una app de tipo <i>Business</i> y agrega el producto <b>WhatsApp</b>.</li><li>Agrega y verifica el número de tu negocio. Copia el <b>Phone number ID</b>.</li><li>En <b>Business Settings → Usuarios del sistema</b> crea un usuario y genera un <b>token permanente</b> con permiso <i>whatsapp_business_messaging</i>.</li><li>En <b>WhatsApp Manager → Plantillas</b> crea una plantilla <b>${esc(c.plantilla||"recordatorio_pago")}</b>, categoría <b>Utilidad</b>, idioma <b>Español</b>, con encabezado <b>Imagen</b> y este cuerpo (con las 7 variables):<div style="background:var(--chip);border-radius:8px;padding:8px;margin:6px 0;font-size:12px;white-space:pre-wrap">${esc(PLANTILLA_WA)}</div><button class="btn g sm" id="wcCp" type="button">Copiar texto de la plantilla</button></li><li>Cuando Meta la apruebe, pega aquí los datos y activa.</li></ol>
-  <div class="fg"><div class="full"><label>Phone number ID</label><input name="pid" value="${esc(c.phone_id||"")}" inputmode="numeric" autocomplete="off"></div>
-  <div class="full"><label>Token de acceso ${c.tiene_token?"<small>(ya guardado; escribe uno nuevo solo para cambiarlo)</small>":""}</label><input name="tk" type="password" autocomplete="off" placeholder="${c.tiene_token?"••••••••":"EAAG…"}"></div>
-  <div><label>Nombre de la plantilla</label><input name="pl" value="${esc(c.plantilla||"recordatorio_pago")}"></div><div><label>Idioma</label><input name="id" value="${esc(c.idioma||"es")}" maxlength="10"></div>
-  <div class="full"><label class="chk"><input type="checkbox" name="ac" ${c.activo?"checked":""}> Envío activado</label></div></div><div class="err2" id="wcE"></div>`,
-  {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="wcOk">Guardar</button>`});
- m.q("#wcCp").onclick=async()=>{try{await navigator.clipboard.writeText(PLANTILLA_WA);toast("Texto copiado")}catch(e){toast("No se pudo copiar")}};
- m.q("#wcOk").onclick=async()=>{const g=n=>m.q(`[name=${n}]`);
-  const e=await espera(async()=>{const x=await db.rpc("guardar_whatsapp",{p_phone_id:g("pid").value,p_token:g("tk").value,p_plantilla:g("pl").value,p_idioma:g("id").value,p_activo:g("ac").checked});if(x.error)throw new Error(x.error.message);return true},"Guardando…");
-  if(e){m.close();toast("WhatsApp guardado")}}}
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-async function enviarWA(v){
- const cfg=await db.rpc("obtener_whatsapp");
- if(cfg.error||!(cfg.data&&cfg.data.configurado)){if(ADM){if(await DAY.ask("WhatsApp todavía no está configurado. ¿Quieres configurarlo ahora?",{titulo:"WhatsApp",ok:"Configurar"}))configWA()}else await DAY.say("WhatsApp aún no está configurado. Pídele al administrador que lo configure.");return}
- let cli=null;try{const {data}=await db.from("clientes").select("id,nombre,telefono");const n=norm(v.cliente_nombre||"").trim();cli=(data||[]).find(x=>norm(x.nombre).trim()===n)||null}catch(e){}
- const t=await DAY.input("Número de WhatsApp de "+(v.cliente_nombre||"cliente")+" (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");
- if(t===null)return;const dig=t.replace(/\D/g,"");const tel=dig.length===8?"503"+dig:dig;
- if(tel.length<10||tel.length>15){await DAY.say("Ese número no es válido.");return}
- if(!await confirmar(`Se enviará a <b>+${tel}</b> un recordatorio con la foto del producto y el saldo de <b>${$$(v.pendiente_monto)}</b>.`,{titulo:"Enviar recordatorio",ok:"Enviar"}))return;
- const id=await espera(async()=>{const x=await db.rpc("enviar_recordatorio_wa",{p_venta:v.id,p_telefono:tel});if(x.error)throw new Error(x.error.message);return x.data},"Enviando a WhatsApp…");
- if(!id)return;
- try{if(cli&&!cli.telefono)await db.from("clientes").update({telefono:t.trim()}).eq("id",cli.id);else if(!cli&&v.cliente_nombre)await db.from("clientes").insert({nombre:v.cliente_nombre,telefono:t.trim()})}catch(e){}
- for(let i=0;i<10;i++){await sleep(1500);const x=await db.rpc("estado_recordatorio_wa",{p_request:id});const s=x.data||{};
-  if(s.estado==="enviado"){snd("ok");toast("Recordatorio enviado a +"+tel);return}
-  if(s.estado==="error"){snd("err");await DAY.say("WhatsApp no pudo enviarlo: "+(s.detalle||"error desconocido"));return}}
- toast("El mensaje está en cola. Si no le llega en unos minutos, revisa la configuración.")}
 /* Recordatorio de cobro pendiente: copiar texto o imagen */
 function recordatorio(v){
  const fecha=new Date(v.created_at).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"});
@@ -494,9 +463,7 @@ function recordatorio(v){
  const m=modal("Recordatorio de pago pendiente",`<div id="rmC" style="background:#fff;color:#222;border-radius:12px;padding:12px">${lineas(v).replace(/class="ln"/g,'class="ln" style="color:#222"')}
   <div class="am"><div><span>Cliente</span><b>${esc(v.cliente_nombre||"")}</b></div><div><span>Precio original</span><b>${$$(v.subtotal)}</b></div><div><span>Abonado</span><b>${$$(v.abonado)}</b></div><div class="o"><span>Saldo pendiente</span><b>${$$(v.pendiente_monto)}</b></div></div>
   <small style="color:#666">Pendiente desde: ${esc(fecha)}</small></div>`,
-  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="rmT">Copiar texto</button><button class="btn g" id="rmI">Copiar imagen</button><button class="btn" id="rmW">Enviar por WhatsApp</button>`});
- m.q("#rmW").onclick=()=>enviarWA(v);
- db.from("recordatorios_wa").select("created_at,telefono").eq("venta_id",v.id).order("created_at",{ascending:false}).limit(1).then(r=>{const x=r.data&&r.data[0];if(x){const p=document.createElement("p");p.className="hint";p.textContent="Último recordatorio por WhatsApp: "+fdate(x.created_at)+" "+ftime(x.created_at)+" · +"+x.telefono;m.q("#rmC").after(p)}},()=>{});
+  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="rmT">Copiar texto</button><button class="btn" id="rmI">Copiar imagen</button>`});
  m.q("#rmT").onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast("Datos del recordatorio copiados")}catch(e){const a=document.createElement("textarea");a.value=txt;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(e2){}a.remove();toast(ok?"Datos del recordatorio copiados":"No se pudo copiar")}};
  m.q("#rmI").onclick=async()=>{await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
   const c=await html2canvas(m.q("#rmC"),{backgroundColor:"#ffffff",scale:Math.max(2,devicePixelRatio||1),useCORS:true,logging:false});
@@ -1015,12 +982,12 @@ $("mGo").onclick=abrirMulti;
 const hid=LS("dms_hide")==="1";const setEye=h=>{$("totalAmount").classList.toggle("hid",h);$("bEye").textContent=h?"Mostrar":"Ocultar";LS("dms_hide",h?"1":"0")};setEye(hid);
 $("bEye").onclick=()=>setEye(!$("totalAmount").classList.contains("hid"));
 
-const mm=$("mMore");if(!ADM){const w=$("mWa");if(w)w.remove()}$("bMore").onclick=e=>{e.stopPropagation();const on=mm.classList.toggle("on");$("bMore").setAttribute("aria-expanded",on)};
+const mm=$("mMore");$("bMore").onclick=e=>{e.stopPropagation();const on=mm.classList.toggle("on");$("bMore").setAttribute("aria-expanded",on)};
 document.addEventListener("click",()=>{mm.classList.remove("on");$("bMore").setAttribute("aria-expanded","false")});
 async function refrescar(){await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()]);filtrar(true);if(S.tab==="pend")pintarPend();if(S.tab==="hoy")await pintarHoy();if(S.tab==="ven")await pintarVentas()},"Actualizando…");toast("Datos actualizados")}
 mm.addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)return;const k=b.dataset.m;
  if(k==="refresh")refrescar();else if(k==="excel")excel();
- else if(k==="wa")configWA();else if(k==="keys")modal("Atajos de teclado",`<div class="sk"><span>Enfocar código de barras</span><kbd>Ctrl</kbd></div><div class="sk"><span>Cerrar ventana / cámara</span><kbd>Esc</kbd></div><div class="sk"><span>Lector USB</span><span>Activa "Lector USB" y escanea</span></div>`.replace("<kbd>Ctrl</kbd>","<kbd>Ctrl + B</kbd>"),{foot:""})
+ else if(k==="keys")modal("Atajos de teclado",`<div class="sk"><span>Enfocar código de barras</span><kbd>Ctrl</kbd></div><div class="sk"><span>Cerrar ventana / cámara</span><kbd>Esc</kbd></div><div class="sk"><span>Lector USB</span><span>Activa "Lector USB" y escanea</span></div>`.replace("<kbd>Ctrl</kbd>","<kbd>Ctrl + B</kbd>"),{foot:""})
  else if(k==="out"){DAY.salir()}});
 
 /* Si vuelves a la página tras un rato (por ejemplo desde Compra), se actualizan los datos */
