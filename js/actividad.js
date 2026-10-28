@@ -7,7 +7,7 @@ const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"actividad",me.rol);$("app").classList.remove("hidden");$("bnav").remove();
 document.querySelector("main").style.paddingBottom="30px";
-const TB={ventas:"Venta",productos:"Producto",clientes:"Cliente",proveedores:"Proveedor",categorias:"Categoría",fin_movimientos:"Movimiento financiero",fin_cuentas:"Cuenta",facturas:"Factura",promo_codigos:"Código promo",cierres_caja:"Cierre de caja",config_negocio:"Datos del negocio",capital_movs:"Capital",reservas:"Reserva",reserva_abonos:"Abono de reserva",profiles:"Usuario"};
+const TB={cot_lotes:"Lote de cotización",ventas:"Venta",productos:"Producto",clientes:"Cliente",proveedores:"Proveedor",categorias:"Categoría",fin_movimientos:"Movimiento financiero",fin_cuentas:"Cuenta",facturas:"Factura",promo_codigos:"Código promo",cierres_caja:"Cierre de caja",config_negocio:"Datos del negocio",capital_movs:"Capital",reservas:"Reserva",reserva_abonos:"Abono de reserva",profiles:"Usuario"};
 const AC={crear:["Creó","ok"],editar:["Editó","wa"],eliminar:["Eliminó","or"],anular:["Anuló","or"],eliminar_venta:["Eliminó una venta","or"]};
 const CAMPO={nombre:"Nombre",precio_costo:"Costo",precio_venta:"Precio",stock_minimo:"Stock mínimo",activo:"Activo",descuento_pct:"Descuento %",estado:"Estado",rol:"Rol",monto:"Monto",total:"Total",categoria_id:"Categoría",proveedor_id:"Proveedor"};
 let U=[],L=[],ult=[],lim=100,fin=false;
