@@ -3,16 +3,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Iniciar sesión</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
-<section class="login"><form class="lbox" id="lf">
-<img src="IMG_4183.png" alt="" onerror="this.remove()">
-<div class="brand">DAYMAR<i>-SHOP</i></div><p>Inicia sesión para continuar.</p>
-<label for="u">Correo</label><input id="u" type="email" autocomplete="username" required>
-<label for="p">Contraseña</label><input id="p" type="password" autocomplete="current-password" required>
+<link rel="stylesheet" href="css/estilo.css"><link rel="stylesheet" href="css/login.css"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<div class="lg">
+<aside class="lg-hero">
+ <div class="lg-top"><img src="logo.png" alt=""><b>DAYMAR<i>-SHOP</i></b></div>
+ <div class="lg-mid"><h1>Tu negocio, <em>ordenado</em> y en un solo lugar.</h1>
+  <p>Inventario, ventas, clientes y finanzas sincronizados en todos tus dispositivos.</p>
+  <ul class="lg-ft"><li><span>📦</span>Inventario y punto de venta</li><li><span>👥</span>Clientes y cuentas por cobrar</li><li><span>📊</span>Finanzas y cierres de caja</li></ul></div>
+ <div class="lg-small">DAYMAR-SHOP – A Family Company</div>
+</aside>
+<section class="lg-form"><form class="lbox2" id="lf">
+<h2 id="ht">Bienvenido</h2><p class="sub" id="hs">Inicia sesión para continuar.</p>
+<label for="u">Correo</label><input id="u" type="email" autocomplete="username" required placeholder="tucorreo@ejemplo.com">
+<label for="p">Contraseña</label><div class="pw2"><input id="p" type="password" autocomplete="current-password" required placeholder="••••••••"><button type="button" id="eye">Mostrar</button></div>
 <div id="rg" class="hidden"><label for="rn">Tu nombre</label><input id="rn" autocomplete="name" maxlength="60">
 <label for="p2">Repite la contraseña</label><input id="p2" type="password" autocomplete="new-password"></div>
-<div class="err" id="le" role="alert"></div><button class="btn" id="lb" style="width:100%;margin-top:8px">Ingresar</button>
-<button type="button" id="tg" style="background:none;border:0;color:var(--wine);font-weight:700;margin-top:12px;width:100%;cursor:pointer;padding:8px">¿Te invitaron? Crear cuenta</button></form></section>
+<div class="err" id="le" role="alert"></div><button class="btn" id="lb">Ingresar</button>
+<button type="button" id="tg" class="tg">¿Te invitaron? Crear cuenta</button>
+<div class="foot">© DAYMAR-SHOP · Acceso solo para usuarios autorizados</div></form></section>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="js/app.js"></script>
 <script>
@@ -20,7 +29,8 @@
 if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
 else{const {data}=await db.auth.getSession();if(data.session)location.replace("menu.html")}
 let reg=false;
-$("tg").onclick=()=>{reg=!reg;$("rg").classList.toggle("hidden",!reg);$("lb").textContent=reg?"Crear cuenta":"Ingresar";$("tg").textContent=reg?"Ya tengo cuenta: iniciar sesión":"¿Te invitaron? Crear cuenta";$("p").autocomplete=reg?"new-password":"current-password";$("le").textContent="";$("le").style.color=""};
+$("eye").onclick=()=>{const s=$("p").type==="password";$("p").type=s?"text":"password";$("eye").textContent=s?"Ocultar":"Mostrar"};
+$("tg").onclick=()=>{reg=!reg;$("ht").textContent=reg?"Crea tu cuenta":"Bienvenido";$("hs").textContent=reg?"Usa el correo con el que te invitaron.":"Inicia sesión para continuar.";$("rg").classList.toggle("hidden",!reg);$("lb").textContent=reg?"Crear cuenta":"Ingresar";$("tg").textContent=reg?"Ya tengo cuenta: iniciar sesión":"¿Te invitaron? Crear cuenta";$("p").autocomplete=reg?"new-password":"current-password";$("le").textContent="";$("le").style.color=""};
 $("lf").onsubmit=async e=>{e.preventDefault();$("le").textContent="";$("le").style.color="";$("lb").disabled=true;
  const email=$("u").value.trim(),password=$("p").value;
  if(reg){
