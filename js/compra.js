@@ -78,7 +78,7 @@ $("lotQuantity").addEventListener("input",lotStock);$("unitsPerLot").addEventLis
 /* ---------- colores / variantes ---------- */
 let VARS=[],VARS_DB=[];
 function varRender(){const on=VARS.length>0;$("varPanel").classList.toggle("hidden",!on);$("varTog").classList.toggle("hidden",on);
- $("varRows").innerHTML=VARS.map((v,i)=>`<div class="vr" data-i="${i}"><input data-f="nombre" placeholder="Color (ej. Rosado)" maxlength="40" value="${esc(v.nombre||"")}"><input data-f="cantidad" type="number" min="0" step="1" inputmode="numeric" placeholder="Cant." value="${v.cantidad===""||v.cantidad==null?"":v.cantidad}"><input class="vb" data-f="codigo_barras" placeholder="Código de barras (opcional)" value="${esc(v.codigo_barras||"")}"><button type="button" class="btn g" data-x="${i}" aria-label="Quitar color">×</button></div>`).join("");
+ $("varRows").innerHTML=VARS.map((v,i)=>`<div class="vr" data-i="${i}"><input data-f="nombre" placeholder="Color (ej. Rosado)" maxlength="40" value="${esc(v.nombre||"")}"><input data-f="cantidad" type="number" min="0" step="1" inputmode="numeric" placeholder="Cant." value="${v.cantidad===""||v.cantidad==null?"":v.cantidad}"><input class="vb" data-f="codigo_barras" placeholder="Código de barras (automático si lo dejas vacío)" value="${esc(v.codigo_barras||"")}"><button type="button" class="btn g" data-x="${i}" aria-label="Quitar color">×</button></div>`).join("");
  varSuma()}
 function varSuma(){if(!VARS.length){$("quantity").readOnly=esLote&&!edit;$("quantity").required=true;return}
  $("quantity").value=VARS.reduce((s,v)=>s+Math.max(0,Math.trunc(num(v.cantidad))),0);$("quantity").readOnly=true;$("quantity").required=false}
@@ -142,6 +142,10 @@ $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
  const it={codigo:$("code").value.trim()||(edit?"":autoSku(catN)),nombre:$("name").value.trim(),codigo_barras:$("barcode").value.trim()||genUnico(),categoria:catN,
   precio_venta:num($("price").value),precio_costo:num($("valorReal").value),fecha_compra:$("fechaCompra").value||hoy,descuento_pct:num($("discount").value),cantidad:stock,
   tipo_compra:esLote?"lote":"normal",lotes:lq,unidades_por_lote:upl,descripcion:$("description").value.trim()};
+ if(vl.length){const us=[it.codigo_barras,...vl.map(v=>v.codigo_barras).filter(Boolean)];
+  if(new Set(us).size<us.length){toast("Hay códigos de barras repetidos entre los colores");return}
+  const aj=inv.concat(trash).find(p=>vl.some(v=>v.codigo_barras&&v.codigo_barras===p.codigo_barras&&p.id!==edit));if(aj){await DAY.say(`El código de barras de un color ya lo tiene “${aj.nombre}”.`);return}
+  for(const v of vl)if(!v.codigo_barras){v.codigo_barras=genUnico(us);us.push(v.codigo_barras)}}
  if(vl.length&&!edit)it.variantes=vl.map(v=>({nombre:v.nombre,cantidad:v.cantidad,codigo_barras:v.codigo_barras}));
  if(!await validar(it))return;
  const otro=inv.concat(trash).find(p=>p.codigo_barras&&p.codigo_barras===it.codigo_barras&&p.id!==edit);if(otro){await DAY.say(`Ese código de barras ya lo tiene “${otro.nombre}”.`);return}

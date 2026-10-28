@@ -8,11 +8,17 @@ const ADM=me.rol==="admin";
 mountSide($("side"),"inventario",me.rol);$("app").classList.remove("hidden");
 const IC={sum:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',cat:'<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',top:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
 const BAJO=5,CRIT=2;
-let P=[];
+let P=[],NP=0;
 const fin=p=>r2(p.precio_venta*(1-(+p.descuento_pct||0)/100));
 async function cargar(){
  const rows=await fetchAll(()=>db.from("productos").select("id,codigo,nombre,precio_venta,precio_costo,descuento_pct,stock,stock_minimo,foto_url,codigo_barras,descripcion,categorias(nombre)").eq("activo",true).order("nombre"));
- P=rows.map(p=>({...p,cat:p.categorias?p.categorias.nombre:"Sin categoría",fin:fin(p),val:fin(p)*p.stock}))}
+ let vs=[];try{vs=await fetchAll(()=>db.from("producto_variantes").select("id,producto_id,nombre,codigo_barras,stock,orden").order("orden").order("nombre"))}catch(e){}
+ const VB={};vs.forEach(v=>(VB[v.producto_id]=VB[v.producto_id]||[]).push(v));NP=rows.length;P=[];
+ rows.forEach(p=>{const b={...p,cat:p.categorias?p.categorias.nombre:"Sin categoría",fin:fin(p)},L=VB[p.id];
+  if(!L){b.val=b.fin*b.stock;P.push(b);return}
+  /* un producto con colores se lista una vez por color, cada uno con su stock y su código de barras */
+  let suma=0;L.forEach(v=>{suma+=v.stock;const c={...b,nombre:p.nombre+" – "+v.nombre,stock:v.stock,codigo_barras:v.codigo_barras||"",codigo:p.codigo};c.val=c.fin*c.stock;P.push(c)});
+  if(p.stock>suma){const c={...b,nombre:p.nombre+" – sin color",stock:p.stock-suma,codigo_barras:p.codigo_barras};c.val=c.fin*c.stock;P.push(c)}})}
 const sum=(L,f)=>L.reduce((s,p)=>s+f(p),0);
 function datos(){
  const unidades=sum(P,p=>p.stock),valor=sum(P,p=>p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock>0&&p.stock<=BAJO),sano=P.filter(p=>p.stock>BAJO);
@@ -22,7 +28,7 @@ function datos(){
  return {unidades,valor,agot,bajo,sano,cats,top,aten,costo,ncat:Object.keys(cats).length,prom:unidades?valor/unidades:0}}
 function pintar(){
  const d=datos();
- $("rKpi").innerHTML=`<div><span>Productos</span><b>${P.length}</b></div><div><span>Unidades en stock</span><b>${d.unidades}</b></div><div><span>Valor del inventario</span><b>${$$(d.valor)}</b></div><div><span>Valor promedio por unidad</span><b>${$$(d.prom)}</b></div>${ADM?`<div><span>Utilidad potencial</span><b>${$$(d.valor-d.costo)}</b><small>a precio de venta vs costo</small></div>`:`<div><span>Categorías</span><b>${d.ncat}</b></div>`}`;
+ $("rKpi").innerHTML=`<div><span>Productos</span><b>${NP}</b></div><div><span>Unidades en stock</span><b>${d.unidades}</b></div><div><span>Valor del inventario</span><b>${$$(d.valor)}</b></div><div><span>Valor promedio por unidad</span><b>${$$(d.prom)}</b></div>${ADM?`<div><span>Utilidad potencial</span><b>${$$(d.valor-d.costo)}</b><small>a precio de venta vs costo</small></div>`:`<div><span>Categorías</span><b>${d.ncat}</b></div>`}`;
  $("rSalud").innerHTML=`<div><span>Stock saludable (más de ${BAJO})</span><b class="pos">${d.sano.length}</b></div><div><span>Stock bajo (1 a ${BAJO})</span><b style="color:var(--warn)">${d.bajo.length}</b></div><div><span>Agotados</span><b class="neg">${d.agot.length}</b></div>`;
  $("rAlert").innerHTML=(d.agot.length?`<div class="alert bad"><div><b>${d.agot.length} producto(s) agotado(s)</b>Repón pronto para no perder ventas.</div></div>`:"")+(d.bajo.length?`<div class="alert warn"><div><b>${d.bajo.length} producto(s) con stock bajo</b>Considera reabastecer.</div></div>`:"")+(!P.length?`<div class="alert"><div><b>Inventario vacío</b>Aún no hay productos registrados.</div></div>`:"");
  const cs=Object.entries(d.cats).sort((a,b)=>b[1].v-a[1].v);
@@ -45,7 +51,7 @@ async function reportePdf(){
  await espera(async()=>{await pdfLibs();const {jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),W=210,m=14,d=datos();
   pdf.setFillColor(...WINE);pdf.rect(0,0,W,26,"F");pdf.setTextColor(255);pdf.setFont(undefined,"bold");pdf.setFontSize(18);pdf.text("DAYMAR-SHOP",m,13);pdf.setFontSize(10);pdf.setFont(undefined,"normal");pdf.text("Reporte de inventario",m,20);
   pdf.text(new Date().toLocaleDateString("es-SV",{day:"numeric",month:"long",year:"numeric"}),W-m,13,{align:"right"});
-  const k=[["Productos",P.length],["Unidades",d.unidades],["Valor del inventario",$$(d.valor)],["Agotados",d.agot.length],["Stock bajo",d.bajo.length]];
+  const k=[["Productos",NP],["Unidades",d.unidades],["Valor del inventario",$$(d.valor)],["Agotados",d.agot.length],["Stock bajo",d.bajo.length]];
   const bw=(W-2*m-4*3)/5;k.forEach((x,i)=>{const bx=m+i*(bw+3);pdf.setFillColor(247,242,243);pdf.roundedRect(bx,32,bw,17,2,2,"F");pdf.setTextColor(...MUTE);pdf.setFontSize(7.5);pdf.text(String(x[0]),bx+3,38);pdf.setTextColor(...WINE);pdf.setFont(undefined,"bold");pdf.setFontSize(11);pdf.text(String(x[1]),bx+3,45);pdf.setFont(undefined,"normal")});
   let y=56;const T=(t,head,body,opt)=>{pdf.setTextColor(...WINE);pdf.setFont(undefined,"bold");pdf.setFontSize(12);pdf.text(t,m,y);pdf.setFont(undefined,"normal");
    pdf.autoTable(Object.assign({startY:y+3,head:[head],body,margin:{left:m,right:m},theme:"striped",styles:{fontSize:8.5,cellPadding:1.8,textColor:INK},headStyles:{fillColor:WINE,textColor:255},alternateRowStyles:{fillColor:[247,242,243]}},opt||{}));y=pdf.lastAutoTable.finalY+9};
