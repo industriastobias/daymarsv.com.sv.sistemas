@@ -74,6 +74,19 @@ function mountSide(el,activo,rol){
  el.addEventListener("click",e=>{const a=e.target.closest("[data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
  pintarUsr();aplicarPrefs()}
 /* Ventana de configuración: nombre, foto, tema y opciones del menú */
+const TABLAS_RESPALDO=["productos","categorias","producto_imagenes","proveedores","clientes","ventas","venta_items","movimientos_stock","facturas","factura_items","devoluciones","devolucion_items","fin_movimientos","fin_cuentas","fin_banco","capital_movs","cierres_caja","promo_codigos","descuentos_programados","config_negocio","profiles","invitaciones","bitacora","accesos"];
+async function respaldo(){
+ if(!await ask("Se descargará un archivo ZIP con una copia de todos tus datos (productos, ventas, clientes, finanzas…). Contiene información del negocio y de tus clientes: guárdalo en un lugar seguro.",{titulo:"Descargar respaldo",ok:"Descargar"}))return;
+ toast("Preparando respaldo… puede tardar un momento");
+ try{if(!window.JSZip)await new Promise((ok,ko)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";s.onload=ok;s.onerror=()=>ko(new Error("No se pudo cargar la librería. Revisa tu conexión."));document.head.appendChild(s)});
+  const zip=new JSZip(),res=[];
+  for(const t of TABLAS_RESPALDO){try{const rows=[];for(let f=0;;f+=1000){const r=await db.from(t).select("*").order("id").range(f,f+999);if(r.error)throw new Error(r.error.message);rows.push(...r.data);if(r.data.length<1000)break}
+    zip.file(t+".json",JSON.stringify(rows,null,1));res.push(t+": "+rows.length+" registros")}catch(e){res.push(t+": no se pudo leer ("+(e.message||"error")+")")}}
+  const fch=new Date().toISOString();
+  zip.file("LEEME.txt","Respaldo de DAYMAR-SHOP\nGenerado: "+fch+"\nPor: "+(DAY.me?DAY.me.nombre:"")+"\n\nContenido:\n"+res.join("\n")+"\n\nNota: las fotos de productos no van dentro del ZIP; los archivos traen su dirección (url) y siguen guardadas en el sistema.\nLos datos están en formato JSON (se abren con cualquier editor de texto).\n");
+  const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="respaldo-daymar-"+fch.slice(0,10)+".zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  try{localStorage.setItem("dms_backup",fch)}catch(e){}toast("Respaldo descargado")}
+ catch(e){await say("No se pudo crear el respaldo: "+e.message)}}
 function abrirConfig(){
  if(document.querySelector("dialog.cfgd"))return;
  const me=DAY.me||{nombre:"",avatar:null};let foto=me.avatar||null,quitar=false,nueva=false;
@@ -83,6 +96,7 @@ function abrirConfig(){
   <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small>
   <h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select>
   <h3>Menú</h3><label class="cf-c"><input type="checkbox" id="cfS"> Ocultar el menú lateral (computadora)</label><label class="cf-c"><input type="checkbox" id="cfB"> Ocultar el nombre DAYMAR-SHOP</label>
+  ${me.rol==="admin"?`<h3>Respaldo</h3><p class="cf-m" id="cfBkT" style="margin:0 0 8px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button>`:""}
   <h3>Cuenta</h3><p class="cf-m" style="margin:0">${esc(DAY.email||"")}</p><div class="err" id="cfE" role="alert"></div></div>
   <div class="cf-f"><button type="button" class="btn g" id="cfOut">Cerrar sesión</button><span style="flex:1"></span><button type="button" class="btn g" data-x>Cancelar</button><button type="button" class="btn" id="cfOk">Guardar</button></div>`;
  document.body.appendChild(d);
@@ -102,6 +116,8 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  let dr=null;cv.addEventListener("pointerdown",e=>{dr=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
  cv.addEventListener("pointermove",e=>{if(!dr||!im)return;const k=240/cv.clientWidth;ox+=(e.clientX-dr[0])*k;oy+=(e.clientY-dr[1])*k;dr=[e.clientX,e.clientY];dibujar()});
  ["pointerup","pointercancel"].forEach(n=>cv.addEventListener(n,()=>{dr=null}));
+ const bk=q("#cfBk");if(bk){const t=()=>{let u=null;try{u=localStorage.getItem("dms_backup")}catch(e){}q("#cfBkT").textContent=u?"Último respaldo en este dispositivo: "+new Date(u).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"}):"Aún no has descargado un respaldo desde este dispositivo."};t();
+  bk.onclick=async()=>{bk.disabled=true;try{await respaldo();t()}finally{bk.disabled=false}}}
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
