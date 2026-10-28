@@ -144,10 +144,10 @@ async function entregar(r){
  const ok=await espera(async()=>{const {error}=await db.from("reservas").update({entregada_en:new Date().toISOString()}).eq("id",r.id);if(error)throw new Error(error.message);return true});
  if(ok){toast("Reserva entregada");await recargar()}}
 function cancelar(r){
- const d=modal("Cancelar reserva",`<p style="margin:0 0 8px"><b>${esc(r.cliente_nombre)}</b> · ${esc(r.producto)}</p>${+r.monto_pagado>0?`<div class="alert warn" style="margin-bottom:8px"><div><b>El cliente ya pagó ${$$(r.monto_pagado)}</b>Quedará marcado como “a devolver”. La devolución del dinero la haces tú por fuera.</div></div>`:""}
+ const d=modal("Cancelar reserva",`<p style="margin:0 0 8px"><b>${esc(r.cliente_nombre)}</b> · ${esc(r.producto)}</p>${+r.monto_pagado>0?`<div class="alert warn" style="margin-bottom:8px"><div><b>El cliente ya pagó ${$$(r.monto_pagado)}</b>Elige qué pasa con ese dinero.</div></div><label>Abono</label><select id="cD"><option value="1">Devolverlo al cliente (se registra como gasto)</option><option value="0">Quedármelo (se mantiene como ingreso)</option></select>`:""}
   <label>Motivo <small>(opcional)</small></label><input id="cM" maxlength="200" placeholder="Ej. El cliente ya no lo quiere"><div class="err2" id="fE" role="alert"></div>`,
   {foot:`<button class="btn g" data-x>Volver</button><button class="btn dg" id="cOk">Cancelar reserva</button>`});
- d.q("#cOk").onclick=async()=>{const ok=await espera(async()=>{const {error}=await db.from("reservas").update({cancelada_en:new Date().toISOString(),cancelada_motivo:d.q("#cM").value.trim()||null}).eq("id",r.id);if(error)throw new Error(error.message);return true});
+ d.q("#cOk").onclick=async()=>{const ok=await espera(async()=>{const sel=d.q("#cD");const {error}=await db.rpc("cancelar_reserva",{p_id:r.id,p_motivo:d.q("#cM").value.trim()||null,p_devolver:!!sel&&sel.value==="1"});if(error)throw new Error(error.message);return true});
   if(ok){d.close();toast("Reserva cancelada");await recargar()}}}
 async function reactivar(r){
  if(!await confirmar("La reserva vuelve a estar activa con sus abonos.",{titulo:"Reactivar reserva",ok:"Reactivar"}))return;
