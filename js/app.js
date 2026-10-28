@@ -46,10 +46,11 @@ function aplicarPrefs(){
 function pintarUsr(){const b=document.getElementById("cfg1");if(!b||!DAY.me)return;b.innerHTML=avatarHTML(DAY.me)+`<span class="un"><b>${esc(DAY.me.nombre)}</b><small>Configuración</small></span>`}
 /* Menú lateral de escritorio (en el celular se oculta y se navega desde el menú principal) */
 function mountSide(el,activo,rol){
- el.innerHTML=`<div class="brand">DAYMAR<i>-SHOP</i></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
+ el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>-SHOP</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
   GRUPOS.map(g=>`<div class="sg">${g.t}</div>`+visibles(g,rol).map(m=>enlace(m,"",activo)).join("")).join("")+`</nav><div class="usr"><button type="button" class="ub" id="cfg1" aria-label="Configuración"></button></div><button class="lo" id="lo1">Cerrar sesión</button>`;
  el.querySelector("#lo1").onclick=()=>{if(confirm("¿Cerrar sesión?"))logout()};
  el.querySelector("#cfg1").onclick=abrirConfig;
+ el.querySelector("#hb1").onclick=()=>{PREF("dms_nosd","1");aplicarPrefs()};
  el.addEventListener("click",e=>{const a=e.target.closest("[data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
  pintarUsr();aplicarPrefs()}
 /* Ventana de configuración: nombre, foto, tema y opciones del menú */
@@ -58,7 +59,7 @@ function abrirConfig(){
  const me=DAY.me||{nombre:"",avatar:null};let foto=me.avatar||null,quitar=false,nueva=false;
  const d=document.createElement("dialog");d.className="cfgd";
  d.innerHTML=`<div class="cf-h"><h2>Configuración</h2><button type="button" class="x" data-x aria-label="Cerrar">×</button></div><div class="cf-b">
-  <h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div>
+  <h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Acercar</label><input type="range" id="cfZ" min="1" max="3" step="0.05" value="1"><small class="cf-m">Se ve la foto completa. Arrastra la imagen para moverla y usa el control para acercar.</small></div>
   <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small>
   <h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select>
   <h3>Menú</h3><label class="cf-c"><input type="checkbox" id="cfS"> Ocultar el menú lateral (computadora)</label><label class="cf-c"><input type="checkbox" id="cfB"> Ocultar el nombre DAYMAR-SHOP</label>
@@ -66,17 +67,23 @@ function abrirConfig(){
   <div class="cf-f"><button type="button" class="btn g" id="cfOut">Cerrar sesión</button><span style="flex:1"></span><button type="button" class="btn g" data-x>Cancelar</button><button type="button" class="btn" id="cfOk">Guardar</button></div>`;
  document.body.appendChild(d);
  const q=s=>d.querySelector(s),cerrar=()=>{try{d.close()}catch(e){}d.remove()};
- const pAv=()=>{q("#cfAv").innerHTML=avatarHTML({nombre:q("#cfN").value||me.nombre,avatar:foto},"big")};
+let im=null,z=1,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=cv.height=240;cv.className="cfcv";cv.title="Arrastra para mover";
+ const dibujar=()=>{const x=cv.getContext("2d");x.fillStyle="#efe7e4";x.fillRect(0,0,240,240);const sc=240/Math.max(im.width,im.height)*z,w=im.width*sc,h=im.height*sc;x.drawImage(im,120-w/2+ox,120-h/2+oy,w,h)};
+ const pAv=()=>{const a=q("#cfAv");if(im){if(cv.parentNode!==a){a.innerHTML="";a.appendChild(cv)}q("#cfZw").classList.remove("hidden")}else{a.innerHTML=avatarHTML({nombre:q("#cfN").value||me.nombre,avatar:foto},"big");q("#cfZw").classList.add("hidden")}};
  q("#cfT").value=PREF("dms_th")||"auto";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfB").checked=PREF("dms_nobrand")==="1";pAv();
  q("#cfN").addEventListener("input",pAv);
  d.addEventListener("click",e=>{if(e.target.closest("[data-x]"))cerrar()});d.addEventListener("cancel",e=>{e.preventDefault();cerrar()});
  q("#cfFoto").onclick=()=>q("#cfFile").click();
- q("#cfQuit").onclick=()=>{foto=null;quitar=true;nueva=false;pAv()};
- q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const im=new Image();
-  im.onload=()=>{const s=160,c=document.createElement("canvas");c.width=c.height=s;const x=c.getContext("2d"),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,s,s);foto=c.toDataURL("image/jpeg",.82);nueva=true;quitar=false;pAv()};
-  im.onerror=()=>{q("#cfE").textContent="No se pudo leer esa imagen."};im.src=URL.createObjectURL(f)};
+q("#cfQuit").onclick=()=>{foto=null;quitar=true;nueva=false;im=null;pAv()};
+q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new Image();
+  t.onload=()=>{im=t;z=1;ox=oy=0;q("#cfZ").value=1;nueva=true;quitar=false;pAv();dibujar()};
+  t.onerror=()=>{q("#cfE").textContent="No se pudo leer esa imagen."};t.src=URL.createObjectURL(f)};
+ q("#cfZ").addEventListener("input",()=>{z=+q("#cfZ").value;if(im)dibujar()});
+ let dr=null;cv.addEventListener("pointerdown",e=>{dr=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
+ cv.addEventListener("pointermove",e=>{if(!dr||!im)return;const k=240/cv.clientWidth;ox+=(e.clientX-dr[0])*k;oy+=(e.clientY-dr[1])*k;dr=[e.clientX,e.clientY];dibujar()});
+ ["pointerup","pointercancel"].forEach(n=>cv.addEventListener(n,()=>{dr=null}));
  q("#cfOut").onclick=()=>{if(confirm("¿Cerrar sesión?"))logout()};
- q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";
+ q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
   const t=q("#cfT").value;try{if(t==="auto")localStorage.removeItem("dms_th");else localStorage.setItem("dms_th",t)}catch(e){}
   if(t==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;

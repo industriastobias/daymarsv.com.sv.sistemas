@@ -32,7 +32,7 @@ input[type=checkbox]{width:auto;min-height:0}
 @media(min-width:800px){
  .shell{display:grid;grid-template-columns:250px 1fr}
  .side{display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--card);border-right:1px solid var(--line);padding:22px 14px}
- .side .brand{color:var(--wine);margin:0 8px 14px;font-size:21px;font-weight:700}.side .brand i{color:var(--gold);font-style:normal}
+ .side .sbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 4px 14px 8px;min-height:40px}.side .sbar .brand{margin:0}.side .hb{flex:none;width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:10px;background:none;color:var(--wine);cursor:pointer}.side .hb svg{width:22px;height:22px}.side .brand{color:var(--wine);font-size:21px;font-weight:700}.side .brand i{color:var(--gold);font-style:normal}
  .side .sg{font:700 12px "DM Sans",sans-serif;color:var(--mute);margin:14px 10px 4px}
  .side a,.side button{display:flex;align-items:center;gap:11px;color:var(--ink);text-decoration:none;padding:9px 10px;border-radius:8px;border:0;background:none;cursor:pointer;text-align:left;width:100%;font-size:14px}
  .side a .ic{width:20px;height:20px;color:var(--wine)}
@@ -41,7 +41,7 @@ input[type=checkbox]{width:auto;min-height:0}
  .side a.off{opacity:.55}
  .side .lo{margin-top:auto;border:1px solid var(--line);justify-content:center}.side .usr{margin-top:auto;padding-top:12px}.side .usr+.lo{margin-top:6px}
  .side .ub{border:1px solid var(--line);padding:8px 10px}.side .ub .un{display:flex;flex-direction:column;line-height:1.2;min-width:0}.side .ub .un b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.side .ub .un small{color:var(--mute);font-size:12px}
- .shell.nosd{grid-template-columns:1fr}.shell.nosd .side{display:none}
+ .shell.nosd{grid-template-columns:1fr}.shell.nosd main{padding-left:76px}.shell.nosd .side{display:none}
  #sdOpen{position:fixed;top:14px;left:14px;z-index:30;width:42px;height:42px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--wine);cursor:pointer}
  main{padding:28px 32px}
 }
@@ -54,3 +54,7 @@ dialog.cfgd{border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-heig
 .cf-c{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px;font-weight:400;margin:2px 0}.cf-c input{width:20px;height:20px}
 .cf-f{display:flex;gap:8px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
 .btn.s{min-height:34px;padding:4px 12px;font-size:13px}
+
+.cfcv{width:140px;height:140px;border-radius:50%;border:2px solid var(--line);touch-action:none;cursor:grab;display:block}
+.cf-z{margin:4px 0 8px}.cf-z input[type=range]{width:100%;padding:0;min-height:30px}
+.side .sbar .brand{white-space:nowrap;font-size:19px}
