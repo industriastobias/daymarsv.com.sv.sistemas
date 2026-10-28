@@ -449,9 +449,12 @@ $("bPdf").onclick=async()=>{if(!inv.length)return toast("No hay productos para e
    if(p.foto_url){try{const r=await fetch(p.foto_url);if(r.ok)pdf.addImage(await aDataUrl(await r.blob()),"JPEG",15,y,30,30)}catch(e){}}
    pdf.setFontSize(11);pdf.text(`${p.nombre} (${p.codigo})`,50,y+8);pdf.text(`Precio: ${$$(p.precio_venta)} | Stock: ${p.stock}`,50,y+15);pdf.text(`Cat: ${catName(p.categoria_id)||"-"}`,50,y+22);y+=35;$("ovText").textContent=`Generando PDF… ${++n}/${inv.length}`}
   pdf.save(`inventario_${hoy}.pdf`);toast("PDF generado")}catch(e){toast("Error generando el PDF")}busy(false)};
-$("bLabels").onclick=()=>{if(!inv.length)return toast("No hay productos");const a=$("labelPrintArea");
- a.innerHTML=inv.map((p,i)=>`<div class="label"><div style="font-weight:bold;margin-bottom:5px">${esc(p.nombre)}</div><div class="price">${$$(p.precio_venta)}</div><svg id="lb${i}"></svg><div class="code">${esc(p.codigo)}</div></div>`).join("");
- inv.forEach((p,i)=>{if(p.codigo_barras)drawBarcode($("lb"+i),p.codigo_barras,{width:2,height:40,margin:2})});
+$("bLabels").onclick=async()=>{if(!inv.length)return toast("No hay productos");const a=$("labelPrintArea");
+ let vs=[];try{vs=await ok(db.from("producto_variantes").select("producto_id,nombre,codigo_barras,stock,orden").order("orden").order("nombre"))}catch(e){}
+ const VB={};(vs||[]).forEach(v=>(VB[v.producto_id]=VB[v.producto_id]||[]).push(v));
+ const L=[];inv.forEach(p=>{const cs=VB[p.id];if(!cs||!cs.length)L.push({p,color:"",cb:p.codigo_barras});else cs.forEach(v=>L.push({p,color:v.nombre,cb:v.codigo_barras||p.codigo_barras}))});
+ a.innerHTML=L.map((l,i)=>`<div class="label"><div style="font-weight:bold;margin-bottom:5px">${esc(l.p.nombre)}${l.color?`<div style="font-weight:600;font-size:.85em">${DAY.colorDot(l.color)}${esc(l.color)}</div>`:""}</div><div class="price">${$$(l.p.precio_venta)}</div><svg id="lb${i}"></svg><div class="code">${esc(l.p.codigo)}</div></div>`).join("");
+ L.forEach((l,i)=>{if(l.cb)drawBarcode($("lb"+i),l.cb,{width:2,height:40,margin:2})});
  document.body.classList.add("print-labels");const fin=()=>{document.body.classList.remove("print-labels");removeEventListener("afterprint",fin)};addEventListener("afterprint",fin,{once:true});print();setTimeout(fin,1500)};
 $("bVaciaInv").onclick=async()=>{if(!inv.length)return;if(!await DAY.ask(`¿Enviar TODO el inventario (${inv.length} productos) a la papelera?`)||!await DAY.ask("Última confirmación: podrás restaurarlos desde la papelera durante 30 días."))return;
  busy(true,"Enviando a la papelera…");try{await ok(db.from("productos").update({activo:false,eliminado_en:new Date().toISOString()}).eq("activo",true));$("dgBulk").close();await refresh();toast("Inventario enviado a la papelera")}catch(x){}busy(false)};

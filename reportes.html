@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Inventario</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610281452">
-<link rel="stylesheet" href="css/compra.css?v=202610281452">
-<link rel="stylesheet" href="css/almacen.css?v=202610281452">
-<link rel="stylesheet" href="css/paginas.css?v=202610281452"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202610281503">
+<link rel="stylesheet" href="css/compra.css?v=202610281503">
+<link rel="stylesheet" href="css/almacen.css?v=202610281503">
+<link rel="stylesheet" href="css/paginas.css?v=202610281503"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -41,8 +41,8 @@
     <label for="dCat">Categoría</label><select id="dCat"></select>
     <label class="chk"><input type="checkbox" id="dFotos" checked> Incluir fotos</label><label class="chk"><input type="checkbox" id="dSoloStock"> Solo productos disponibles</label>
     <button class="btn" id="bCat" type="button">Descargar catálogo</button></div>
-   <div class="pan"><h3>Etiquetas de código de barras (PDF)</h3><p class="hint">Hoja A4 de 4 × 10 etiquetas, una por cada unidad en stock.</p>
-    <label for="dCat2">Categoría</label><select id="dCat2"></select><div style="height:8px"></div>
+   <div class="pan"><h3>Etiquetas de código de barras (PDF)</h3><p class="hint">Hoja A4 de 4 × 10 etiquetas, una por cada unidad en stock. Los productos con colores salen una vez por color, con su propio código y su puntito de color.</p>
+    <label for="dCat2">Categoría</label><select id="dCat2"></select><label for="dEtqQ" style="margin-top:8px">Solo este producto o color <small>(opcional)</small></label><input id="dEtqQ" type="search" placeholder="Ej. Anillo – Rosado" autocomplete="off"><label for="dEtqM" style="margin-top:8px">Cantidad de etiquetas</label><select id="dEtqM"><option value="stock">Una por cada unidad en stock</option><option value="uno">Una sola por producto o color</option></select><div style="height:8px"></div>
     <button class="btn" id="bEtq" type="button">Generar etiquetas</button></div>
   </div>
   <div class="ctl"><span class="grow"></span><button class="btn g sm" id="bRef" type="button">Actualizar datos</button></div>
@@ -52,7 +52,7 @@
 <div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="js/app.js?v=202610281452"></script>
-<script src="js/comun.js?v=202610281452"></script>
-<script src="js/reportes.js?v=202610281452"></script>
+<script src="js/app.js?v=202610281503"></script>
+<script src="js/comun.js?v=202610281503"></script>
+<script src="js/reportes.js?v=202610281503"></script>
 </body></html>

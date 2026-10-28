@@ -17,8 +17,8 @@ async function cargar(){
  rows.forEach(p=>{const b={...p,cat:p.categorias?p.categorias.nombre:"Sin categoría",fin:fin(p)},L=VB[p.id];
   if(!L){b.val=b.fin*b.stock;P.push(b);return}
   /* un producto con colores se lista una vez por color, cada uno con su stock y su código de barras */
-  let suma=0;L.forEach(v=>{suma+=v.stock;const c={...b,nombre:p.nombre+" – "+v.nombre,stock:v.stock,codigo_barras:v.codigo_barras||"",codigo:p.codigo};c.val=c.fin*c.stock;P.push(c)});
-  if(p.stock>suma){const c={...b,nombre:p.nombre+" – sin color",stock:p.stock-suma,codigo_barras:p.codigo_barras};c.val=c.fin*c.stock;P.push(c)}})}
+  let suma=0;L.forEach(v=>{suma+=v.stock;const c={...b,base:p.nombre,color:v.nombre,nombre:p.nombre+" – "+v.nombre,stock:v.stock,codigo_barras:v.codigo_barras||"",codigo:p.codigo};c.val=c.fin*c.stock;P.push(c)});
+  if(p.stock>suma){const c={...b,base:p.nombre,color:"Sin color",nombre:p.nombre+" – sin color",stock:p.stock-suma,codigo_barras:p.codigo_barras};c.val=c.fin*c.stock;P.push(c)}})}
 const sum=(L,f)=>L.reduce((s,p)=>s+f(p),0);
 function datos(){
  const unidades=sum(P,p=>p.stock),valor=sum(P,p=>p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock>0&&p.stock<=BAJO),sano=P.filter(p=>p.stock>BAJO);
@@ -95,19 +95,22 @@ function etiqueta(pdf,p,x,y){
  const L=["D","A","Y","M","A","R"],fs=7,step=3.1,cap=fs*.353*.72,blk=(L.length-1)*step+cap,y0=y+(LH-blk)/2+cap;
  pdf.setFont(undefined,"bold");pdf.setFontSize(fs);pdf.setTextColor(102,45,66);L.forEach((c,i)=>pdf.text(c,x+2.2,y0+i*step));
  pdf.setDrawColor(165,171,179);pdf.line(x+7.5,y+2,x+7.5,y+LH-2);
- const tx=x+9,tw=LW-11;let f=6,ls=wrapL(pdf,p.nombre,tw,f);if(ls.length>2){f=5;ls=wrapL(pdf,p.nombre,tw,f)}if(ls.length>2){ls=ls.slice(0,2);ls[1]=ls[1].slice(0,19)+"…"}
+ const tx=x+9,tw=LW-11;const nm=p.color?p.base:p.nombre;let f=6,ls=wrapL(pdf,nm,tw,f);if(ls.length>2){f=5;ls=wrapL(pdf,nm,tw,f)}if(ls.length>2){ls=ls.slice(0,2);ls[1]=ls[1].slice(0,19)+"…"}
  pdf.setFontSize(f);pdf.setFont(undefined,"normal");pdf.setTextColor(35,45,57);ls.forEach((l,i)=>pdf.text(l,tx,y+4.5+i*2.4));
  pdf.setFontSize(8);pdf.setFont(undefined,"bold");pdf.setTextColor(16,32,50);pdf.text($$(p.fin),tx,y+11.4);
+ if(p.color){const pw=pdf.getTextWidth($$(p.fin)),hx=DAY.colorHex(p.color);let cx=tx+pw+2;
+  if(hx&&hx[0]==="#"){pdf.setFillColor(parseInt(hx.slice(1,3),16),parseInt(hx.slice(3,5),16),parseInt(hx.slice(5,7),16));pdf.setDrawColor(90);pdf.setLineWidth(.15);pdf.circle(cx+1.1,y+10.6,1.1,"FD");cx+=3}
+  pdf.setFontSize(5.5);pdf.setFont(undefined,"normal");pdf.setTextColor(60);pdf.text(String(p.color).slice(0,14),cx,y+11.3)}
  try{const c=document.createElement("canvas");JsBarcode(c,String(p.codigo_barras),{format:"CODE128",width:1.1,height:36,displayValue:false,margin:0});pdf.addImage(c.toDataURL("image/png"),"PNG",tx,y+13.4,tw,7.2);
   pdf.setFontSize(5);pdf.setFont(undefined,"normal");pdf.setTextColor(70);pdf.text(String(p.codigo_barras),tx+tw/2,y+24,{align:"center"})}catch(e){}}
 async function etiquetas(){
- const cat=$("dCat2").value,L=P.filter(p=>(!cat||p.cat===cat)&&p.codigo_barras&&p.stock>0);
+ const cat=$("dCat2").value,q=norm($("dEtqQ").value),uno=$("dEtqM").value==="uno",L=P.filter(p=>(!cat||p.cat===cat)&&p.codigo_barras&&(uno||p.stock>0)&&(!q||norm(p.nombre).includes(q)));
  if(!L.length){toast("No hay productos con código de barras y stock"+(cat?" en esa categoría":""));return}
- const tot=sum(L,p=>p.stock);
- if(!await confirmar(`Se generarán <b>${tot}</b> etiquetas (una por cada unidad en stock) de <b>${L.length}</b> producto(s).`,{titulo:"Etiquetas de código de barras",ok:"Generar PDF"}))return;
+ const cn=p=>uno?1:p.stock,tot=sum(L,cn);
+ if(!await confirmar(`Se generarán <b>${tot}</b> etiquetas (${uno?"una por cada producto o color":"una por cada unidad en stock"}) de <b>${L.length}</b> producto(s).`,{titulo:"Etiquetas de código de barras",ok:"Generar PDF"}))return;
  await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
   const {jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),per=LC*LR,gx=(210-(LC*LW+(LC-1)*GX))/2,gy=(297-(LR*LH+(LR-1)*GY))/2;let n=0;
-  L.forEach(p=>{for(let u=0;u<p.stock;u++){if(n>0&&n%per===0)pdf.addPage();const pos=n%per;etiqueta(pdf,p,gx+(pos%LC)*(LW+GX),gy+Math.floor(pos/LC)*(LH+GY));n++}});
+  L.forEach(p=>{for(let u=0;u<cn(p);u++){if(n>0&&n%per===0)pdf.addPage();const pos=n%per;etiqueta(pdf,p,gx+(pos%LC)*(LW+GX),gy+Math.floor(pos/LC)*(LH+GY));n++}});
   pdf.save("etiquetas-"+(cat?norm(cat).replace(/[^a-z0-9]+/g,"_"):"todas")+"-"+ymd(new Date())+".pdf");toast(tot+" etiquetas generadas")},"Generando etiquetas…")}
 async function excelInv(){
  if(!P.length){toast("No hay productos para exportar");return}

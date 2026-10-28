@@ -192,12 +192,13 @@ async function requireSession(){
 /* Puntito de color según el nombre del color (rosado → punto rosado). Si no lo reconoce, no pone nada. */
 const COLORES={rosado:"#f06292",rosa:"#f06292",blanco:"#ffffff",negro:"#1a1a1a",rojo:"#d32f2f",azul:"#1e66d0",celeste:"#5bc0eb",verde:"#2e9d57",amarillo:"#f6d332",naranja:"#f58a1f",anaranjado:"#f58a1f",morado:"#8e44ad",violeta:"#8e44ad",lila:"#b99be0",gris:"#9e9e9e",plateado:"#c0c0c0",plata:"#c0c0c0",dorado:"#d4a62a",oro:"#d4a62a",cafe:"#7b4a2a",marron:"#7b4a2a",beige:"#e8d8b8",crema:"#f3e9d2",turquesa:"#20b2aa",vino:"#7b1e3a",guinda:"#7b1e3a",fucsia:"#e0198b",coral:"#ff7f6a",mostaza:"#d9a21b",nude:"#e3bfa5",salmon:"#fa8f7d",durazno:"#ffb38a",menta:"#98e0c0",transparente:"repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/8px 8px",multicolor:"conic-gradient(red,orange,yellow,green,blue,violet,red)"};
 function mezclar(h,c,p){const n=x=>parseInt(h.slice(x,x+2),16),m=(a,b)=>Math.round(a+(b-a)*p).toString(16).padStart(2,"0");return "#"+m(n(1),c)+m(n(3),c)+m(n(5),c)}
-function colorDot(nombre){
+function colorHex(nombre){
  const w=String(nombre||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(/[^a-z]+/).filter(Boolean);
  let c=null;for(const x of w){const k=COLORES[x]||COLORES[x.replace(/(es|s|a|os|as)$/,"o")]||COLORES[x.replace(/s$/,"")];if(k){c=k;break}}
  if(!c)return "";
  if(c[0]==="#"){if(w.includes("claro"))c=mezclar(c,255,.45);else if(w.includes("oscuro"))c=mezclar(c,0,.4)}
- return `<i class="cdot" style="background:${c}"></i>`}
-window.DAY={colorDot,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+ return c}
+function colorDot(nombre){const c=colorHex(nombre);return c?`<i class="cdot" style="background:${c}"></i>`:""}
+window.DAY={colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
