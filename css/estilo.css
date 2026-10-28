@@ -47,7 +47,7 @@ input[type=checkbox]{width:auto;min-height:0}
 }
 
 .av{overflow:hidden;flex:none}.av img{width:100%;height:100%;object-fit:cover;display:block}.side .av{width:36px;height:36px;font-size:16px}.av.big{width:76px;height:76px;font-size:30px}
-dialog.cfgd{border:0;border-radius:16px;padding:0;margin:auto;width:min(460px,94vw);max-height:92vh;max-height:min(92vh,calc(100dvh - 24px));background:var(--card);color:var(--ink);overflow:hidden}dialog.cfgd[open]{display:flex;flex-direction:column}dialog.cfgd::backdrop{background:rgba(0,0,0,.55)}
+dialog.cfgd{border:0;border-radius:18px;padding:0;margin:auto;width:min(720px,96vw);height:min(560px,calc(100dvh - 24px));background:var(--card);color:var(--ink);overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.4)}dialog.cfgd[open]{display:flex;flex-direction:column}dialog.cfgd::backdrop{background:rgba(20,10,14,.6);backdrop-filter:blur(2px)}
 .cf-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}.cf-h h2{font-size:19px}.cf-h .x{background:none;border:0;font-size:24px;cursor:pointer;color:var(--mute);line-height:1}
 .cf-b{padding:6px 18px 12px;overflow-y:auto;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch}.cf-h,.cf-f{flex:none}.cf-b h3{font-size:14px;color:var(--wine);margin:16px 0 2px}
 .cf-p{display:flex;gap:14px;align-items:center;margin:8px 0}.cf-ab{display:flex;gap:8px;flex-wrap:wrap}.cf-m{color:var(--mute);font-size:12px;display:block;margin-top:3px}
@@ -79,3 +79,28 @@ body.kiosco input,body.kiosco select{min-height:48px}
 body.kiosco .hact .btn{font-size:16px}
 #kSal{position:fixed;bottom:12px;right:12px;z-index:60;min-height:40px;font-size:14px;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 body.kiosco .back{display:inline-block!important}
+
+/* Configuración (rediseño) */
+.cf-h{padding:16px 20px}.cf-h h2{font-size:20px;margin:0}.cf-h small{color:var(--mute);font-size:12px}
+.cf-w{display:flex;flex:1 1 auto;min-height:0}
+.cf-n{display:flex;flex-direction:column;gap:2px;padding:12px;width:170px;flex:none;border-right:1px solid var(--line);background:var(--bg);overflow-y:auto}
+.cf-n button{display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;background:none;border-radius:10px;font:600 14px "DM Sans",system-ui,sans-serif;color:var(--mute);cursor:pointer;text-align:left;min-height:42px}
+.cf-n button .ic{width:18px;height:18px;flex:none}
+.cf-n button:hover{background:rgba(107,45,62,.07)}.cf-n button.on{background:var(--card);color:var(--wine);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.cf-w .cf-b{padding:8px 22px 16px}.cf-b h3{font-size:16px;margin:14px 0 8px;color:var(--ink)}
+.cf-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--bg);display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.cf-bad{border-color:rgba(176,32,32,.35)}
+.cf-sw{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;margin:0;font-weight:400}
+.cf-sw:last-child{border-bottom:0}.cf-sw span{display:flex;flex-direction:column;gap:2px;min-width:0}.cf-sw b{font-size:15px}.cf-sw small{color:var(--mute);font-size:12.5px;line-height:1.4}
+.cf-sw input{appearance:none;-webkit-appearance:none;flex:none;width:46px!important;height:26px!important;min-height:0!important;border-radius:99px;background:#cdbfc3;position:relative;cursor:pointer;transition:background .2s;border:0;padding:0;margin:0}
+.cf-sw input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.cf-sw input:checked{background:var(--wine)}.cf-sw input:checked::after{transform:translateX(20px)}
+.cf-sw input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.cf-f{padding:12px 20px}
+@media(max-width:640px){
+ dialog.cfgd{height:min(640px,calc(100dvh - 16px))}
+ .cf-w{flex-direction:column}
+ .cf-n{flex-direction:row;width:auto;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;padding:8px 10px}
+ .cf-n button{flex:none;padding:8px 12px;white-space:nowrap}
+ .cf-w .cf-b{padding:4px 16px 14px}
+}

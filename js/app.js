@@ -61,6 +61,7 @@ async function kiosco(on,quiet){
    const r=await db.auth.signInWithPassword({email:DAY.email,password:p});if(r.error){toast("Contraseña incorrecta");return}kiosco(false)}}
  if(!on&&x)x.remove();
  try{if(on){if(!quiet&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
+ if(on&&document.documentElement.requestFullscreen)document.addEventListener("pointerdown",()=>{if(document.body.classList.contains("kiosco")&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{})},{once:true});
  document.dispatchEvent(new CustomEvent("kiosco",{detail:on}));
  if(!quiet)toast(on?"Modo kiosco activado":"Modo kiosco desactivado")}
 const salir=()=>ask("¿Quieres cerrar tu sesión?",{titulo:"Cerrar sesión",ok:"Cerrar sesión"}).then(o=>{if(o)logout()});
@@ -123,15 +124,31 @@ function abrirConfig(){
  if(document.querySelector("dialog.cfgd"))return;
  const me=DAY.me||{nombre:"",avatar:null};let foto=me.avatar||null,quitar=false,nueva=false;
  const d=document.createElement("dialog");d.className="cfgd";
- d.innerHTML=`<div class="cf-h"><h2>Configuración</h2><button type="button" class="x" data-x aria-label="Cerrar">×</button></div><div class="cf-b">
-  <h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Acercar</label><input type="range" id="cfZ" min="1" max="4" step="0.02" value="1"><small class="cf-m">La foto llena todo el círculo. Arrastra para encuadrar tu cara y usa el control para acercar.</small></div>
-  <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small>
-  <h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select>
-  <h3>Menú</h3><label class="cf-c"><input type="checkbox" id="cfK"> Modo kiosco: pantalla simple y grande para vender (salir pide tu contraseña)</label><label class="cf-c"><input type="checkbox" id="cfS"> Ocultar el menú lateral (computadora)</label><label class="cf-c"><input type="checkbox" id="cfB"> Ocultar el nombre DAYMAR-SHOP</label>
-  ${me.rol==="admin"?`<h3>Respaldo</h3><p class="cf-m" id="cfBkT" style="margin:0 0 8px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button>`:""}
-  <div id="cfDz"></div>
-  <h3>Cuenta</h3><p class="cf-m" style="margin:0">${esc(DAY.email||"")}</p><div class="err" id="cfE" role="alert"></div></div>
-  <div class="cf-f"><button type="button" class="btn g" id="cfOut">Cerrar sesión</button><span style="flex:1"></span><button type="button" class="btn g" data-x>Cancelar</button><button type="button" class="btn" id="cfOk">Guardar</button></div>`;
+ const IC={perfil:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/>',ap:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',pa:'<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',dt:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',cu:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'};
+ const ti=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
+ const sw=(id,t,s)=>`<label class="cf-sw" for="${id}"><span><b>${t}</b><small>${s}</small></span><input type="checkbox" id="${id}" role="switch"></label>`;
+ d.innerHTML=`<div class="cf-h"><div><h2>Configuración</h2><small>Tu perfil y las preferencias de este dispositivo</small></div><button type="button" class="x" data-x aria-label="Cerrar">×</button></div>
+ <div class="cf-w"><nav class="cf-n" role="tablist" aria-label="Secciones">
+  <button type="button" role="tab" data-t="perfil" class="on">${ti("perfil")}<span>Mi perfil</span></button>
+  <button type="button" role="tab" data-t="ap">${ti("ap")}<span>Apariencia</span></button>
+  <button type="button" role="tab" data-t="pa">${ti("pa")}<span>Pantalla</span></button>
+  ${me.rol==="admin"?`<button type="button" role="tab" data-t="dt">${ti("dt")}<span>Datos</span></button>`:""}
+  <button type="button" role="tab" data-t="cu">${ti("cu")}<span>Cuenta</span></button></nav>
+ <div class="cf-b">
+  <section class="cf-s" data-s="perfil"><h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Acercar</label><input type="range" id="cfZ" min="1" max="4" step="0.02" value="1"><small class="cf-m">La foto llena todo el círculo. Arrastra para encuadrar tu cara y usa el control para acercar.</small></div>
+  <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small></section>
+  <section class="cf-s hidden" data-s="ap"><h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select><small class="cf-m">Se guarda solo en este dispositivo.</small></section>
+  <section class="cf-s hidden" data-s="pa"><h3>Pantalla</h3>
+   ${sw("cfK","Modo kiosco","Pantalla simple y con botones grandes para vender en el mostrador. Para salir se pide tu contraseña.")}
+   ${sw("cfS","Ocultar el menú lateral","Solo en computadora; el menú sigue en la página de inicio.")}
+   ${sw("cfB","Ocultar el nombre DAYMAR-SHOP","Quita el nombre de la barra para ganar espacio.")}</section>
+  ${me.rol==="admin"?`<section class="cf-s hidden" data-s="dt"><h3>Respaldo</h3><div class="cf-card"><p class="cf-m" id="cfBkT" style="margin:0 0 10px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button></div>
+   <div id="cfDz"></div></section>`:""}
+  <section class="cf-s hidden" data-s="cu"><h3>Cuenta</h3><div class="cf-card"><small class="cf-m" style="margin:0">Sesión iniciada como</small><b style="word-break:break-all">${esc(DAY.email||"")}</b><small class="cf-m">${me.rol==="admin"?"Administrador":"Vendedor"}</small></div>
+   <button type="button" class="btn g" id="cfOut" style="margin-top:12px">Cerrar sesión</button></section>
+  <div class="err" id="cfE" role="alert"></div></div></div>
+  <div class="cf-f"><span style="flex:1"></span><button type="button" class="btn g" data-x>Cancelar</button><button type="button" class="btn" id="cfOk">Guardar cambios</button></div>`;
+ d.querySelector(".cf-n").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b)return;d.querySelectorAll(".cf-n button").forEach(x=>x.classList.toggle("on",x===b));d.querySelectorAll(".cf-s").forEach(s=>s.classList.toggle("hidden",s.dataset.s!==b.dataset.t))});
  document.body.appendChild(d);
  const q=s=>d.querySelector(s),cerrar=()=>{try{d.close()}catch(e){}d.remove()};
 let im=null,z=1,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=cv.height=240;cv.className="cfcv";cv.title="Arrastra para mover";
@@ -151,7 +168,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  ["pointerup","pointercancel"].forEach(n=>cv.addEventListener(n,()=>{dr=null}));
  const bk=q("#cfBk");if(bk){const t=()=>{let u=null;try{u=localStorage.getItem("dms_backup")}catch(e){}q("#cfBkT").textContent=u?"Último respaldo en este dispositivo: "+new Date(u).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"}):"Aún no has descargado un respaldo desde este dispositivo."};t();
   bk.onclick=async()=>{bk.disabled=true;try{await respaldo();t()}finally{bk.disabled=false}}}
- db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3 style="color:var(--bad)">Zona peligrosa</h3><p class="cf-m" style="margin:0 0 8px">Vaciar los datos de prueba para empezar con los reales. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()}}},()=>{});
+ db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()}}},()=>{});
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
