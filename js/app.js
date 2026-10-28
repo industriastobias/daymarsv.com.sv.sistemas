@@ -71,7 +71,6 @@ const avatarHTML=(p,c)=>`<span class="av ${c||""}">${p&&p.avatar?`<img src="${es
 function aplicarPrefs(){
  const sh=document.querySelector(".shell"),ocultar=PREF("dms_nosd")==="1";
  if(sh)sh.classList.toggle("nosd",ocultar);
- document.querySelectorAll(".side .brand").forEach(b=>b.classList.toggle("hidden",PREF("dms_nobrand")==="1"));
  let o=document.getElementById("sdOpen");
  if(ocultar&&sh){if(!o){o=document.createElement("button");o.id="sdOpen";o.type="button";o.setAttribute("aria-label","Mostrar el menú lateral");o.title="Mostrar el menú";o.innerHTML=svg("menu");o.onclick=()=>{PREF("dms_nosd","0");aplicarPrefs()};document.body.appendChild(o)}}
  else if(o)o.remove()}
@@ -140,8 +139,7 @@ function abrirConfig(){
   <section class="cf-s hidden" data-s="ap"><h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select><small class="cf-m">Se guarda solo en este dispositivo.</small></section>
   <section class="cf-s hidden" data-s="pa"><h3>Pantalla</h3>
    ${sw("cfK","Modo kiosco","Pone el sistema en pantalla completa y, para salir, pide tu contraseña. No cambia el diseño de las páginas.")}
-   ${sw("cfS","Ocultar el menú lateral","Solo en computadora; el menú sigue en la página de inicio.")}
-   ${sw("cfB","Ocultar el nombre DAYMAR-SHOP","Quita el nombre de la barra para ganar espacio.")}</section>
+   ${sw("cfS","Ocultar el menú lateral","Solo en computadora; el menú sigue en la página de inicio.")}</section>
   ${me.rol==="admin"?`<section class="cf-s hidden" data-s="dt"><h3>Respaldo</h3><div class="cf-card"><p class="cf-m" id="cfBkT" style="margin:0 0 10px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button></div>
    <div id="cfDz"></div></section>`:""}
   <section class="cf-s hidden" data-s="cu"><h3>Cuenta</h3><div class="cf-card"><small class="cf-m" style="margin:0">Sesión iniciada como</small><b style="word-break:break-all">${esc(DAY.email||"")}</b><small class="cf-m">${me.rol==="admin"?"Administrador":"Vendedor"}</small></div>
@@ -154,7 +152,7 @@ function abrirConfig(){
 let im=null,z=1,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=cv.height=240;cv.className="cfcv";cv.title="Arrastra para mover";
  const dibujar=()=>{const x=cv.getContext("2d"),sc=240/Math.min(im.width,im.height)*z,w=im.width*sc,h=im.height*sc,mx=(w-240)/2,my=(h-240)/2;ox=Math.max(-mx,Math.min(mx,ox));oy=Math.max(-my,Math.min(my,oy));x.fillStyle="#efe7e4";x.fillRect(0,0,240,240);x.drawImage(im,120-w/2+ox,120-h/2+oy,w,h)};
  const pAv=()=>{const a=q("#cfAv");if(im){if(cv.parentNode!==a){a.innerHTML="";a.appendChild(cv)}q("#cfZw").classList.remove("hidden")}else{a.innerHTML=avatarHTML({nombre:q("#cfN").value||me.nombre,avatar:foto},"big");q("#cfZw").classList.add("hidden")}};
- q("#cfT").value=PREF("dms_th")||"auto";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfK").checked=PREF("dms_kiosco")==="1";q("#cfB").checked=PREF("dms_nobrand")==="1";pAv();
+ q("#cfT").value=PREF("dms_th")||"auto";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfK").checked=PREF("dms_kiosco")==="1";pAv();
  q("#cfN").addEventListener("input",pAv);
  d.addEventListener("click",e=>{if(e.target.closest("[data-x]"))cerrar()});d.addEventListener("cancel",e=>{e.preventDefault();cerrar()});
  q("#cfFoto").onclick=()=>q("#cfFile").click();
@@ -174,7 +172,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
   const t=q("#cfT").value;try{if(t==="auto")localStorage.removeItem("dms_th");else localStorage.setItem("dms_th",t)}catch(e){}
   if(t==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;
-  PREF("dms_nosd",q("#cfS").checked?"1":"0");PREF("dms_nobrand",q("#cfB").checked?"1":"0");aplicarPrefs();if(q("#cfK").checked&&PREF("dms_kiosco")!=="1")setTimeout(()=>kiosco(true),0);
+  PREF("dms_nosd",q("#cfS").checked?"1":"0");aplicarPrefs();if(q("#cfK").checked&&PREF("dms_kiosco")!=="1")setTimeout(()=>kiosco(true),0);
   if(nom!==me.nombre||nueva||quitar){q("#cfOk").disabled=true;
    const {error}=await db.rpc("actualizar_mi_perfil",{p_nombre:nom,p_avatar:nueva?foto:null,p_quitar_avatar:quitar});q("#cfOk").disabled=false;
    if(error){q("#cfE").textContent=/function|actualizar_mi_perfil/i.test(error.message)?"Falta correr migracion_perfil.sql en Supabase para guardar nombre y foto.":error.message;return}
