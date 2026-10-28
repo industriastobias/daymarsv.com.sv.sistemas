@@ -7,7 +7,7 @@ const me=await requireSession();if(!me)return;
 const ADM=me.rol==="admin";
 mountSide($("side"),"inventario",me.rol);$("app").classList.remove("hidden");
 const IC={sum:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',cat:'<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',top:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
-const BAJO=5,CRIT=2;
+const mini=p=>Math.max(0,+p.stock_minimo||0),crit=p=>Math.max(1,Math.floor(mini(p)/2));
 let P=[],NP=0;
 const fin=p=>r2(p.precio_venta*(1-(+p.descuento_pct||0)/100));
 async function cargar(){
@@ -21,15 +21,15 @@ async function cargar(){
   if(p.stock>suma){const c={...b,base:p.nombre,color:"Sin color",nombre:p.nombre+" – sin color",stock:p.stock-suma,codigo_barras:p.codigo_barras};c.val=c.fin*c.stock;P.push(c)}})}
 const sum=(L,f)=>L.reduce((s,p)=>s+f(p),0);
 function datos(){
- const unidades=sum(P,p=>p.stock),valor=sum(P,p=>p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock>0&&p.stock<=BAJO),sano=P.filter(p=>p.stock>BAJO);
+ const unidades=sum(P,p=>p.stock),valor=sum(P,p=>p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock>0&&p.stock<=mini(p)),sano=P.filter(p=>p.stock>mini(p));
  const cats={};P.forEach(p=>{const c=cats[p.cat]=cats[p.cat]||{n:0,u:0,v:0,costo:0};c.n++;c.u+=p.stock;c.v+=p.val;c.costo+=p.precio_costo*p.stock});
- const top=[...P].sort((a,b)=>b.val-a.val).slice(0,10),aten=P.filter(p=>p.stock<=CRIT).sort((a,b)=>a.stock-b.stock||a.nombre.localeCompare(b.nombre));
+ const top=[...P].sort((a,b)=>b.val-a.val).slice(0,10),aten=P.filter(p=>p.stock<=crit(p)).sort((a,b)=>a.stock-b.stock||a.nombre.localeCompare(b.nombre));
  const costo=sum(P,p=>p.precio_costo*p.stock);
  return {unidades,valor,agot,bajo,sano,cats,top,aten,costo,ncat:Object.keys(cats).length,prom:unidades?valor/unidades:0}}
 function pintar(){
  const d=datos();
  $("rKpi").innerHTML=`<div><span>Productos</span><b>${NP}</b></div><div><span>Unidades en stock</span><b>${d.unidades}</b></div><div><span>Valor del inventario</span><b>${$$(d.valor)}</b></div><div><span>Valor promedio por unidad</span><b>${$$(d.prom)}</b></div>${ADM?`<div><span>Utilidad potencial</span><b>${$$(d.valor-d.costo)}</b><small>a precio de venta vs costo</small></div>`:`<div><span>Categorías</span><b>${d.ncat}</b></div>`}`;
- $("rSalud").innerHTML=`<div><span>Stock saludable (más de ${BAJO})</span><b class="pos">${d.sano.length}</b></div><div><span>Stock bajo (1 a ${BAJO})</span><b style="color:var(--warn)">${d.bajo.length}</b></div><div><span>Agotados</span><b class="neg">${d.agot.length}</b></div>`;
+ $("rSalud").innerHTML=`<div><span>Stock saludable (sobre su mínimo)</span><b class="pos">${d.sano.length}</b></div><div><span>Stock bajo (hasta su mínimo)</span><b style="color:var(--warn)">${d.bajo.length}</b></div><div><span>Agotados</span><b class="neg">${d.agot.length}</b></div>`;
  $("rAlert").innerHTML=(d.agot.length?`<div class="alert bad"><div><b>${d.agot.length} producto(s) agotado(s)</b>Repón pronto para no perder ventas.</div></div>`:"")+(d.bajo.length?`<div class="alert warn"><div><b>${d.bajo.length} producto(s) con stock bajo</b>Considera reabastecer.</div></div>`:"")+(!P.length?`<div class="alert"><div><b>Inventario vacío</b>Aún no hay productos registrados.</div></div>`:"");
  const cs=Object.entries(d.cats).sort((a,b)=>b[1].v-a[1].v);
  $("cTab").innerHTML=cs.map(([n,c])=>{const pc=d.valor?c.v/d.valor*100:0,avg=c.n?c.u/c.n:0;
