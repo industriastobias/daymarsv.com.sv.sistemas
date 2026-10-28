@@ -1,0 +1,11 @@
+/* Historial de ventas */
+.vr2{display:grid;grid-template-columns:56px 1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card);margin:0 0 8px;cursor:pointer}
+.vr2:hover{border-color:var(--wine)}
+.vr2 .vth{display:flex;position:relative;width:56px;height:56px}.vr2 .vth img,.vr2 .vth .ph0{width:56px;height:56px;border-radius:12px;object-fit:cover;background:var(--bg)}.vr2 .ph0{display:grid;place-items:center;font:700 20px "Bricolage Grotesque",sans-serif;color:#fff;background:linear-gradient(135deg,var(--wine),var(--gold))}
+.vr2 .vtx{min-width:0}.vr2 .vtx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vr2 .vtx small{display:block;color:var(--mute);margin-top:1px}
+.vr2 .vmt{text-align:right}.vr2 .vmt b{font-size:17px;display:block}
+.vr2 .vbd{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.vr2.an{opacity:.65}.vr2.an .vmt b{text-decoration:line-through}
+.vdt .rw{align-items:center}.vdt .im{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:none;margin-right:10px}
+.vtt{display:flex;justify-content:space-between;padding:4px 0}.vtt.g{font-size:18px;font-weight:700;border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+.vfd.off{display:none}
