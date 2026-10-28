@@ -12,7 +12,9 @@ const AC={crear:["Creó","ok"],editar:["Editó","wa"],eliminar:["Eliminó","or"]
 const CAMPO={nombre:"Nombre",precio_costo:"Costo",precio_venta:"Precio",stock_minimo:"Stock mínimo",activo:"Activo",descuento_pct:"Descuento %",estado:"Estado",rol:"Rol",monto:"Monto",total:"Total",categoria_id:"Categoría",proveedor_id:"Proveedor"};
 let U=[],L=[],ult=[],lim=100,fin=false;
 const v=x=>x===null||x===undefined?"—":typeof x==="boolean"?(x?"Sí":"No"):String(x);
-function cambios(c){if(!c)return"";return Object.keys(c).map(k=>`<div class="df2"><span>${esc(CAMPO[k]||k)}</span> <s>${esc(v(c[k].antes))}</s> → <b>${esc(v(c[k].despues))}</b></div>`).join("")}
+const OCULTOS=["eliminado_en","updated_at","created_at"];
+const corto=s=>s.length>70?s.slice(0,67)+"…":s;
+function cambios(c){if(!c)return"";return Object.keys(c).filter(k=>!OCULTOS.includes(k)).map(k=>k==="foto_url"?`<div class="df2"><span>Foto</span> <b>actualizada</b></div>`:`<div class="df2"><span>${esc(CAMPO[k]||k)}</span> <s>${esc(corto(v(c[k].antes)))}</s> → <b>${esc(corto(v(c[k].despues)))}</b></div>`).join("")}
 function fila(b){const a=AC[b.accion]||[b.accion,"mu"];
  return `<div class="rw"><div class="th ph">${esc((b.usuario_nombre||"?")[0].toUpperCase())}</div><div class="ti"><b>${esc(b.usuario_nombre||"Sistema")}</b> <span class="bd ${a[1]}">${a[0]}</span> ${b.accion==="eliminar_venta"?"":esc(TB[b.tabla]||b.tabla)}
  <small>${b.resumen?esc(b.resumen)+" · ":""}${fdate(b.created_at)} ${ftime(b.created_at)}</small>${cambios(b.cambios)}</div></div>`}

@@ -62,3 +62,10 @@ dialog.cfgd{border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-heig
 button.av{padding:0}.av img{border-radius:50%}
 /* En el iPhone, un texto menor a 16px hace que la pantalla se agrande sola al escribir */
 @media(max-width:800px){input,select,textarea,dialog.dday input{font-size:16px!important}}
+
+/* Texto largo (URLs, códigos) nunca se sale de su tarjeta o ventana */
+main,dialog,.card,.rw,.sv,.sv2,.ti,.df2,.dd-b,.alert,.pc,.pb,.am,.kp>div,#toast{overflow-wrap:anywhere;word-break:break-word}
+.tbl,.tbl *{overflow-wrap:normal;word-break:normal}
+.rw>.ti,.sv>.ti,.ln>.ti,.df2{min-width:0}
+dialog{max-width:calc(100vw - 16px)}
+img,canvas,video,svg{max-width:100%}
