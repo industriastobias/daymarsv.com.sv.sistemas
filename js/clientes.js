@@ -29,7 +29,7 @@ async function cargar(){
  S.DV.forEach(x=>{const id=mapa[norm(x.cliente_nombre)];if(id)S.stats[id].devs.push(x)})}
 /* ---------- lista ---------- */
 function filtrados(){
- const q=norm($("cQ").value);let L=S.C.filter(c=>!q||norm([c.nombre,c.telefono,c.correo,c.documento].join(" ")).includes(q));
+ const q=norm($("cQ").value);let L=S.C.filter(c=>!q||norm([c.nombre,c.codigo,c.telefono,c.correo,c.documento].join(" ")).includes(q));
  const st=c=>S.stats[c.id];
  if(S.orden==="gasto")L=L.slice().sort((a,b)=>st(b).t-st(a).t);else if(S.orden==="deuda")L=L.filter(c=>st(c).deuda>0).sort((a,b)=>st(b).deuda-st(a).deuda);else if(S.orden==="reciente")L=L.slice().sort((a,b)=>(st(b).u||"").localeCompare(st(a).u||""));
  return L}
@@ -41,7 +41,7 @@ function pintar(){
  $("cSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.o===S.orden));
  const L=filtrados();
  $("cL").innerHTML=L.length?L.slice(0,400).map(c=>{const s=S.stats[c.id];
-  return `<div class="rw" data-c="${c.id}" style="cursor:pointer"><div class="th ph">${esc(ini(c.nombre))}</div><div class="ti"><b>${esc(c.nombre)}</b><small>${esc([c.telefono,c.correo].filter(Boolean).join(" · ")||"Sin contacto")}</small></div>
+  return `<div class="rw" data-c="${c.id}" style="cursor:pointer"><div class="th ph">${esc(ini(c.nombre))}</div><div class="ti"><b>${esc(c.nombre)}</b><small>${esc([c.codigo,c.telefono,c.correo].filter(Boolean).join(" · ")||"Sin contacto")}</small></div>
   ${waUrl(c,s)?`<a class="cwa" href="${waUrl(c,s)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${esc(c.nombre)}" title="Escribir por WhatsApp" style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#25d366;color:#fff;margin-right:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.6.1a6.7 6.7 0 01-3.3-2.9c-.2-.4.2-.4.6-1.2a.5.5 0 000-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.8 11.9 11.9 0 004.6 4c1.7.7 2.4.8 3.2.7a2.7 2.7 0 001.8-1.3 2.2 2.2 0 00.2-1.3c-.1-.1-.3-.2-.6-.3z"/></svg></a>`:""}<div class="am2"><b>${$$(s.t)}</b><br><small>${s.n} compra${s.n===1?"":"s"}${s.u?" · "+fdate(s.u):""}</small>${s.deuda>0?`<br><span class="bd or">Debe ${$$(s.deuda)}</span>`:""}</div></div>`}).join("")
   :`<div class="empty card">${S.C.length?"Ningún cliente coincide con la búsqueda.":"Aún no hay clientes. Toca “Nuevo cliente” para crear el primero."}</div>`}
 /* ---------- formulario ---------- */
@@ -64,7 +64,7 @@ function ficha(id){
  const c=S.C.find(x=>x.id===id);if(!c)return;const s=S.stats[id];
  const tel=(c.telefono||"").replace(/\D/g,""),wa=tel.length===8?"503"+tel:tel;
  const d=modal(esc(c.nombre),`<div class="kp" style="grid-template-columns:repeat(3,1fr);margin:0 0 12px"><div><span>Compras</span><b>${s.n}</b></div><div><span>Total</span><b>${$$(s.t)}</b></div><div><span>Ticket prom.</span><b>${$$(s.n?s.t/s.n:0)}</b></div></div>
-  <div class="ti" style="margin-bottom:10px">${[c.telefono&&"Tel. "+esc(c.telefono),c.correo&&esc(c.correo),c.documento&&"Doc. "+esc(c.documento),c.direccion&&esc(c.direccion)].filter(Boolean).map(x=>`<div>${x}</div>`).join("")||'<small>Sin datos de contacto</small>'}${c.notas?`<div style="margin-top:6px"><small>${esc(c.notas)}</small></div>`:""}</div>
+  <div class="ti" style="margin-bottom:10px">${[c.codigo&&"Código "+esc(c.codigo),c.telefono&&"Tel. "+esc(c.telefono),c.correo&&esc(c.correo),c.documento&&"Doc. "+esc(c.documento),c.direccion&&esc(c.direccion)].filter(Boolean).map(x=>`<div>${x}</div>`).join("")||'<small>Sin datos de contacto</small>'}${c.notas?`<div style="margin-top:6px"><small>${esc(c.notas)}</small></div>`:""}</div>
   <div class="ctl" style="flex-wrap:wrap">${tel?`<a class="btn g sm" href="tel:${esc(c.telefono)}">Llamar</a><a class="btn g sm" target="_blank" rel="noopener" href="https://wa.me/${wa}">WhatsApp</a>`:""}${c.correo?`<a class="btn g sm" href="mailto:${esc(c.correo)}">Correo</a>`:""}<a class="btn g sm" href="almacenamiento.html#fac">Facturar</a></div>
   ${fichaDeuda(c,s)}
   <h3 class="sect">Últimas compras</h3>${s.ventas.length?s.ventas.slice(0,8).map(v=>`<div class="rw"><div class="ti"><b>Venta #${v.numero}</b><small>${fdate(v.created_at)}</small></div><div class="am2"><b>${$$(v.total)}</b></div></div>`).join(""):'<p class="hint">Todavía no tiene compras registradas. Las ventas se ligan por el nombre del cliente.</p>'}
@@ -97,7 +97,7 @@ $("cQ").addEventListener("input",deb(pintar,150));
 $("cSg").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b){S.orden=b.dataset.o;pintar()}});
 $("cL").addEventListener("click",e=>{if(e.target.closest(".cwa"))return;const r=e.target.closest("[data-c]");if(r)ficha(r.dataset.c)});
 $("cNew").onclick=()=>form();
-$("cXls").onclick=()=>excel("clientes",[{n:"Clientes",c:[["Nombre",28],["Teléfono",16],["Correo",26],["DUI / NIT",18],["Dirección",34],["Compras",10],["Total comprado",16,"money"],["Última compra",14],["Notas",30]],f:S.C.map(c=>{const s=S.stats[c.id];return[c.nombre,c.telefono||"",c.correo||"",c.documento||"",c.direccion||"",s.n,s.t,s.u?s.u.slice(0,10):"",c.notas||""]})}]);
+$("cXls").onclick=()=>excel("clientes",[{n:"Clientes",c:[["Código",10],["Nombre",28],["Teléfono",16],["Correo",26],["DUI / NIT",18],["Dirección",34],["Compras",10],["Total comprado",16,"money"],["Última compra",14],["Notas",30]],f:S.C.map(c=>{const s=S.stats[c.id];return[c.codigo||"",c.nombre,c.telefono||"",c.correo||"",c.documento||"",c.direccion||"",s.n,s.t,s.u?s.u.slice(0,10):"",c.notas||""]})}]);
 await recargar();
 const hc=location.hash.match(/c=([\w-]+)/);if(hc&&S.stats[hc[1]])ficha(hc[1]);
 })();
