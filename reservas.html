@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Reservas</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610281400">
-<link rel="stylesheet" href="css/compra.css?v=202610281400">
-<link rel="stylesheet" href="css/almacen.css?v=202610281400">
-<link rel="stylesheet" href="css/reservas.css?v=202610281400"><link rel="stylesheet" href="css/paginas.css?v=202610281400"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202610281406">
+<link rel="stylesheet" href="css/compra.css?v=202610281406">
+<link rel="stylesheet" href="css/almacen.css?v=202610281406">
+<link rel="stylesheet" href="css/reservas.css?v=202610281406"><link rel="stylesheet" href="css/paginas.css?v=202610281406"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -17,7 +17,7 @@
  </div>
  <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
  <div class="kp" id="rK" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"></div>
- <div class="seg2" id="rSg"><button data-e="" class="on">Todas</button><button data-e="pendiente">Pendientes</button><button data-e="completado">Completadas</button></div>
+ <div class="seg2" id="rSg" style="overflow-x:auto"><button data-e="activas" class="on">Activas</button><button data-e="pendiente">Pendientes</button><button data-e="vencida">Vencidas</button><button data-e="porentregar">Por entregar</button><button data-e="entregada">Entregadas</button><button data-e="cancelada">Canceladas</button><button data-e="">Todas</button></div>
  <div class="fl" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
   <div class="full"><label for="rQ">Buscar</label><input id="rQ" type="search" placeholder="Cliente, teléfono, producto o nota" autocomplete="off"></div>
   <div><label for="rC">Categoría</label><select id="rC"><option value="">Todas</option></select></div>
@@ -32,7 +32,7 @@
 <div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="js/app.js?v=202610281400"></script>
-<script src="js/comun.js?v=202610281400"></script>
-<script src="js/reservas.js?v=202610281400"></script>
+<script src="js/app.js?v=202610281406"></script>
+<script src="js/comun.js?v=202610281406"></script>
+<script src="js/reservas.js?v=202610281406"></script>
 </body></html>

@@ -86,7 +86,7 @@ function mountSide(el,activo,rol){
  el.addEventListener("click",e=>{const a=e.target.closest("[data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
  pintarUsr();aplicarPrefs()}
 /* Ventana de configuración: nombre, foto, tema y opciones del menú */
-const TABLAS_RESPALDO=["productos","categorias","producto_imagenes","producto_variantes","reservas","proveedores","clientes","ventas","venta_items","movimientos_stock","facturas","factura_items","devoluciones","devolucion_items","fin_movimientos","fin_cuentas","fin_banco","capital_movs","cierres_caja","promo_codigos","descuentos_programados","config_negocio","profiles","invitaciones","bitacora","accesos"];
+const TABLAS_RESPALDO=["productos","categorias","producto_imagenes","producto_variantes","reservas","reserva_abonos","proveedores","clientes","ventas","venta_items","movimientos_stock","facturas","factura_items","devoluciones","devolucion_items","fin_movimientos","fin_cuentas","fin_banco","capital_movs","cierres_caja","promo_codigos","descuentos_programados","config_negocio","profiles","invitaciones","bitacora","accesos"];
 async function respaldo(){
  if(!await ask("Se descargará un archivo ZIP con una copia de todos tus datos (productos, ventas, clientes, finanzas…). Contiene información del negocio y de tus clientes: guárdalo en un lugar seguro.",{titulo:"Descargar respaldo",ok:"Descargar"}))return;
  toast("Preparando respaldo… puede tardar un momento");
