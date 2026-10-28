@@ -3,25 +3,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Iniciar sesión</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610281108"><link rel="stylesheet" href="css/login.css?v=202610281112"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
-<div class="lg">
-<aside class="lg-hero">
- <div class="lg-top"><img src="logo.png" alt=""><b>DAYMAR<i>-SHOP</i></b></div>
- <div class="lg-mid"><h1>Tu negocio, <em>ordenado</em> y en un solo lugar.</h1>
-  <p>Inventario, ventas, clientes y finanzas sincronizados en todos tus dispositivos.</p>
-  <ul class="lg-ft"><li><span>📦</span>Inventario y punto de venta</li><li><span>👥</span>Clientes y cuentas por cobrar</li><li><span>📊</span>Finanzas y cierres de caja</li></ul></div>
- <div class="lg-small">DAYMAR-SHOP – A Family Company</div>
-</aside>
-<section class="lg-form"><form class="lbox2" id="lf">
-<h2 id="ht">Bienvenido</h2><p class="sub" id="hs">Inicia sesión para continuar.</p>
-<label for="u">Correo</label><input id="u" type="email" autocomplete="username" required placeholder="tucorreo@ejemplo.com">
-<label for="p">Contraseña</label><div class="pw2"><input id="p" type="password" autocomplete="current-password" required placeholder="••••••••"><button type="button" id="eye">Mostrar</button></div>
-<div id="rg" class="hidden"><label for="rn">Tu nombre</label><input id="rn" autocomplete="name" maxlength="60">
-<label for="p2">Repite la contraseña</label><input id="p2" type="password" autocomplete="new-password"></div>
-<div class="err" id="le" role="alert"></div><button class="btn" id="lb">Ingresar</button>
-<p class="inv" id="inv">🔒 El registro es <b>solo por invitación</b>. Si aún no tienes acceso, pídeselo al administrador.</p><button type="button" id="tg" class="tg hidden">¿Te invitaron? Crear cuenta</button>
-<div class="foot">© DAYMAR-SHOP · Acceso solo para usuarios autorizados</div></form></section>
-</div>
+<link rel="stylesheet" href="css/estilo.css?v=202610281108"><link rel="stylesheet" href="css/login.css?v=202610281121"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<div class="lx"><i class="o o1"></i><i class="o o2"></i><i class="o o3"></i>
+<form class="lc" id="lf">
+ <div class="lc-logo"><img src="logo.png" alt="DAYMAR"></div>
+ <div class="lc-brand">DAYMAR<i>-SHOP</i></div><div class="lc-sl">A Family Company</div>
+ <h2 id="ht">Bienvenido</h2><p class="sub" id="hs">Inicia sesión para continuar.</p>
+ <div class="fld"><input id="u" type="email" autocomplete="username" required placeholder=" "><label for="u">Correo</label></div>
+ <div class="fld"><input id="p" type="password" autocomplete="current-password" required placeholder=" "><label for="p">Contraseña</label><button type="button" id="eye" aria-label="Mostrar contraseña">Mostrar</button></div>
+ <div id="rg" class="hidden"><div class="fld"><input id="rn" autocomplete="name" maxlength="60" placeholder=" "><label for="rn">Tu nombre</label></div>
+ <div class="fld"><input id="p2" type="password" autocomplete="new-password" placeholder=" "><label for="p2">Repite la contraseña</label></div></div>
+ <div class="err" id="le" role="alert"></div><button class="btn" id="lb">Ingresar</button>
+ <p class="inv" id="inv">🔒 El registro es <b>solo por invitación</b>. Si aún no tienes acceso, pídeselo al administrador.</p>
+ <button type="button" id="tg" class="tg hidden">¿Te invitaron? Crear cuenta</button>
+</form>
+<div class="lx-ft">© DAYMAR-SHOP · Acceso solo para usuarios autorizados</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="js/app.js?v=202610281108"></script>
 <script>
