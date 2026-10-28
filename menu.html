@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Inicio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.top h1{font-size:26px;line-height:1.15}.top small{color:var(--mute);display:block;text-transform:capitalize}
+.who{display:flex;align-items:center;gap:8px}
+.kp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.kp a{display:block;text-decoration:none;color:inherit}
+.kp .c b{font-size:24px}
+.gt{font:700 13px "DM Sans",sans-serif;color:var(--mute);margin:18px 0 8px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:104px;padding:12px 6px;background:var(--card);border:1px solid var(--line);border-radius:16px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500;text-align:center;position:relative}
+.tile .ic{width:30px;height:30px;color:var(--wine)}
+.tile.off{opacity:.55}.tile.off:after{content:"Pronto";position:absolute;top:6px;right:8px;font-size:10px;color:var(--mute)}
+.tile:active{background:var(--chip)}
+@media(min-width:800px){
+ .tiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+ .tile{align-items:flex-start;text-align:left;padding:16px;min-height:96px;font-size:14px}
+ .tile:hover{border-color:var(--wine)}
+ .kp{max-width:520px}
+}
+@media(min-width:800px){.top h1{font-size:30px}}
+</style></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main>
+<div class="top"><div><h1 id="gr">Hola</h1><small id="dt"></small></div>
+<div class="who"><button class="btn g" id="th" style="min-height:38px;padding:4px 12px">Tema</button><button class="av" id="av" title="Cerrar sesión" aria-label="Cerrar sesión">?</button></div></div>
+<div class="kp"><a href="sistema.html#rep"><div class="c"><b id="s1">—</b><span>Ventas de hoy</span></div></a><a href="sistema.html#inv"><div class="c w"><b id="s2">—</b><span>Productos con stock bajo</span></div></a></div>
+<div id="mods"></div>
+</main></div><div id="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js"></script>
+<script>
+(async()=>{const {db,esc,$$,ymd,toast,logout,requireSession,toggleTheme,GRUPOS,svg,visibles,enlace,mountSide}=DAY,$=i=>document.getElementById(i);
+const me=await requireSession();if(!me)return;
+$("app").classList.remove("hidden");
+const hr=new Date().getHours();$("gr").textContent=(hr<12?"Buenos días":hr<19?"Buenas tardes":"Buenas noches")+", "+me.nombre;
+$("dt").textContent=new Date().toLocaleDateString("es-SV",{weekday:"long",day:"numeric",month:"long"});
+$("av").textContent=(me.nombre||"?").charAt(0).toUpperCase();
+$("mods").innerHTML=GRUPOS.map(g=>`<div class="gt">${g.t}</div><div class="tiles">${visibles(g,me.rol).map(x=>enlace(x,"tile")).join("")}</div>`).join("");
+mountSide($("side"),"menu",me.rol);
+document.addEventListener("click",e=>{const a=e.target.closest("#mods [data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
+$("av").onclick=()=>{if(confirm("¿Cerrar sesión?"))logout()};$("th").onclick=toggleTheme;
+try{const [v,p]=await Promise.all([db.from("vista_ventas_diarias").select("total").eq("fecha",ymd(new Date())),db.from("productos").select("stock,stock_minimo").eq("activo",true)]);
+ $("s1").textContent=$$((v.data||[]).reduce((a,x)=>a+(+x.total||0),0));$("s2").textContent=(p.data||[]).filter(x=>x.stock<=x.stock_minimo).length}catch(e){}
+})();
+</script></body></html>

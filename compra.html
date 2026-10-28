@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Compra</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="stylesheet" href="css/compra.css"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Compra</h1><small>Registra mercadería y administra el inventario</small></div>
+  <div class="hact">
+   <div class="tot"><span>Valor del inventario</span><b id="totalAmount">$0.00</b></div>
+   <button class="btn" id="bBulk" title="Carga masiva y exportación (Ctrl+M)">Carga masiva<span id="fabBadge" class="badge hidden" style="margin-left:6px"></span></button>
+   <div class="more"><button class="btn g" id="bMore" aria-haspopup="true" aria-expanded="false">Más ▾</button>
+    <div class="menu" id="mMore" role="menu">
+     <button data-m="trash">Papelera</button><button data-m="stock0" class="dg">Eliminar productos con stock 0</button><button data-m="keys">Atajos de teclado</button><hr>
+     <button data-m="regen">Regenerar códigos de barras</button><button data-m="theme">Cambiar tema</button><hr><button data-m="out">Cerrar sesión</button>
+    </div></div>
+  </div>
+ </div>
+
+ <div class="seg" id="seg"><button class="on" data-p="f">Registrar</button><button data-p="i">Inventario <span class="badge" id="cnt2">0</span></button></div>
+
+ <div class="cols" data-pane="f" id="cols">
+  <section class="card" id="paneForm">
+   <div class="banner warn" id="recBanner"><span>Tienes un borrador sin guardar. ¿Quieres recuperarlo?</span><span style="display:flex;gap:6px"><button class="btn g sm" id="bDiscard" type="button">Descartar</button><button class="btn sm" id="bRecover" type="button">Recuperar</button></span></div>
+   <div class="editflag" id="editFlag"><span>Editando producto</span><button type="button" id="bCancelEdit1">Cancelar</button></div>
+   <h2 id="formTitle">Nuevo producto</h2>
+   <div class="tabs" id="tabs"><button type="button" class="on" data-t="normal">Producto normal</button><button type="button" data-t="lote">Por lote / mayoreo</button></div>
+   <form id="purchaseForm" autocomplete="off"><div class="fg">
+    <div class="full"><label for="name">Nombre del producto *</label><input id="name" required placeholder="Ej: Reloj deportivo negro"></div>
+    <div><label for="code">Código SKU *</label><input id="code" required placeholder="Ej: REL-001"></div>
+    <div><label for="category">Categoría *</label><select id="category" required></select></div>
+    <div class="full" style="margin-top:-4px"><button type="button" class="btn g sm" id="bNewCat">+ Crear nueva categoría</button></div>
+    <div class="full"><label for="barcode">Código de barras *</label><div class="bcg"><input id="barcode" required placeholder="Escanea, escribe o genera"><button type="button" class="btn g" id="bAuto">Generar</button></div><canvas id="barcodeCanvas"></canvas></div>
+    <div><label for="valorReal">Costo (valor real)</label><div class="ig"><span>$</span><input id="valorReal" type="number" step="0.01" min="0" placeholder="0.00"></div></div>
+    <div><label for="porcentajeGanancia">% de ganancia</label><div class="ig"><input id="porcentajeGanancia" type="number" step="1" min="0" max="999" value="60"><span>%</span></div></div>
+    <div><label for="sugerenciaVenta">Precio sugerido</label><div class="ig"><span>$</span><input id="sugerenciaVenta" type="number" readonly></div></div>
+    <div><label for="price">Precio de venta *</label><div class="ig"><span>$</span><input id="price" type="number" step="0.01" min="0" required placeholder="0.00"></div></div>
+    <div><label for="discount">Descuento</label><div class="ig"><input id="discount" type="number" step="0.01" min="0" max="100" value="0"><span>%</span></div></div>
+    <div><label for="fechaCompra">Fecha de compra *</label><input id="fechaCompra" type="date" required></div>
+    <div id="lotQuantityGroup" class="hidden"><label for="lotQuantity">Cantidad de lotes *</label><input id="lotQuantity" type="number" min="0" step="1" placeholder="0"></div>
+    <div id="unitsPerLotGroup" class="hidden"><label for="unitsPerLot">Unidades por lote *</label><input id="unitsPerLot" type="number" min="0" step="1" placeholder="0"></div>
+    <div class="full"><label for="quantity" id="quantityLabel">Stock inicial *</label><input id="quantity" type="number" min="0" step="1" required placeholder="0"><small class="h" id="quantityHelp">Unidades disponibles.</small></div>
+    <div class="full"><label for="description">Descripción *</label><textarea id="description" rows="3" required placeholder="Describe las características…"></textarea></div>
+    <div class="full"><label>Imágenes del producto</label>
+     <div class="up" id="upArea" tabindex="0" role="button">Toca para subir imágenes, o enfoca aquí y pega con Ctrl+V<input type="file" id="imageFile" accept="image/*" multiple class="hidden"></div>
+     <div class="prevs" id="prevs"></div></div>
+   </div>
+   <div class="autosave" id="autoInd">Borrador guardado</div>
+   <div class="acts"><button class="btn" id="bSave" type="submit">Guardar producto</button><button class="btn g" type="button" id="bReset">Limpiar</button><button class="btn g hidden" type="button" id="bCancelEdit2">Cancelar edición</button></div>
+   </form>
+  </section>
+
+  <section id="paneInv">
+   <div class="invh"><h2>Inventario actual</h2><span class="badge" id="countBadge">0 productos</span></div>
+   <div class="filters">
+    <div class="full"><label for="searchBox">Búsqueda inteligente</label><input id="searchBox" type="search" placeholder="Nombre, código, categoría…"></div>
+    <div><label for="categoryFilter">Categoría</label><select id="categoryFilter"></select></div>
+    <div><label for="precioMin">Precio mín.</label><input id="precioMin" type="number" step="0.01" min="0" placeholder="0"></div>
+    <div><label for="precioMax">Precio máx.</label><input id="precioMax" type="number" step="0.01" min="0" placeholder="Sin tope"></div>
+    <label class="chk"><input type="checkbox" id="stockBajo"> Stock bajo (≤5)</label>
+   </div>
+   <div class="hist" id="hist"><span>Recientes:</span><button class="clr" id="histClr" type="button">Limpiar historial</button></div>
+   <div class="pg" id="inventoryList"></div>
+  </section>
+ </div>
+</main></div>
+
+<!-- Carga masiva y exportación -->
+<dialog id="dgBulk" class="big">
+ <div class="dh"><h2>Carga masiva y exportación</h2><button class="x" data-x="dgBulk" aria-label="Cerrar">×</button></div>
+ <div class="db">
+  <div class="banner warn" id="pendAlert"><span id="pendText">Tienes un lote pendiente de edición</span><span style="display:flex;gap:6px"><button class="btn g sm" id="bPendDel" type="button">Descartar</button><button class="btn sm" id="bPendGo" type="button">Continuar edición</button></span></div>
+  <div class="sec"><h3>Carga por imágenes</h3><p>Máximo 130 imágenes. Se crean códigos de barras automáticos (4 a 8 dígitos).</p>
+   <label for="lotePrefix">Prefijo del código (hasta 6 caracteres)</label><input id="lotePrefix" value="KLO" maxlength="6" style="max-width:160px;text-transform:uppercase;font-weight:700">
+   <div class="drop" style="margin-top:10px"><button class="btn" id="bPick" type="button">Seleccionar imágenes</button><input type="file" id="loteFiles" accept="image/*" multiple class="hidden"><p id="loteFileCount" style="margin:8px 0 0">Ninguna imagen seleccionada</p></div>
+   <div class="acts"><button class="btn" id="bProc" type="button">Procesar lote</button><button class="btn g" id="bVaciaLote" type="button">Vaciar</button></div>
+   <div id="loteStatus" style="font-size:13px;color:var(--mute);margin-top:8px"></div><div class="mini" id="lotePreview"></div></div>
+  <div class="sec"><h3>Exportar e importar</h3><p>El ZIP trae el inventario y las fotos. También acepta los ZIP de tu sistema anterior.</p>
+   <div class="xg"><button class="btn g" id="bZip" type="button">Exportar ZIP</button><button class="btn g" id="bPdf" type="button">Exportar PDF</button><button class="btn g" id="bLabels" type="button">Imprimir etiquetas</button><button class="btn g" id="bImpZip" type="button">Importar ZIP</button><button class="btn g" id="bImpPdf" type="button">Importar PDF</button></div>
+   <input type="file" id="importFile" accept=".zip" class="hidden"><input type="file" id="pdfFile" accept=".pdf" class="hidden">
+   <button class="btn dg" id="bVaciaInv" type="button" style="width:100%;margin-top:14px">Enviar todo el inventario a la papelera</button></div>
+ </div>
+</dialog>
+
+<!-- Editor de lote -->
+<dialog id="dgLote" class="big">
+ <div class="dh"><h2 id="editorTitle">Editar productos del lote</h2><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn g" id="bLotePause" type="button">Guardar y salir</button><button class="btn" id="bLoteSave" type="button">Guardar lote completo</button></span></div>
+ <div class="db"><div class="lg" id="editLoteGrid"></div></div>
+</dialog>
+
+<!-- Papelera -->
+<dialog id="dgTrash">
+ <div class="dh"><h2>Papelera <span class="badge" id="trashCount">0</span></h2><button class="x" data-x="dgTrash" aria-label="Cerrar">×</button></div>
+ <div class="db" id="trashBody"></div>
+ <div class="df"><span style="margin-right:auto;font-size:12px;color:var(--mute)">Se eliminan para siempre a los 30 días.</span><button class="btn dg" id="bTrashAll" type="button">Vaciar papelera</button></div>
+</dialog>
+
+<!-- Regenerar códigos -->
+<dialog id="dgRegen">
+ <div class="dh"><h2>Regenerar códigos de barras</h2><button class="x" data-x="dgRegen" aria-label="Cerrar">×</button></div>
+ <div class="db"><p style="margin-top:0">Crea códigos nuevos para todos los productos del inventario. Elige la longitud:</p>
+  <div class="bl" id="lenBtns"><button type="button" class="on" data-l="mixed">Variado (4–8)</button><button type="button" data-l="4">4 dígitos</button><button type="button" data-l="5">5</button><button type="button" data-l="6">6</button><button type="button" data-l="7">7</button><button type="button" data-l="8">8</button></div>
+  <div class="note"><b>Ojo:</b> los códigos actuales se reemplazan. Si ya imprimiste etiquetas, tendrás que imprimirlas otra vez.</div></div>
+ <div class="df"><button class="btn g" data-x="dgRegen" type="button">Cancelar</button><button class="btn" id="bRegenGo" type="button">Regenerar códigos</button></div>
+</dialog>
+
+<!-- Eliminar stock 0 -->
+<dialog id="dgStock0">
+ <div class="dh"><h2>Eliminar productos sin stock</h2><button class="x" data-x="dgStock0" aria-label="Cerrar">×</button></div>
+ <div class="db"><div id="s0Empty" class="empty hidden">No hay productos con stock en cero.</div>
+  <div id="s0Content"><div class="stats"><div><b id="countStockZero">0</b><span>Productos detectados</span></div><div><b id="valueStockZero">$0.00</b><span>Precio de venta sumado</span></div></div>
+   <div id="eliminarStockGrid" style="max-height:230px;overflow-y:auto"></div>
+   <div class="note">Se envían a la papelera y puedes restaurarlos durante 30 días. Confirma con tu contraseña.</div>
+   <label for="passStock0">Tu contraseña</label><input id="passStock0" type="password" autocomplete="current-password"><div class="err" id="errPass" role="alert"></div></div></div>
+ <div class="df"><button class="btn g" data-x="dgStock0" type="button">Cancelar</button><button class="btn dg" id="bStock0Go" type="button">Enviar a la papelera</button></div>
+</dialog>
+
+<!-- Detalle -->
+<dialog id="dgDet">
+ <div class="dh"><h2 id="pmTitulo">Detalle del producto</h2><button class="x" data-x="dgDet" aria-label="Cerrar">×</button></div>
+ <div class="db"><div class="dgal"><div><img class="main" id="pmImagen" alt="Imagen del producto"><div class="th" id="pmMin"></div></div>
+  <div><div style="font:700 20px 'Bricolage Grotesque',sans-serif" id="pmNombre"></div><div style="color:var(--mute);margin-bottom:8px" id="pmCodigo"></div><table class="dt" id="pmTabla"></table>
+   <p style="margin:10px 0 2px"><b>Descripción</b></p><p style="margin:0;color:var(--mute)" id="pmDesc"></p><svg id="pmBarcode" style="max-width:100%;margin-top:10px"></svg></div></div></div>
+ <div class="df"><button class="btn g" data-x="dgDet" type="button">Cerrar</button><button class="btn" id="pmEditar" type="button">Editar</button></div>
+</dialog>
+
+<!-- Atajos -->
+<dialog id="dgKeys">
+ <div class="dh"><h2>Atajos de teclado</h2><button class="x" data-x="dgKeys" aria-label="Cerrar">×</button></div>
+ <div class="db"><div class="sk"><span>Nuevo producto</span><span><kbd>Ctrl</kbd> + <kbd>N</kbd></span></div><div class="sk"><span>Buscar</span><span><kbd>Ctrl</kbd> + <kbd>B</kbd></span></div><div class="sk"><span>Guardar</span><span><kbd>Ctrl</kbd> + <kbd>S</kbd></span></div><div class="sk"><span>Carga masiva</span><span><kbd>Ctrl</kbd> + <kbd>M</kbd></span></div><div class="sk"><span>Cerrar ventanas</span><span><kbd>Esc</kbd></span></div></div>
+</dialog>
+
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovText">Guardando…</span></div></div>
+<section id="labelPrintArea" aria-label="Etiquetas para imprimir"></section>
+<div id="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="js/app.js"></script>
+<script src="js/compra.js"></script>
+</body></html>

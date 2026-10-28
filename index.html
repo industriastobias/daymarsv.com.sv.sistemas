@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Iniciar sesión</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css"></head><body>
+<section class="login"><form class="lbox" id="lf">
+<img src="IMG_4183.png" alt="" onerror="this.remove()">
+<div class="brand">DAYMAR<i>-SHOP</i></div><p>Inicia sesión para continuar.</p>
+<label for="u">Correo</label><input id="u" type="email" autocomplete="username" required>
+<label for="p">Contraseña</label><input id="p" type="password" autocomplete="current-password" required>
+<div id="rg" class="hidden"><label for="rn">Tu nombre</label><input id="rn" autocomplete="name" maxlength="60">
+<label for="p2">Repite la contraseña</label><input id="p2" type="password" autocomplete="new-password"></div>
+<div class="err" id="le" role="alert"></div><button class="btn" id="lb" style="width:100%;margin-top:8px">Ingresar</button>
+<button type="button" id="tg" style="background:none;border:0;color:var(--wine);font-weight:700;margin-top:12px;width:100%;cursor:pointer;padding:8px">¿Te invitaron? Crear cuenta</button></form></section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js"></script>
+<script>
+(async()=>{const {db}=DAY,$=i=>document.getElementById(i);
+if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
+else{const {data}=await db.auth.getSession();if(data.session)location.replace("menu.html")}
+let reg=false;
+$("tg").onclick=()=>{reg=!reg;$("rg").classList.toggle("hidden",!reg);$("lb").textContent=reg?"Crear cuenta":"Ingresar";$("tg").textContent=reg?"Ya tengo cuenta: iniciar sesión":"¿Te invitaron? Crear cuenta";$("p").autocomplete=reg?"new-password":"current-password";$("le").textContent="";$("le").style.color=""};
+$("lf").onsubmit=async e=>{e.preventDefault();$("le").textContent="";$("le").style.color="";$("lb").disabled=true;
+ const email=$("u").value.trim(),password=$("p").value;
+ if(reg){
+  if(password.length<8){$("le").textContent="La contraseña debe tener al menos 8 caracteres.";$("lb").disabled=false;return}
+  if(password!==$("p2").value){$("le").textContent="Las contraseñas no coinciden.";$("lb").disabled=false;return}
+  const {data,error}=await db.auth.signUp({email,password,options:{data:{nombre:$("rn").value.trim()}}});$("lb").disabled=false;
+  if(error){$("le").textContent=/database error|invitaci/i.test(error.message)?"Ese correo no tiene invitación. Pide al administrador principal que te invite.":/already|registered/i.test(error.message)?"Ese correo ya tiene una cuenta. Inicia sesión.":error.message;return}
+  if(data.session){location.replace("menu.html");return}
+  $("le").style.color="var(--ok)";$("le").textContent="Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.";return}
+ const {error}=await db.auth.signInWithPassword({email,password});$("lb").disabled=false;
+ if(error){$("le").textContent=/invalid login/i.test(error.message)?"Correo o contraseña incorrectos.":error.message;return}
+ location.replace("menu.html")}
+})();
+</script></body></html>

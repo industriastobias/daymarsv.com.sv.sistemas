@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Usuarios</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="stylesheet" href="css/compra.css">
+<link rel="stylesheet" href="css/almacen.css">
+<link rel="stylesheet" href="css/paginas.css"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Usuarios</h1><small>Equipo, roles e invitaciones</small></div>
+  <div class="hact"></div>
+ </div>
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+
+ <div class="kp" id="uKpi" style="grid-template-columns:repeat(3,1fr)"></div>
+ <div class="alert warn hidden" id="soloP"><div><b>Solo lectura</b>Únicamente el administrador principal puede invitar personas o cambiar roles.</div></div>
+ <div class="pan" id="inv" style="margin-bottom:14px">
+  <h3>Invitar a una persona</h3>
+  <p class="hint">1) Escribe su correo y elige el rol. 2) Esa persona abre el sistema, toca <b>“Crear cuenta”</b> y se registra con <b>ese mismo correo</b>. Nadie sin invitación puede crear una cuenta.</p>
+  <div class="fl"><div><label for="iEm">Correo</label><input id="iEm" type="email" autocomplete="off" placeholder="persona@correo.com"></div>
+  <div><label for="iNom">Nombre <small>(opcional)</small></label><input id="iNom" maxlength="60" autocomplete="off"></div>
+  <div><label for="iRol">Rol</label><select id="iRol"><option value="vendedor">Vendedor</option><option value="admin">Administrador</option></select></div>
+  <div style="align-self:end"><button class="btn" id="iAdd" type="button" style="width:100%">Invitar</button></div></div>
+ </div>
+ <h3 class="sect">Invitaciones pendientes</h3><div id="iList"></div>
+ <h3 class="sect">Equipo</h3><div id="uList"></div>
+ <p class="hint" style="margin-top:14px"><b>Vendedor:</b> vende, factura y consulta. <b>Administrador:</b> además edita precios, stock, compras, descuentos y finanzas. Solo el administrador principal gestiona cuentas.</p>
+</main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/usuarios.js"></script>
+</body></html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Finanzas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="stylesheet" href="css/compra.css">
+<link rel="stylesheet" href="css/almacen.css">
+<link rel="stylesheet" href="css/paginas.css"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Finanzas</h1><small>Ingresos, gastos, cuentas e informes</small></div>
+  <div class="hact"></div>
+ </div>
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+
+ <div id="perW"><div class="prd" id="fBar"><button class="btn g" data-q="month">Este mes</button><button class="btn g" data-q="prev">Mes anterior</button><button class="btn g" data-q="3m">3 meses</button><button class="btn g" data-q="year">Este año</button><button class="btn g" data-q="all">Todo</button></div>
+ <div class="fl" style="grid-template-columns:1fr 1fr"><div><label for="fD">Desde</label><input id="fD" type="date"></div><div><label for="fH">Hasta</label><input id="fH" type="date"></div></div></div>
+ <section id="p-res">
+  <div class="kp" id="rK"></div><div id="rA"></div>
+  <div class="pan"><h3>Ingresos y egresos por mes</h3><div class="lg"><span><i style="background:var(--wine)"></i>Ingresos</span><span><i style="background:var(--gold)"></i>Egresos</span></div><div id="rG"></div></div>
+ </section>
+ <section id="p-mov" class="hidden">
+  <div class="kp" id="mK" style="grid-template-columns:repeat(3,1fr)"></div>
+  <div class="seg2" id="mSg"><button data-t="all" class="on">Todos</button><button data-t="ingreso">Ingresos</button><button data-t="gasto">Gastos</button><button data-t="costo">Costos directos</button></div>
+  <div class="ctl"><input id="mQ" type="search" placeholder="Buscar" style="flex:1;min-width:140px;width:auto"><button class="btn g sm" id="mXls" type="button">Excel</button><button class="btn" id="mNew" type="button">Nuevo movimiento</button></div>
+  <div id="mL"></div>
+ </section>
+ <section id="p-cue" class="hidden">
+  <div class="seg2" id="cSg"><button data-t="cobrar" class="on">Por cobrar</button><button data-t="pagar">Por pagar</button></div>
+  <div class="kp" id="cK" style="grid-template-columns:repeat(2,1fr)"></div>
+  <div class="ctl"><span class="grow"></span><button class="btn" id="cNew" type="button">Nueva cuenta</button></div>
+  <div id="cL"></div>
+ </section>
+ <section id="p-inf" class="hidden">
+  <div class="ctl"><div class="grow">Periodo: <b id="iP"></b></div><button class="btn" id="iDoc" type="button">Imprimir / PDF</button></div>
+  <div class="pgrid c2"><div class="pan"><h3>Estado de resultados</h3><div id="iE"></div></div><div><div class="pan" style="margin-bottom:12px"><h3>Balance general (a hoy)</h3><div id="iB"></div></div><div class="pan"><h3>Indicadores</h3><div id="iI"></div></div></div></div>
+  <p class="hint" style="margin-top:10px">Informe de gestión: usa las ventas completadas y los movimientos que registras aquí. El efectivo y bancos sale del último saldo que anotes en la pestaña Banco.</p>
+ </section>
+ <section id="p-ban" class="hidden">
+  <div class="kp" id="bK" style="grid-template-columns:repeat(3,1fr)"></div>
+  <div class="pan" style="margin-bottom:12px"><h3>Saldo según tu banco</h3><div class="fl"><div><label for="bFec">Fecha</label><input id="bFec" type="date"></div><div><label for="bSal">Saldo ($)</label><input id="bSal" type="number" step="0.01" inputmode="decimal"></div><div class="full"><button class="btn" id="bSave" type="button">Guardar saldo</button></div></div></div>
+  <p class="hint">Marca los movimientos que ya aparecen en tu estado de cuenta del banco.</p><div id="bL"></div>
+ </section>
+ <section id="p-prov" class="hidden">
+  <div class="ctl"><span class="grow"></span><button class="btn" id="pNew" type="button">Nuevo proveedor</button></div><div id="pL"></div>
+ </section>
+</main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/finanzas.js"></script>
+</body></html>
