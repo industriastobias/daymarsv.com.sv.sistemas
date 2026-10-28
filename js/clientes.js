@@ -33,6 +33,8 @@ function filtrados(){
  const st=c=>S.stats[c.id];
  if(S.orden==="gasto")L=L.slice().sort((a,b)=>st(b).t-st(a).t);else if(S.orden==="deuda")L=L.filter(c=>st(c).deuda>0).sort((a,b)=>st(b).deuda-st(a).deuda);else if(S.orden==="reciente")L=L.slice().sort((a,b)=>(st(b).u||"").localeCompare(st(a).u||""));
  return L}
+const waUrl=(c,s)=>{let t=String(c.telefono||"").replace(/\D/g,"");if(t.length===8)t="503"+t;if(t.length<8)return "";
+ const m=`Hola ${c.nombre}, te escribimos de DAYMAR-SHOP.`+(s&&s.deuda>0?` Tienes un saldo pendiente de ${$$(s.deuda)}.`:"");return "https://wa.me/"+t+"?text="+encodeURIComponent(m)};
 function pintar(){
  const act=S.C.filter(c=>S.stats[c.id].n>0).length,tot=S.C.reduce((s,c)=>s+S.stats[c.id].t,0),deu=S.C.reduce((s,c)=>s+S.stats[c.id].deuda,0);
  $("cK").innerHTML=`<div><span>Clientes</span><b>${S.C.length}</b></div><div><span>Con compras</span><b>${act}</b></div><div><span>Vendido a clientes</span><b>${$$(tot)}</b></div><div><span>Por cobrar</span><b class="${deu>0?"neg":""}">${$$(deu)}</b><small>${S.C.filter(c=>S.stats[c.id].deuda>0).length} cliente(s)</small></div>`;
@@ -40,7 +42,7 @@ function pintar(){
  const L=filtrados();
  $("cL").innerHTML=L.length?L.slice(0,400).map(c=>{const s=S.stats[c.id];
   return `<div class="rw" data-c="${c.id}" style="cursor:pointer"><div class="th ph">${esc(ini(c.nombre))}</div><div class="ti"><b>${esc(c.nombre)}</b><small>${esc([c.telefono,c.correo].filter(Boolean).join(" · ")||"Sin contacto")}</small></div>
-  <div class="am2"><b>${$$(s.t)}</b><br><small>${s.n} compra${s.n===1?"":"s"}${s.u?" · "+fdate(s.u):""}</small>${s.deuda>0?`<br><span class="bd or">Debe ${$$(s.deuda)}</span>`:""}</div></div>`}).join("")
+  ${waUrl(c,s)?`<a class="cwa" href="${waUrl(c,s)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${esc(c.nombre)}" title="Escribir por WhatsApp" style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#25d366;color:#fff;margin-right:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.6.1a6.7 6.7 0 01-3.3-2.9c-.2-.4.2-.4.6-1.2a.5.5 0 000-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.8 11.9 11.9 0 004.6 4c1.7.7 2.4.8 3.2.7a2.7 2.7 0 001.8-1.3 2.2 2.2 0 00.2-1.3c-.1-.1-.3-.2-.6-.3z"/></svg></a>`:""}<div class="am2"><b>${$$(s.t)}</b><br><small>${s.n} compra${s.n===1?"":"s"}${s.u?" · "+fdate(s.u):""}</small>${s.deuda>0?`<br><span class="bd or">Debe ${$$(s.deuda)}</span>`:""}</div></div>`}).join("")
   :`<div class="empty card">${S.C.length?"Ningún cliente coincide con la búsqueda.":"Aún no hay clientes. Toca “Nuevo cliente” para crear el primero."}</div>`}
 /* ---------- formulario ---------- */
 function form(c){
@@ -93,7 +95,7 @@ function nuevaCuenta(c){
 async function recargar(){const ok=await espera(async()=>{await cargar();return true},"Actualizando…");if(ok)pintar()}
 $("cQ").addEventListener("input",deb(pintar,150));
 $("cSg").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b){S.orden=b.dataset.o;pintar()}});
-$("cL").addEventListener("click",e=>{const r=e.target.closest("[data-c]");if(r)ficha(r.dataset.c)});
+$("cL").addEventListener("click",e=>{if(e.target.closest(".cwa"))return;const r=e.target.closest("[data-c]");if(r)ficha(r.dataset.c)});
 $("cNew").onclick=()=>form();
 $("cXls").onclick=()=>excel("clientes",[{n:"Clientes",c:[["Nombre",28],["Teléfono",16],["Correo",26],["DUI / NIT",18],["Dirección",34],["Compras",10],["Total comprado",16,"money"],["Última compra",14],["Notas",30]],f:S.C.map(c=>{const s=S.stats[c.id];return[c.nombre,c.telefono||"",c.correo||"",c.documento||"",c.direccion||"",s.n,s.t,s.u?s.u.slice(0,10):"",c.notas||""]})}]);
 await recargar();
