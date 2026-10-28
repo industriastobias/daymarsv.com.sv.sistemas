@@ -885,7 +885,7 @@ mm.addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)retur
  if(k==="refresh")refrescar();else if(k==="excel")excel();
  else if(k==="full"){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{})}
  else if(k==="keys")modal("Atajos de teclado",`<div class="sk"><span>Enfocar código de barras</span><kbd>Ctrl</kbd></div><div class="sk"><span>Cerrar ventana / cámara</span><kbd>Esc</kbd></div><div class="sk"><span>Lector USB</span><span>Activa "Lector USB" y escanea</span></div>`.replace("<kbd>Ctrl</kbd>","<kbd>Ctrl + B</kbd>"),{foot:""})
- else if(k==="theme")toggleTheme();else if(k==="out"){if(confirm("¿Cerrar sesión?"))logout()}});
+ else if(k==="theme")toggleTheme();else if(k==="out"){DAY.salir()}});
 
 /* Si vuelves a la página tras un rato (por ejemplo desde Compra), se actualizan los datos */
 document.addEventListener("visibilitychange",async()=>{

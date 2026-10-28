@@ -33,6 +33,25 @@ const GRUPOS=[
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 const visibles=(g,rol)=>g.m.filter(m=>!m.adm||rol==="admin");
 const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}" ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span></a>`;
+/* Ventanas propias (reemplazan los avisos feos del navegador) */
+function dlgCss(){if(document.getElementById("dayDlgCss"))return;const st=document.createElement("style");st.id="dayDlgCss";
+ st.textContent='dialog.dday{border:0;border-radius:16px;padding:0;width:min(420px,92vw);background:var(--card,#fff);color:var(--ink,#2a1a1f);box-shadow:0 20px 60px rgba(0,0,0,.35)}dialog.dday::backdrop{background:rgba(0,0,0,.55)}dialog.dday .dd-h{padding:18px 20px 2px;font:700 18px "Bricolage Grotesque",system-ui,sans-serif;margin:0}dialog.dday .dd-b{padding:6px 20px 12px;font:15px/1.5 "DM Sans",system-ui,sans-serif;white-space:pre-line}dialog.dday input{width:100%;box-sizing:border-box;margin-top:10px;padding:10px 12px;border:1px solid var(--line,#ddd);border-radius:10px;font:inherit;background:var(--card,#fff);color:inherit}dialog.dday .dd-f{display:flex;gap:8px;justify-content:flex-end;padding:8px 20px 18px;flex-wrap:wrap}dialog.dday button{min-height:42px;padding:8px 18px;border-radius:10px;font:700 14px "DM Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line,#ddd);background:none;color:var(--wine,#6B2D3E)}dialog.dday button.pr{background:var(--wine,#6B2D3E);border-color:var(--wine,#6B2D3E);color:#fff}dialog.dday button.dg{background:#B3261E;border-color:#B3261E;color:#fff}';
+ document.head.appendChild(st)}
+function dlg(titulo,texto,o){o=o||{};dlgCss();
+ return new Promise(res=>{const d=document.createElement("dialog");d.className="dday";
+  d.innerHTML=`<h2 class="dd-h">${esc(titulo)}</h2><div class="dd-b">${esc(texto)}${o.input?`<input type="text" value="${esc(o.def||"")}" autocomplete="off">`:""}</div><div class="dd-f">${o.aviso?"":'<button type="button" data-n>'+esc(o.no||"Cancelar")+'</button>'}<button type="button" class="${o.peligro?"dg":"pr"}" data-y>${esc(o.ok||"Aceptar")}</button></div>`;
+  document.body.appendChild(d);let hecho=false;
+  const fin=v=>{if(hecho)return;hecho=true;try{d.close()}catch(e){}d.remove();res(v)};
+  const inp=d.querySelector("input");
+  d.querySelector("[data-y]").onclick=()=>fin(o.input?inp.value:true);
+  const n=d.querySelector("[data-n]");if(n)n.onclick=()=>fin(o.input?null:false);
+  d.addEventListener("cancel",e=>{e.preventDefault();fin(o.aviso?true:o.input?null:false)});
+  if(inp)inp.addEventListener("keydown",e=>{if(e.key==="Enter")fin(inp.value)});
+  d.showModal();setTimeout(()=>(inp||d.querySelector("[data-y]")).focus(),40)})}
+const ask=(t,o)=>dlg((o&&o.titulo)||"Confirmar",t,o);
+const say=(t,o)=>dlg((o&&o.titulo)||"Aviso",t,Object.assign({aviso:true},o));
+const input=(t,def,o)=>dlg((o&&o.titulo)||"Escribe un valor",t,Object.assign({input:true,def:def},o));
+const salir=()=>ask("¿Quieres cerrar tu sesión?",{titulo:"Cerrar sesión",ok:"Cerrar sesión"}).then(o=>{if(o)logout()});
 /* Preferencias de este dispositivo (se guardan en el navegador) */
 const PREF=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const avatarHTML=(p,c)=>`<span class="av ${c||""}">${p&&p.avatar?`<img src="${esc(p.avatar)}" alt="">`:esc(((p&&p.nombre)||"?").trim().charAt(0).toUpperCase()||"?")}</span>`;
@@ -48,7 +67,7 @@ function pintarUsr(){const b=document.getElementById("cfg1");if(!b||!DAY.me)retu
 function mountSide(el,activo,rol){
  el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>-SHOP</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
   GRUPOS.map(g=>`<div class="sg">${g.t}</div>`+visibles(g,rol).map(m=>enlace(m,"",activo)).join("")).join("")+`</nav><div class="usr"><button type="button" class="ub" id="cfg1" aria-label="Configuración"></button></div><button class="lo" id="lo1">Cerrar sesión</button>`;
- el.querySelector("#lo1").onclick=()=>{if(confirm("¿Cerrar sesión?"))logout()};
+ el.querySelector("#lo1").onclick=salir;
  el.querySelector("#cfg1").onclick=abrirConfig;
  el.querySelector("#hb1").onclick=()=>{PREF("dms_nosd","1");aplicarPrefs()};
  el.addEventListener("click",e=>{const a=e.target.closest("[data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
@@ -82,7 +101,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  let dr=null;cv.addEventListener("pointerdown",e=>{dr=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
  cv.addEventListener("pointermove",e=>{if(!dr||!im)return;const k=240/cv.clientWidth;ox+=(e.clientX-dr[0])*k;oy+=(e.clientY-dr[1])*k;dr=[e.clientX,e.clientY];dibujar()});
  ["pointerup","pointercancel"].forEach(n=>cv.addEventListener(n,()=>{dr=null}));
- q("#cfOut").onclick=()=>{if(confirm("¿Cerrar sesión?"))logout()};
+ q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
   const t=q("#cfT").value;try{if(t==="auto")localStorage.removeItem("dms_th");else localStorage.setItem("dms_th",t)}catch(e){}
@@ -102,5 +121,5 @@ async function requireSession(){
  const r=await db.from("profiles").select("*").eq("id",data.session.user.id).single();
  if(r.error||!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
  DAY.me=r.data;DAY.email=data.session.user.email;return r.data}
-window.DAY={db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+window.DAY={db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 })();

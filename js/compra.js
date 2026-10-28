@@ -111,8 +111,8 @@ async function subirImagenes(id,list,reemplazar){
  if(rows.length){await ok(db.from("producto_imagenes").insert(rows));await ok(db.from("productos").update({foto_url:rows[0].thumb_url}).eq("id",id))}}
 
 /* guardar producto */
-function validar(it){if(it.precio_costo&&it.precio_venta&&it.precio_costo>it.precio_venta&&!confirm("⚠️ El costo es mayor que el precio de venta. ¿Continuar?"))return false;
- if(it.fecha_compra>hoy){alert("La fecha de compra no puede ser futura.");return false}return true}
+async function validar(it){if(it.precio_costo&&it.precio_venta&&it.precio_costo>it.precio_venta&&!await DAY.ask("⚠️ El costo es mayor que el precio de venta. ¿Continuar?"))return false;
+ if(it.fecha_compra>hoy){await DAY.say("La fecha de compra no puede ser futura.");return false}return true}
 $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
  const lq=esLote?Math.max(0,Math.trunc(num($("lotQuantity").value))):0,upl=esLote?Math.max(0,Math.trunc(num($("unitsPerLot").value))):0,uq=Math.max(0,Math.trunc(num($("quantity").value)));
  const stock=esLote&&!edit?lq*upl:uq;
@@ -122,8 +122,8 @@ $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
   precio_venta:num($("price").value),precio_costo:num($("valorReal").value),fecha_compra:$("fechaCompra").value,descuento_pct:num($("discount").value),cantidad:stock,
   tipo_compra:esLote?"lote":"normal",lotes:lq,unidades_por_lote:upl,descripcion:$("description").value.trim()};
  if(!$("category").value)return toast("Elige una categoría");
- if(!validar(it))return;
- const otro=inv.concat(trash).find(p=>p.codigo_barras&&p.codigo_barras===it.codigo_barras&&p.id!==edit);if(otro){alert(`Ese código de barras ya lo tiene “${otro.nombre}”.`);return}
+ if(!await validar(it))return;
+ const otro=inv.concat(trash).find(p=>p.codigo_barras&&p.codigo_barras===it.codigo_barras&&p.id!==edit);if(otro){await DAY.say(`Ese código de barras ya lo tiene “${otro.nombre}”.`);return}
  $("bSave").disabled=true;busy(true,"Guardando en el sistema…");
  try{
   let id;
@@ -131,8 +131,8 @@ $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
    await ok(db.from("productos").update({nombre:it.nombre,codigo_barras:it.codigo_barras||null,categoria_id:$("category").value,precio_venta:it.precio_venta,precio_costo:it.precio_costo,fecha_compra:it.fecha_compra||null,descuento_pct:it.descuento_pct,descripcion:it.descripcion,tipo_compra:it.tipo_compra,lotes:lq,unidades_por_lote:upl}).eq("id",edit));
    const d=stock-prev.stock;if(d!==0)await ok(db.rpc("registrar_movimiento",{p_producto:edit,p_tipo:d>0?"entrada":"salida",p_cantidad:Math.abs(d),p_nota:"Ajuste al editar"}))}
   else{const ex=inv.find(p=>p.codigo===it.codigo);
-   if(trash.some(p=>p.codigo===it.codigo)){alert("Ese código está en la papelera. Restáuralo o elimínalo definitivamente.");busy(false);$("bSave").disabled=false;return}
-   if(ex){if(confirm("Ese código ya existe. ¿Quieres sumar este stock al producto existente?"))it.sumar=true;else it.codigo=it.codigo+"_"+Date.now().toString().slice(-4)}
+   if(trash.some(p=>p.codigo===it.codigo)){await DAY.say("Ese código está en la papelera. Restáuralo o elimínalo definitivamente.");busy(false);$("bSave").disabled=false;return}
+   if(ex){if(await DAY.ask("Ese código ya existe. ¿Quieres sumar este stock al producto existente?"))it.sumar=true;else it.codigo=it.codigo+"_"+Date.now().toString().slice(-4)}
    const r=await ok(db.rpc("registrar_compra",{p_items:[it]}));id=r[0].id}
   if(imgsTemp.length)await subirImagenes(id,imgsTemp,true);
   await refresh();resetForm(true);beep();toast("Producto guardado")
@@ -158,12 +158,12 @@ async function startEdit(id){const p=inv.find(x=>x.id===id);if(!p)return;
  try{const im=await ok(db.from("producto_imagenes").select("thumb_url,url,orden").eq("producto_id",id).order("orden"));if(edit===id)renderPrevs(im.map(i=>i.thumb_url||i.url))}catch(e){}}
 
 /* ---------- categorías ---------- */
-$("bNewCat").onclick=async()=>{const n=(prompt("Nombre de la nueva categoría:")||"").trim();if(!n)return;
- if(cats.some(c=>c.nombre.toLowerCase()===n.toLowerCase())){alert("Esa categoría ya existe");return}
+$("bNewCat").onclick=async()=>{const n=(await DAY.input("Nombre de la nueva categoría:")||"").trim();if(!n)return;
+ if(cats.some(c=>c.nombre.toLowerCase()===n.toLowerCase())){await DAY.say("Esa categoría ya existe");return}
  try{const c=await ok(db.from("categorias").insert({nombre:n}).select().single());cats.push(c);cats.sort((a,b)=>a.nombre.localeCompare(b.nombre));renderCats();$("category").value=c.id;toast(`Categoría “${n}” creada`)}catch(x){}};
 
 /* ---------- papelera ---------- */
-async function toTrash(id){const p=inv.find(x=>x.id===id);if(!p||!confirm(`¿Enviar “${p.nombre}” a la papelera?`))return;
+async function toTrash(id){const p=inv.find(x=>x.id===id);if(!p||!await DAY.ask(`¿Enviar “${p.nombre}” a la papelera?`))return;
  try{await ok(db.from("productos").update({activo:false,eliminado_en:new Date().toISOString()}).eq("id",id));await refresh();toast("Producto enviado a la papelera")}catch(x){}}
 function renderTrash(){$("trashCount").textContent=trash.length+" items";
  $("trashBody").innerHTML=trash.length?trash.map(p=>{const d=Math.ceil(DIAS-(Date.now()-new Date(p.eliminado_en))/864e5);
@@ -172,8 +172,8 @@ async function borrarDef(p){const r=await ok(db.rpc("eliminar_producto_definitiv
  if(r==="borrado"){const im=await db.from("producto_imagenes").select("path,thumb_path").eq("producto_id",p.id);const paths=(im.data||[]).flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await db.storage.from(BUCKET).remove(paths)}return r}
 $("trashBody").onclick=async e=>{const b=e.target.closest("button");if(!b)return;const p=trash.find(x=>x.id===b.dataset.i);if(!p)return;
  try{if(b.dataset.a==="r"){await ok(db.from("productos").update({activo:true,eliminado_en:null}).eq("id",p.id));await refresh();renderTrash();toast("Producto restaurado")}
-  else if(confirm("¿Eliminar para siempre?")){const r=await borrarDef(p);await refresh();renderTrash();toast(r==="oculto"?"Tiene ventas registradas: se oculta para conservar el historial":"Eliminado para siempre")}}catch(x){}};
-$("bTrashAll").onclick=async()=>{if(!trash.length||!confirm("¿Vaciar la papelera? No se puede deshacer."))return;busy(true,"Vaciando papelera…");
+  else if(await DAY.ask("¿Eliminar para siempre?")){const r=await borrarDef(p);await refresh();renderTrash();toast(r==="oculto"?"Tiene ventas registradas: se oculta para conservar el historial":"Eliminado para siempre")}}catch(x){}};
+$("bTrashAll").onclick=async()=>{if(!trash.length||!await DAY.ask("¿Vaciar la papelera? No se puede deshacer."))return;busy(true,"Vaciando papelera…");
  try{for(const p of trash.slice())await borrarDef(p);await refresh();renderTrash();toast("Papelera vaciada")}catch(x){}busy(false)};
 async function limpiarVieja(){const v=trash.filter(p=>Date.now()-new Date(p.eliminado_en)>DIAS*864e5);if(!v.length)return;try{for(const p of v)await borrarDef(p);await load();renderCats()}catch(x){}}
 
@@ -190,7 +190,7 @@ $("passStock0").addEventListener("keydown",e=>{if(e.key==="Enter")$("bStock0Go")
 
 /* ---------- regenerar códigos ---------- */
 $("lenBtns").onclick=e=>{const b=e.target.closest("button");if(!b)return;regenMode=b.dataset.l;document.querySelectorAll("#lenBtns button").forEach(x=>x.classList.toggle("on",x===b))};
-$("bRegenGo").onclick=async()=>{if(!inv.length)return toast("No hay productos");if(!confirm(`¿Regenerar TODOS los códigos de barras? Se actualizarán ${inv.length} productos.`))return;
+$("bRegenGo").onclick=async()=>{if(!inv.length)return toast("No hay productos");if(!await DAY.ask(`¿Regenerar TODOS los códigos de barras? Se actualizarán ${inv.length} productos.`))return;
  $("dgRegen").close();busy(true,"Regenerando códigos…");try{await ok(db.rpc("regenerar_codigos_barras",{p_longitud:regenMode==="mixed"?null:+regenMode}));await refresh();toast("Códigos regenerados")}catch(x){}busy(false)};
 
 /* ---------- detalle ---------- */
@@ -211,9 +211,9 @@ function lotBadge(){const b=$("fabBadge");b.classList.toggle("hidden",!loteTemp.
 $("bBulk").onclick=async()=>{$("pendAlert").classList.toggle("on",!!loteTemp.length);if(loteTemp.length)$("pendText").textContent=`Lote pendiente (${loteTemp.length} productos)`;openDlg("dgBulk")};
 $("bPick").onclick=()=>$("loteFiles").click();
 $("loteFiles").onchange=()=>{const n=$("loteFiles").files.length;$("loteFileCount").textContent=n?`${n} imagen(es) seleccionada(s)`:"Ninguna imagen seleccionada"};
-$("bProc").onclick=async()=>{if(loteTemp.length&&!confirm("¿Reemplazar el lote actual?"))return;
- const files=[...$("loteFiles").files];if(!files.length)return alert("Selecciona imágenes");if(files.length>130)return alert("Máximo 130 imágenes");
- const pre=($("lotePrefix").value.trim()||"KLO").toUpperCase();if(pre.length>6)return alert("El prefijo admite máximo 6 caracteres");
+$("bProc").onclick=async()=>{if(loteTemp.length&&!await DAY.ask("¿Reemplazar el lote actual?"))return;
+ const files=[...$("loteFiles").files];if(!files.length)return await DAY.say("Selecciona imágenes");if(files.length>130)return await DAY.say("Máximo 130 imágenes");
+ const pre=($("lotePrefix").value.trim()||"KLO").toUpperCase();if(pre.length>6)return await DAY.say("El prefijo admite máximo 6 caracteres");
  loteTemp=[];const pv=$("lotePreview");pv.innerHTML="";$("loteStatus").textContent="Procesando…";busy(true,"Procesando imágenes…");
  const usados=[];
  for(let i=0;i<files.length;i++){try{let code=shortCode(pre,i);while(!codeLibre(code)||loteTemp.some(x=>x.code===code))code=shortCode(pre,i);
@@ -221,7 +221,7 @@ $("bProc").onclick=async()=>{if(loteTemp.length&&!confirm("¿Reemplazar el lote 
    const d=document.createElement("div");d.innerHTML=`<img src="${u}" alt=""><div>${esc(code)}</div><div>BC ${esc(bc)}</div>`;pv.appendChild(d);
    loteTemp.push({code,barcode:bc,main:im.main,thumb:im.thumb});$("ovText").textContent=`Procesando imágenes… ${i+1}/${files.length}`}catch(e){console.error(e)}}
  busy(false);$("loteStatus").textContent=`${loteTemp.length} productos listos`;await localforage.removeItem(LKEY);showEditor()};
-function vaciarLote(){if(!confirm("¿Cancelar el lote?"))return;loteTemp=[];localforage.removeItem(LKEY);$("lotePreview").innerHTML="";$("loteStatus").textContent="";$("loteFiles").value="";$("loteFileCount").textContent="Ninguna imagen seleccionada";if($("dgLote").open)$("dgLote").close();$("pendAlert").classList.remove("on");lotBadge()}
+async function vaciarLote(){if(!await DAY.ask("¿Cancelar el lote?"))return;loteTemp=[];localforage.removeItem(LKEY);$("lotePreview").innerHTML="";$("loteStatus").textContent="";$("loteFiles").value="";$("loteFileCount").textContent="Ninguna imagen seleccionada";if($("dgLote").open)$("dgLote").close();$("pendAlert").classList.remove("on");lotBadge()}
 $("bVaciaLote").onclick=vaciarLote;
 const catOpts=`<option value="">Seleccionar…</option>`;
 function showEditor(prev){const g=$("editLoteGrid");loteUrls.forEach(u=>URL.revokeObjectURL(u));loteUrls=[];
@@ -252,15 +252,15 @@ async function pausarYVolver(){await pausar();$("dgLote").close();$("pendText").
 $("bLotePause").onclick=pausarYVolver;
 $("dgLote").addEventListener("cancel",e=>{e.preventDefault();pausarYVolver()});
 $("bPendGo").onclick=async()=>{const s=await localforage.getItem(LKEY);if(s){loteTemp=s.items||[];showEditor(s.datos)}};
-$("bPendDel").onclick=()=>{if(!confirm("¿Descartar el lote pendiente?"))return;loteTemp=[];localforage.removeItem(LKEY);$("pendAlert").classList.remove("on");$("lotePreview").innerHTML="";$("loteStatus").textContent="";$("loteFiles").value="";lotBadge()};
-$("bLoteSave").onclick=async()=>{if(!confirm(`¿Guardar ${loteTemp.length} productos?`))return;
+$("bPendDel").onclick=async ()=>{if(!await DAY.ask("¿Descartar el lote pendiente?"))return;loteTemp=[];localforage.removeItem(LKEY);$("pendAlert").classList.remove("on");$("lotePreview").innerHTML="";$("loteStatus").textContent="";$("loteFiles").value="";lotBadge()};
+$("bLoteSave").onclick=async()=>{if(!await DAY.ask(`¿Guardar ${loteTemp.length} productos?`))return;
  const D=datosEditor();
  for(let i=0;i<D.length;i++){const d=D[i],q=Math.trunc(num(d.quantity)),pr=num(d.price),co=num(d.valorReal);
-  if(!d.name.trim()||!d.barcode.trim()||pr<=0||q<1||!d.fechaCompra||!d.description.trim()||!d.category){alert(`Completa nombre, precio, stock, código de barras, fecha, descripción y categoría del producto ${i+1}.`);return}
-  if(co>pr&&!confirm(`Producto ${i+1}: el costo es mayor que el precio. ¿Continuar?`))return;
-  if(d.fechaCompra>hoy){alert(`Producto ${i+1}: la fecha no puede ser futura.`);return}
-  if(D.findIndex(x=>x.barcode.trim()===d.barcode.trim())!==i){alert(`El código de barras del producto ${i+1} está repetido en el lote.`);return}
-  const o=[...inv,...trash].find(p=>p.codigo_barras===d.barcode.trim());if(o){alert(`El código de barras del producto ${i+1} ya lo tiene “${o.nombre}”.`);return}}
+  if(!d.name.trim()||!d.barcode.trim()||pr<=0||q<1||!d.fechaCompra||!d.description.trim()||!d.category){await DAY.say(`Completa nombre, precio, stock, código de barras, fecha, descripción y categoría del producto ${i+1}.`);return}
+  if(co>pr&&!await DAY.ask(`Producto ${i+1}: el costo es mayor que el precio. ¿Continuar?`))return;
+  if(d.fechaCompra>hoy){await DAY.say(`Producto ${i+1}: la fecha no puede ser futura.`);return}
+  if(D.findIndex(x=>x.barcode.trim()===d.barcode.trim())!==i){await DAY.say(`El código de barras del producto ${i+1} está repetido en el lote.`);return}
+  const o=[...inv,...trash].find(p=>p.codigo_barras===d.barcode.trim());if(o){await DAY.say(`El código de barras del producto ${i+1} ya lo tiene “${o.nombre}”.`);return}}
  busy(true,"Guardando lote…");
  try{const items=D.map((d,i)=>({codigo:loteTemp[i].code,nombre:d.name.trim(),codigo_barras:d.barcode.trim(),categoria:d.category,precio_venta:num(d.price),precio_costo:num(d.valorReal),fecha_compra:d.fechaCompra,descuento_pct:0,cantidad:Math.trunc(num(d.quantity)),tipo_compra:"normal",lotes:0,unidades_por_lote:0,descripcion:d.description.trim()}));
   const ids=[];for(let k=0;k<items.length;k+=100){const r=await ok(db.rpc("registrar_compra",{p_items:items.slice(k,k+100)}));ids.push(...r)}
@@ -356,9 +356,9 @@ function parsearFila(band, ignorar) {
 
 $("bImpPdf").onclick=()=>$("pdfFile").click();
 $("pdfFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.value="";if(!file)return;
- if(loteTemp.length&&!confirm("¿Reemplazar el lote actual?"))return;
- const extra=parseFloat(prompt("Costo extra TOTAL (envío + cargos) en USD para repartir entre los productos. Pon 0 si el PDF ya trae el costo real:","0"))||0;
- const omitir=(prompt("Códigos a OMITIR (separados por coma), por ejemplo empaque o cajas. Deja vacío si ninguno:","")||"").split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);
+ if(loteTemp.length&&!await DAY.ask("¿Reemplazar el lote actual?"))return;
+ const extra=parseFloat(await DAY.input("Costo extra TOTAL (envío + cargos) en USD para repartir entre los productos. Pon 0 si el PDF ya trae el costo real:","0"))||0;
+ const omitir=(await DAY.input("Códigos a OMITIR (separados por coma), por ejemplo empaque o cajas. Deja vacío si ninguno:","")||"").split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);
  busy(true,"Leyendo el PDF…");
  try{await cargarPdfJs();const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise,bandas=[];
   for(let p=1;p<=pdf.numPages;p++){const page=await pdf.getPage(p),vp=page.getViewport({scale:3}),canvas=document.createElement("canvas");canvas.width=vp.width;canvas.height=vp.height;
@@ -417,7 +417,7 @@ $("bLabels").onclick=()=>{if(!inv.length)return toast("No hay productos");const 
  a.innerHTML=inv.map((p,i)=>`<div class="label"><div style="font-weight:bold;margin-bottom:5px">${esc(p.nombre)}</div><div class="price">${$$(p.precio_venta)}</div><svg id="lb${i}"></svg><div class="code">${esc(p.codigo)}</div></div>`).join("");
  inv.forEach((p,i)=>{if(p.codigo_barras)drawBarcode($("lb"+i),p.codigo_barras,{width:2,height:40,margin:2})});
  document.body.classList.add("print-labels");const fin=()=>{document.body.classList.remove("print-labels");removeEventListener("afterprint",fin)};addEventListener("afterprint",fin,{once:true});print();setTimeout(fin,1500)};
-$("bVaciaInv").onclick=async()=>{if(!inv.length)return;if(!confirm(`¿Enviar TODO el inventario (${inv.length} productos) a la papelera?`)||!confirm("Última confirmación: podrás restaurarlos desde la papelera durante 30 días."))return;
+$("bVaciaInv").onclick=async()=>{if(!inv.length)return;if(!await DAY.ask(`¿Enviar TODO el inventario (${inv.length} productos) a la papelera?`)||!await DAY.ask("Última confirmación: podrás restaurarlos desde la papelera durante 30 días."))return;
  busy(true,"Enviando a la papelera…");try{await ok(db.from("productos").update({activo:false,eliminado_en:new Date().toISOString()}).eq("activo",true));$("dgBulk").close();await refresh();toast("Inventario enviado a la papelera")}catch(x){}busy(false)};
 
 /* ---------- borrador automático ---------- */
@@ -439,7 +439,7 @@ $("seg").onclick=e=>{const b=e.target.closest("button");if(b)setPane(b.dataset.p
 const mm=$("mMore");$("bMore").onclick=e=>{e.stopPropagation();const on=mm.classList.toggle("on");$("bMore").setAttribute("aria-expanded",on)};
 document.addEventListener("click",()=>{mm.classList.remove("on");$("bMore").setAttribute("aria-expanded","false")});
 mm.onclick=e=>{const b=e.target.closest("button");if(!b)return;const m=b.dataset.m;
- if(m==="trash"){renderTrash();openDlg("dgTrash")}else if(m==="stock0")openStock0();else if(m==="keys")openDlg("dgKeys");else if(m==="regen")openDlg("dgRegen");else if(m==="theme")toggleTheme();else if(m==="out"&&confirm("¿Cerrar sesión?"))logout()};
+ if(m==="trash"){renderTrash();openDlg("dgTrash")}else if(m==="stock0")openStock0();else if(m==="keys")openDlg("dgKeys");else if(m==="regen")openDlg("dgRegen");else if(m==="theme")toggleTheme();else if(m==="out")DAY.salir()};
 document.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey))return;const k=e.key.toLowerCase();
  if(k==="n"){e.preventDefault();resetForm();setPane("f");$("name").focus();toast("Nuevo producto")}
  else if(k==="b"){e.preventDefault();setPane("i");$("searchBox").focus()}
