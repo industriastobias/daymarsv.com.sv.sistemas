@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Catálogo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css?v=202610281429">
+<link rel="stylesheet" href="css/compra.css?v=202610281429">
+<link rel="stylesheet" href="css/almacen.css?v=202610281429">
+<link rel="stylesheet" href="css/catalogo.css?v=202610281429"><link rel="stylesheet" href="css/paginas.css?v=202610281429"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Catálogo</h1><small>Productos con foto, precio y código · descarga en PDF, Excel o Wix</small></div>
+  <div class="hact"><button class="btn" id="kDes" type="button">Descargar</button></div>
+ </div>
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+ <div class="kp" id="kK" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))"></div>
+ <div class="fl" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+  <div class="full"><label for="kQ">Buscar</label><input id="kQ" type="search" placeholder="Nombre, código o código de barras" autocomplete="off"></div>
+  <div><label for="kC">Categoría</label><select id="kC"><option value="">Todas</option></select></div>
+  <div><label for="kO">Ordenar por</label><select id="kO"><option value="cat">Categoría</option><option value="nombre">Nombre A–Z</option><option value="menor">Precio menor</option><option value="mayor">Precio mayor</option><option value="nuevo">Más nuevos</option></select></div>
+  <div><label for="kS">Mostrar</label><select id="kS"><option value="">Todos</option><option value="con">Solo con stock</option><option value="sin">Agotados</option><option value="foto">Con foto</option><option value="nofoto">Sin foto</option></select></div>
+ </div>
+ <label class="kbc"><input type="checkbox" id="kB"> Mostrar códigos de barras</label>
+ <div id="kL" class="kg"></div>
+ <div class="ctl"><span class="grow"></span><button class="btn g hidden" id="kMas" type="button">Ver más</button><span class="grow"></span></div>
+ </main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="js/app.js?v=202610281429"></script>
+<script src="js/comun.js?v=202610281429"></script>
+<script src="js/catalogo.js?v=202610281429"></script>
+</body></html>
