@@ -467,9 +467,10 @@ const dayRange=(a,b)=>{const [y1,m1,d1]=a.split("-").map(Number),[y2,m2,d2]=b.sp
 async function ventasRango(desde,hasta){
  return fetchAll(()=>{let q=db.from("ventas").select(`*,profiles(nombre),venta_items(${SEL_ITEMS})`).eq("estado","completada").order("created_at",{ascending:false});
   if(desde&&hasta){const r=dayRange(desde,hasta);q=q.gte("created_at",r[0]).lt("created_at",r[1])}return q})}
-const filaVenta=v=>`<div class="sv"><div class="th">${(v.venta_items||[]).slice(0,3).map(i=>itImg(i)?`<img src="${esc(itImg(i))}" alt="" loading="lazy">`:`<div class="ph">${inicial(itName(i))}</div>`).join("")}</div>
- <div class="ti"><b>${resumenItems(v)}</b><small>${fdate(v.created_at)} ${ftime(v.created_at)}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}${v.profiles?" · Vendió: "+esc(v.profiles.nombre):""}</small><br>${tipoBd(v.tipo)} ${pagoBd(v.metodo_pago)}</div>
- <div class="am2"><b>${$$(v.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<button class="btn g sm" data-an="${v.id}" style="color:var(--bad)">Anular</button><a class="btn g sm" href="devoluciones.html#v=${v.id}">Devolver</a><button class="btn g sm" data-el="${v.id}" style="color:var(--bad)">Eliminar</button>`:""}</div></div></div>`;
+const filaVenta=v=>`<div class="sv2"><div class="sv2h"><div class="th">${(v.venta_items||[]).slice(0,3).map(i=>itImg(i)?`<img src="${esc(itImg(i))}" alt="" loading="lazy">`:`<div class="ph">${inicial(itName(i))}</div>`).join("")}</div>
+ <div class="sv2t"><b>${resumenItems(v)}</b><small>${fdate(v.created_at)} · ${ftime(v.created_at)}</small></div><b class="sv2p">${$$(v.total)}</b></div>
+ <div class="sv2m">${tipoBd(v.tipo)} ${pagoBd(v.metodo_pago)}${v.cliente_nombre?`<span class="sv2c">👤 ${esc(v.cliente_nombre)}</span>`:""}${v.profiles?`<span class="sv2c">Vendió: ${esc(v.profiles.nombre)}</span>`:""}</div>
+ <div class="sv2a"><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<a class="btn g sm" href="devoluciones.html#v=${v.id}">Devolver</a><button class="btn g sm dn" data-an="${v.id}">Anular</button><button class="btn g sm dn" data-el="${v.id}">Eliminar</button>`:""}</div></div>`;
 async function anular(id,after){
  if(!soloAdmin())return;if(!await pedirClave("Vas a anular esta venta."))return;
  const v=[...S.ventas,...S.pend].find(x=>x.id===id);
