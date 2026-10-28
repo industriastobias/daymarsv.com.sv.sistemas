@@ -1,0 +1,16 @@
+/* Reservas */
+.rs{display:grid;grid-template-columns:64px 1fr;gap:6px 12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card);margin:0 0 10px}
+.rs .im{width:64px;height:64px;border-radius:12px;object-fit:cover;cursor:zoom-in;background:var(--bg)}.rs .ph0{display:grid;place-items:center;font:700 22px "Bricolage Grotesque",sans-serif;color:#fff;background:linear-gradient(135deg,var(--wine),var(--gold));cursor:default}
+.rs .rtp{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;min-width:0}.rs .rnm{min-width:0}.rs .rnm b{display:block}.rs .rnm small{display:block;color:var(--mute);margin-top:1px}
+.rs .rtg{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.rs .tag{font-size:11px;padding:2px 8px;border-radius:99px;background:rgba(107,45,62,.1);color:var(--wine)}
+.rs .rmt{text-align:right;flex:none}.rs .rmt b{font-size:17px;display:block}.rs .rmt small{color:var(--mute)}
+.rs .rpr{grid-column:1/-1}.rs .bar2{height:8px;border-radius:99px;background:var(--bg);overflow:hidden;border:1px solid var(--line)}.rs .bar2 i{display:block;height:100%;background:linear-gradient(90deg,var(--wine),var(--gold));border-radius:99px}
+.rs .rpl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mute);margin-top:4px;gap:8px;flex-wrap:wrap}.rs .rpl b{color:var(--ink)}
+.rs .ac2{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}.rs .ac2 .btn{min-height:36px;padding:4px 12px;font-size:13px}
+.rs.ok{border-left:4px solid var(--ok,#2f8f5b)}.rs.pe{border-left:4px solid var(--gold)}
+.rs .rnt{grid-column:1/-1;font-size:13px;color:var(--mute);background:var(--bg);padding:6px 10px;border-radius:8px}
+.hv{filter:blur(6px);user-select:none}
+.rimg{width:100%;max-height:60vh;object-fit:contain;border-radius:10px}
+.rup{border:2px dashed var(--line);border-radius:12px;padding:12px;text-align:center;cursor:pointer;color:var(--mute);position:relative}.rup img{max-width:100%;max-height:160px;border-radius:8px;display:block;margin:0 auto 6px}
+.rcalc{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:var(--bg);margin-top:8px}.rcalc b{font-size:18px}
+@media(min-width:700px){.rs{grid-template-columns:72px 1fr}.rs .im{width:72px;height:72px}}

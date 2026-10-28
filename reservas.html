@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Reservas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css?v=202610281400">
+<link rel="stylesheet" href="css/compra.css?v=202610281400">
+<link rel="stylesheet" href="css/almacen.css?v=202610281400">
+<link rel="stylesheet" href="css/reservas.css?v=202610281400"><link rel="stylesheet" href="css/paginas.css?v=202610281400"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Reservas</h1><small>Apartados de clientes y sus abonos</small></div>
+  <div class="hact"><button class="btn g" id="rEye" type="button" aria-pressed="false">Ocultar montos</button><button class="btn" id="rNew" type="button">Nueva reserva</button></div>
+ </div>
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+ <div class="kp" id="rK" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"></div>
+ <div class="seg2" id="rSg"><button data-e="" class="on">Todas</button><button data-e="pendiente">Pendientes</button><button data-e="completado">Completadas</button></div>
+ <div class="fl" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+  <div class="full"><label for="rQ">Buscar</label><input id="rQ" type="search" placeholder="Cliente, teléfono, producto o nota" autocomplete="off"></div>
+  <div><label for="rC">Categoría</label><select id="rC"><option value="">Todas</option></select></div>
+  <div><label for="rD">Desde</label><input id="rD" type="date"></div>
+  <div><label for="rH">Hasta</label><input id="rH" type="date"></div>
+  <div><label for="rO">Ordenar por</label><select id="rO"><option value="reciente">Más recientes</option><option value="fecha">Fecha de la reserva</option><option value="saldo">Mayor saldo</option><option value="nombre">Cliente A–Z</option></select></div>
+ </div>
+ <div id="rL"></div>
+ <div class="ctl"><span class="grow"></span><button class="btn g hidden" id="rMas" type="button">Ver más</button><span class="grow"></span></div>
+</main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js?v=202610281400"></script>
+<script src="js/comun.js?v=202610281400"></script>
+<script src="js/reservas.js?v=202610281400"></script>
+</body></html>

@@ -28,7 +28,7 @@ const ICON={
  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 const GRUPOS=[
- {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"traslados.html"},{k:"reservas",n:"Reservas",i:"cal",h:"reservas.html"}]},
+ {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"traslados.html"},{k:"reservas",n:"Reservas",i:"cal",h:"reservas.html",ok:1}]},
  {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"fotos",n:"Fotos",i:"store",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"store",h:"gastos.html"}]},
  {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"usuarios",n:"Usuarios",i:"users",h:"usuarios.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"clock",h:"actividad.html",ok:1,adm:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
@@ -86,7 +86,7 @@ function mountSide(el,activo,rol){
  el.addEventListener("click",e=>{const a=e.target.closest("[data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
  pintarUsr();aplicarPrefs()}
 /* Ventana de configuración: nombre, foto, tema y opciones del menú */
-const TABLAS_RESPALDO=["productos","categorias","producto_imagenes","proveedores","clientes","ventas","venta_items","movimientos_stock","facturas","factura_items","devoluciones","devolucion_items","fin_movimientos","fin_cuentas","fin_banco","capital_movs","cierres_caja","promo_codigos","descuentos_programados","config_negocio","profiles","invitaciones","bitacora","accesos"];
+const TABLAS_RESPALDO=["productos","categorias","producto_imagenes","producto_variantes","reservas","proveedores","clientes","ventas","venta_items","movimientos_stock","facturas","factura_items","devoluciones","devolucion_items","fin_movimientos","fin_cuentas","fin_banco","capital_movs","cierres_caja","promo_codigos","descuentos_programados","config_negocio","profiles","invitaciones","bitacora","accesos"];
 async function respaldo(){
  if(!await ask("Se descargará un archivo ZIP con una copia de todos tus datos (productos, ventas, clientes, finanzas…). Contiene información del negocio y de tus clientes: guárdalo en un lugar seguro.",{titulo:"Descargar respaldo",ok:"Descargar"}))return;
  toast("Preparando respaldo… puede tardar un momento");
@@ -100,7 +100,7 @@ async function respaldo(){
   try{localStorage.setItem("dms_backup",fch)}catch(e){}toast("Respaldo descargado")}
  catch(e){await say("No se pudo crear el respaldo: "+e.message)}}
 async function vaciarDatos(){
- const OPC=[["productos","Productos e inventario","incluye fotos, descuentos y códigos promo; exige borrar también las ventas"],["ventas","Ventas, devoluciones, facturas y cierres de caja","la numeración vuelve a #1"],["clientes","Clientes",""],["proveedores","Proveedores",""],["finanzas","Finanzas","movimientos, cuentas por cobrar y pagar, banco y capital"],["historial","Historial de Actividad e inicios de sesión",""]];
+ const OPC=[["productos","Productos e inventario","incluye fotos, descuentos y códigos promo; exige borrar también las ventas"],["ventas","Ventas, devoluciones, facturas y cierres de caja","la numeración vuelve a #1"],["clientes","Clientes",""],["reservas","Reservas","apartados de clientes y sus abonos"],["proveedores","Proveedores",""],["finanzas","Finanzas","movimientos, cuentas por cobrar y pagar, banco y capital"],["historial","Historial de Actividad e inicios de sesión",""]];
  dlgCss();const d=document.createElement("dialog");d.className="dday";
  d.innerHTML=`<h2 class="dd-h" style="color:var(--bad)">Vaciar datos de prueba</h2><div class="dd-b"><p style="margin:0 0 8px">Marca lo que quieres <b>borrar para siempre</b>. No se puede deshacer. <b>No se borran</b> usuarios, invitaciones, categorías ni los datos de tu negocio.</p>
   ${OPC.map(o=>`<label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0;text-align:left"><input type="checkbox" data-k="${o[0]}" checked style="width:20px;height:20px;flex:none;margin-top:2px"><span><b>${o[1]}</b>${o[2]?`<br><small style="color:var(--mute)">${o[2]}</small>`:""}</span></label>`).join("")}
