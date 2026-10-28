@@ -998,16 +998,9 @@ const hid=LS("dms_hide")==="1";const setEye=h=>{$("totalAmount").classList.toggl
 $("bEye").onclick=()=>setEye(!$("totalAmount").classList.contains("hid"));
 
 /* ---------- modo kiosco: pantalla simple y grande para vender; salir pide la contraseña ---------- */
-function kiosco(on,quiet){document.body.classList.toggle("kiosco",on);LS("dms_kiosco",on?"1":"0");
- let x=$("kSal");if(on&&!x){x=document.createElement("button");x.id="kSal";x.type="button";x.className="btn g";x.textContent="Salir del kiosco";document.body.appendChild(x);
-  x.onclick=async()=>{if(await pedirClave("Para salir del modo kiosco.")){kiosco(false)}}}
- if(!on&&x)x.remove();
- if(on){S.view="cards";try{if(S.byId.size)pintarInv()}catch(e){}
-  if(S.tab&&S.tab!=="inv")try{tab("inv")}catch(e){}
-  if(!quiet&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}
- else if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
- if(!quiet)toast(on?"Modo kiosco activado":"Modo kiosco desactivado")}
-if(LS("dms_kiosco")==="1"){kiosco(true,true);S.view="cards"}
+function kiosco(on){DAY.kiosco(on)}
+document.addEventListener("kiosco",e=>{if(e.detail){S.view="cards";try{if(S.byId.size)pintarInv()}catch(x){}if(S.tab&&S.tab!=="inv")try{tab("inv")}catch(x){}}});
+if(LS("dms_kiosco")==="1")S.view="cards";
 const mm=$("mMore");$("bMore").onclick=e=>{e.stopPropagation();const on=mm.classList.toggle("on");$("bMore").setAttribute("aria-expanded",on)};
 document.addEventListener("click",()=>{mm.classList.remove("on");$("bMore").setAttribute("aria-expanded","false")});
 async function refrescar(){await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()]);filtrar(true);if(S.tab==="pend")pintarPend();if(S.tab==="hoy")await pintarHoy();if(S.tab==="ven")await pintarVentas()},"Actualizando…");toast("Datos actualizados")}

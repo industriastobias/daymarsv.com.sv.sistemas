@@ -40,7 +40,7 @@ function dlgCss(){if(document.getElementById("dayDlgCss"))return;const st=docume
  document.head.appendChild(st)}
 function dlg(titulo,texto,o){o=o||{};dlgCss();
  return new Promise(res=>{const d=document.createElement("dialog");d.className="dday";
-  d.innerHTML=`<h2 class="dd-h">${esc(titulo)}</h2><div class="dd-b">${esc(texto)}${o.input?`<input type="text" value="${esc(o.def||"")}" autocomplete="off">`:""}</div><div class="dd-f">${o.aviso?"":'<button type="button" data-n>'+esc(o.no||"Cancelar")+'</button>'}<button type="button" class="${o.peligro?"dg":"pr"}" data-y>${esc(o.ok||"Aceptar")}</button></div>`;
+  d.innerHTML=`<h2 class="dd-h">${esc(titulo)}</h2><div class="dd-b">${esc(texto)}${o.input?`<input type="${o.tipo||"text"}" value="${esc(o.def||"")}" autocomplete="${o.tipo==="password"?"current-password":"off"}">`:""}</div><div class="dd-f">${o.aviso?"":'<button type="button" data-n>'+esc(o.no||"Cancelar")+'</button>'}<button type="button" class="${o.peligro?"dg":"pr"}" data-y>${esc(o.ok||"Aceptar")}</button></div>`;
   document.body.appendChild(d);let hecho=false;
   const fin=v=>{if(hecho)return;hecho=true;try{d.close()}catch(e){}d.remove();res(v)};
   const inp=d.querySelector("input");
@@ -52,6 +52,17 @@ function dlg(titulo,texto,o){o=o||{};dlgCss();
 const ask=(t,o)=>dlg((o&&o.titulo)||"Confirmar",t,o);
 const say=(t,o)=>dlg((o&&o.titulo)||"Aviso",t,Object.assign({aviso:true},o));
 const input=(t,def,o)=>dlg((o&&o.titulo)||"Escribe un valor",t,Object.assign({input:true,def:def},o));
+/* Modo kiosco (todas las páginas): pantalla simple y grande para el mostrador; salir pide la contraseña */
+async function kiosco(on,quiet){
+ document.body.classList.toggle("kiosco",on);PREF("dms_kiosco",on?"1":"0");
+ let x=document.getElementById("kSal");
+ if(on&&!x){x=document.createElement("button");x.id="kSal";x.type="button";x.className="btn g";x.textContent="Salir del kiosco";document.body.appendChild(x);
+  x.onclick=async()=>{const p=await dlg("Salir del modo kiosco","Escribe tu contraseña para salir:",{input:true,tipo:"password",ok:"Salir"});if(p===null||p==="")return;
+   const r=await db.auth.signInWithPassword({email:DAY.email,password:p});if(r.error){toast("Contraseña incorrecta");return}kiosco(false)}}
+ if(!on&&x)x.remove();
+ try{if(on){if(!quiet&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
+ document.dispatchEvent(new CustomEvent("kiosco",{detail:on}));
+ if(!quiet)toast(on?"Modo kiosco activado":"Modo kiosco desactivado")}
 const salir=()=>ask("¿Quieres cerrar tu sesión?",{titulo:"Cerrar sesión",ok:"Cerrar sesión"}).then(o=>{if(o)logout()});
 /* Preferencias de este dispositivo (se guardan en el navegador) */
 const PREF=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
@@ -116,7 +127,7 @@ function abrirConfig(){
   <h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Acercar</label><input type="range" id="cfZ" min="1" max="4" step="0.02" value="1"><small class="cf-m">La foto llena todo el círculo. Arrastra para encuadrar tu cara y usa el control para acercar.</small></div>
   <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small>
   <h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select>
-  <h3>Menú</h3><label class="cf-c"><input type="checkbox" id="cfS"> Ocultar el menú lateral (computadora)</label><label class="cf-c"><input type="checkbox" id="cfB"> Ocultar el nombre DAYMAR-SHOP</label>
+  <h3>Menú</h3><label class="cf-c"><input type="checkbox" id="cfK"> Modo kiosco: pantalla simple y grande para vender (salir pide tu contraseña)</label><label class="cf-c"><input type="checkbox" id="cfS"> Ocultar el menú lateral (computadora)</label><label class="cf-c"><input type="checkbox" id="cfB"> Ocultar el nombre DAYMAR-SHOP</label>
   ${me.rol==="admin"?`<h3>Respaldo</h3><p class="cf-m" id="cfBkT" style="margin:0 0 8px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button>`:""}
   <div id="cfDz"></div>
   <h3>Cuenta</h3><p class="cf-m" style="margin:0">${esc(DAY.email||"")}</p><div class="err" id="cfE" role="alert"></div></div>
@@ -126,7 +137,7 @@ function abrirConfig(){
 let im=null,z=1,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=cv.height=240;cv.className="cfcv";cv.title="Arrastra para mover";
  const dibujar=()=>{const x=cv.getContext("2d"),sc=240/Math.min(im.width,im.height)*z,w=im.width*sc,h=im.height*sc,mx=(w-240)/2,my=(h-240)/2;ox=Math.max(-mx,Math.min(mx,ox));oy=Math.max(-my,Math.min(my,oy));x.fillStyle="#efe7e4";x.fillRect(0,0,240,240);x.drawImage(im,120-w/2+ox,120-h/2+oy,w,h)};
  const pAv=()=>{const a=q("#cfAv");if(im){if(cv.parentNode!==a){a.innerHTML="";a.appendChild(cv)}q("#cfZw").classList.remove("hidden")}else{a.innerHTML=avatarHTML({nombre:q("#cfN").value||me.nombre,avatar:foto},"big");q("#cfZw").classList.add("hidden")}};
- q("#cfT").value=PREF("dms_th")||"auto";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfB").checked=PREF("dms_nobrand")==="1";pAv();
+ q("#cfT").value=PREF("dms_th")||"auto";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfK").checked=PREF("dms_kiosco")==="1";q("#cfB").checked=PREF("dms_nobrand")==="1";pAv();
  q("#cfN").addEventListener("input",pAv);
  d.addEventListener("click",e=>{if(e.target.closest("[data-x]"))cerrar()});d.addEventListener("cancel",e=>{e.preventDefault();cerrar()});
  q("#cfFoto").onclick=()=>q("#cfFile").click();
@@ -146,7 +157,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
   const t=q("#cfT").value;try{if(t==="auto")localStorage.removeItem("dms_th");else localStorage.setItem("dms_th",t)}catch(e){}
   if(t==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;
-  PREF("dms_nosd",q("#cfS").checked?"1":"0");PREF("dms_nobrand",q("#cfB").checked?"1":"0");aplicarPrefs();
+  PREF("dms_nosd",q("#cfS").checked?"1":"0");PREF("dms_nobrand",q("#cfB").checked?"1":"0");aplicarPrefs();if(q("#cfK").checked&&PREF("dms_kiosco")!=="1")setTimeout(()=>kiosco(true),0);
   if(nom!==me.nombre||nueva||quitar){q("#cfOk").disabled=true;
    const {error}=await db.rpc("actualizar_mi_perfil",{p_nombre:nom,p_avatar:nueva?foto:null,p_quitar_avatar:quitar});q("#cfOk").disabled=false;
    if(error){q("#cfE").textContent=/function|actualizar_mi_perfil/i.test(error.message)?"Falta correr migracion_perfil.sql en Supabase para guardar nombre y foto.":error.message;return}
@@ -161,5 +172,6 @@ async function requireSession(){
  const r=await db.from("profiles").select("*").eq("id",data.session.user.id).single();
  if(r.error||!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
  DAY.me=r.data;DAY.email=data.session.user.email;return r.data}
-window.DAY={db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+window.DAY={kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
