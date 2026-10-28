@@ -175,3 +175,9 @@ body:has(#bMulti.on) #invList tr[data-id],body:has(#bMulti.on) #invList .pc{curs
 .sv2a .dn{color:var(--bad)}
 @media(min-width:800px){.sv2{grid-template-columns:1fr auto;align-items:center}.sv2h{grid-column:1}.sv2m{grid-column:1}.sv2a{grid-column:2;grid-row:1/3;border:0;padding:0;grid-template-columns:repeat(4,auto)}}
 @media(max-width:420px){.sv2 .th img,.sv2 .th .ph{width:44px;height:44px}.sv2a{grid-template-columns:1fr 1fr}}
+
+.cpk{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;background:var(--chip);border-radius:12px;padding:5px}
+.cpk button{border:0;background:none;border-radius:9px;padding:10px 6px;font-weight:700;color:var(--mute);cursor:pointer;min-height:42px}
+.cpk button.on{background:var(--card);color:var(--wine);box-shadow:0 1px 3px #0002}
+@media(min-width:520px){.cpk{grid-template-columns:repeat(5,1fr)}}
+.cpf{margin-top:12px;grid-template-columns:1fr 1fr}.cpf>div{min-width:0}.cpf input{width:100%;min-width:0}

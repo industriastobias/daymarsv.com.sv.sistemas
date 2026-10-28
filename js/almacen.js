@@ -644,7 +644,7 @@ async function cierreHTML(c,fmt){
  const util=+c.total_ventas-+c.costo_total;
  return `<div class="fx fx-${fmt}"><style>${DOC_CSS}</style>
  <div class="top"><div><h1>${esc(cf.nombre||"DAYMAR-SHOP")}</h1><div class="sl">Cierre de caja</div></div>
- <div class="no"><b>${fdate(c.fecha)}</b><small>Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)}${c.profiles?" · "+esc(c.profiles.nombre):""}</small></div></div>
+ <div class="no"><b>${rangoTxt(c.fecha,c.fecha_hasta)}</b><small>Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)}${c.profiles?" · "+esc(c.profiles.nombre):""}</small></div></div>
  <table><thead><tr><th>Concepto</th><th class="r">Ventas</th><th class="r">Total</th></tr></thead><tbody>${rows}</tbody></table>
  <div class="tt"><div class="g"><span>Total vendido</span><span>${money(c.total_ventas)}</span></div>
   <div><span>Ventas completadas</span><span>${c.n_ventas}</span></div><div><span>Ventas anuladas</span><span>${c.n_anuladas}</span></div>
@@ -823,18 +823,40 @@ $("fcCfg").onclick=async()=>{await ensureCfg();const c=CFG;const F=(n,l,v,x)=>`<
   if(r){CFG=null;m.close();toast("Datos guardados")}}};
 
 /* ---------- CIERRE DE CAJA (guarda un registro; no borra ventas) ---------- */
+const rangoTxt=(a,b)=>b&&b!==a?fdate(a)+" – "+fdate(b):fdate(a);
+function periodo(k,base){const [y,mo,da]=base.split("-").map(Number),dt=new Date(y,mo-1,da),p=n=>ymd(n);
+ if(k==="sem"){const s=new Date(dt);s.setDate(dt.getDate()-((dt.getDay()+6)%7));const e=new Date(s);e.setDate(s.getDate()+6);return [p(s),p(e)]}
+ if(k==="mes")return [p(new Date(y,mo-1,1)),p(new Date(y,mo,0))];
+ if(k==="ano")return [p(new Date(y,0,1)),p(new Date(y,11,31))];
+ return [base,base]}
 async function cerrarCaja(){
- const d=$("hDate").value||hoyD(),L=await espera(()=>ventasRango(d,d));if(!L)return;
+ const base=$("hDate").value||hoyD();
+ const m0=modal("Cerrar caja",`<p class="pw" style="margin-top:0">¿Qué periodo quieres cerrar?</p>
+  <div class="cpk" id="cpK"><button type="button" data-k="dia" class="on">Un día</button><button type="button" data-k="sem">Semana</button><button type="button" data-k="mes">Mes</button><button type="button" data-k="ano">Año</button><button type="button" data-k="rng">Otro rango</button></div>
+  <div class="fg cpf"><div><label>Desde</label><input type="date" id="cpD" value="${base}"></div><div><label>Hasta</label><input type="date" id="cpH" value="${base}"></div></div>
+  <p class="hint" id="cpT"></p><div class="err2" id="cpE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cpGo">Continuar</button>`});
+ let k="dia";const D=m0.q("#cpD"),H=m0.q("#cpH"),T=m0.q("#cpT");
+ const upd=()=>{T.textContent="Periodo: "+rangoTxt(D.value,H.value)};
+ m0.q("#cpK").addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b)return;k=b.dataset.k;
+  m0.q("#cpK").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+  if(k!=="rng"){const r=periodo(k,D.value||base);D.value=r[0];H.value=r[1]}upd()});
+ [D,H].forEach(i=>i.addEventListener("change",()=>{if(k==="dia"&&i===D)H.value=D.value;else if(k!=="rng"&&i===D){const r=periodo(k,D.value);D.value=r[0];H.value=r[1]}upd()}));upd();
+ m0.q("#cpGo").onclick=()=>{const d=D.value,h=H.value;
+  if(!d||!h||h<d){m0.q("#cpE").textContent="Revisa las fechas: la final no puede ser anterior a la inicial.";return}
+  if((new Date(h)-new Date(d))/864e5>366){m0.q("#cpE").textContent="El periodo no puede superar un año.";return}
+  m0.close();cerrarPeriodo(d,h)}}
+async function cerrarPeriodo(d,h){
+ const L=await espera(()=>ventasRango(d,h));if(!L)return;const un=d===h,per=un?"del día":"del periodo";
  const g={ef:[0,0],tr:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
  L.forEach(v=>{const k=v.tipo==="entrega_pendiente"?"ent":v.tipo==="cod"?"cod":v.tipo==="cobro_pendiente"?"cob":v.metodo_pago==="Transferencia"?"tr":"ef";g[k][0]+=+v.total;g[k][1]++});
- let dv={n:0,t:0,ef:0};try{const r=await db.from("devoluciones").select("diferencia,metodo,monto_devuelto,monto_nuevo").eq("fecha",d);(r.data||[]).forEach(x=>{dv.n++;dv.t+=+x.monto_nuevo-+x.monto_devuelto;if(x.metodo==="Efectivo")dv.ef+=+x.diferencia})}catch(e){}
+ let dv={n:0,t:0,ef:0};try{const r=await db.from("devoluciones").select("diferencia,metodo,monto_devuelto,monto_nuevo").gte("fecha",d).lte("fecha",h);(r.data||[]).forEach(x=>{dv.n++;dv.t+=+x.monto_nuevo-+x.monto_devuelto;if(x.metodo==="Efectivo")dv.ef+=+x.diferencia})}catch(e){}
  g.ef[0]+=dv.ef;const tot=Object.values(g).reduce((s,x)=>s+x[0],0)-dv.ef+dv.t;
- const m=modal("Cerrar caja · "+fdate(d),`<div class="stats"><div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Ventas</span><b>${L.length}</b></div><div><span>Efectivo esperado</span><b>${$$(g.ef[0])}</b></div><div><span>Transferencias</span><b>${$$(g.tr[0])}</b></div></div>
-  ${dv.n?`<p class="hint">Incluye ${dv.n} devolución(es) o cambio(s) del día: ${dv.t<0?"−":""}${$$(Math.abs(dv.t))} en ventas netas${dv.ef?` y ${dv.ef<0?"salieron":"entraron"} ${$$(Math.abs(dv.ef))} en efectivo`:""}.</p>`:""}<p class="pw">Cuenta el efectivo que hay en caja y escríbelo para ver la diferencia. Cerrar la caja <b>guarda un registro</b> del día; no borra ventas ni cambia el inventario.</p>
+ const m=modal("Cerrar caja · "+rangoTxt(d,h),`<div class="stats"><div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Ventas</span><b>${L.length}</b></div><div><span>Efectivo esperado</span><b>${$$(g.ef[0])}</b></div><div><span>Transferencias</span><b>${$$(g.tr[0])}</b></div></div>
+  ${dv.n?`<p class="hint">Incluye ${dv.n} devolución(es) o cambio(s) ${per}: ${dv.t<0?"−":""}${$$(Math.abs(dv.t))} en ventas netas${dv.ef?` y ${dv.ef<0?"salieron":"entraron"} ${$$(Math.abs(dv.ef))} en efectivo`:""}.</p>`:""}<p class="pw">Cuenta el efectivo que hay en caja y escríbelo para ver la diferencia. Cerrar la caja <b>guarda un registro</b> ${un?"del día":"de todo el periodo"}; no borra ventas ni cambia el inventario.</p>
   <div class="fg"><div><label>Efectivo contado <small>(opcional)</small></label><input name="cc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="${g.ef[0].toFixed(2)}"></div><div><label>Nota <small>(opcional)</small></label><input name="cn" maxlength="200"></div></div><div class="err2" id="ccE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="ccOk">Guardar cierre</button>`});
  m.q("#ccOk").onclick=async()=>{const v=m.q("[name=cc]").value.trim();if(v!==""&&!(Number(v)>=0)){m.q("#ccE").textContent="Efectivo no válido.";return}
-  const id=await espera(()=>rpc("cerrar_caja",{p_fecha:d,p_contado:v===""?null:Number(v),p_nota:m.q("[name=cn]").value}),"Guardando cierre…");if(!id)return;
+  const id=await espera(()=>rpc("cerrar_caja",{p_fecha:d,p_hasta:un?null:h,p_contado:v===""?null:Number(v),p_nota:m.q("[name=cn]").value}),"Guardando cierre…");if(!id)return;
   m.close();toast("Cierre de caja guardado");snd("ok");await verCierre(id);if(ADM)liberarFotos()}}
 /* Tras el cierre: quita las fotos grandes de productos agotados y deja una sola miniatura para reconocerlos */
 async function liberarFotos(){
@@ -854,10 +876,10 @@ async function liberarFotos(){
  }catch(e){}}
 async function verCierre(id){
  const c=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("*,profiles(nombre)").eq("id",id).single();if(error)throw new Error(error.message);return data});
- if(c)vistaDoc("Cierre de caja "+fdate(c.fecha),fm=>cierreHTML(c,fm),"cierre-caja-"+c.fecha)}
+ if(c)vistaDoc("Cierre de caja "+rangoTxt(c.fecha,c.fecha_hasta),fm=>cierreHTML(c,fm),"cierre-caja-"+c.fecha+(c.fecha_hasta?"_a_"+c.fecha_hasta:""))}
 async function historialCierres(){
- const L=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("id,fecha,total_ventas,n_ventas,diferencia,created_at").order("created_at",{ascending:false}).limit(60);if(error)throw new Error(error.message);return data});if(!L)return;
- const m=modal("Cierres de caja anteriores",L.length?L.map(c=>`<div class="sv" data-cc="${c.id}" style="cursor:pointer"><div class="ti"><b>${fdate(c.fecha)}</b><small>Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)} · ${c.n_ventas} ventas</small></div><div class="am2"><b>${$$(c.total_ventas)}</b>${c.diferencia!=null?`<small style="color:${+c.diferencia===0?"var(--ok)":"var(--bad)"}">dif. ${$$(c.diferencia)}</small>`:""}</div></div>`).join(""):`<div class="empty">Todavía no hay cierres guardados.</div>`,{});
+ const L=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("id,fecha,fecha_hasta,total_ventas,n_ventas,diferencia,created_at").order("created_at",{ascending:false}).limit(60);if(error)throw new Error(error.message);return data});if(!L)return;
+ const m=modal("Cierres de caja anteriores",L.length?L.map(c=>`<div class="sv" data-cc="${c.id}" style="cursor:pointer"><div class="ti"><b>${rangoTxt(c.fecha,c.fecha_hasta)}</b><small>Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)} · ${c.n_ventas} ventas</small></div><div class="am2"><b>${$$(c.total_ventas)}</b>${c.diferencia!=null?`<small style="color:${+c.diferencia===0?"var(--ok)":"var(--bad)"}">dif. ${$$(c.diferencia)}</small>`:""}</div></div>`).join(""):`<div class="empty">Todavía no hay cierres guardados.</div>`,{});
  m.el.addEventListener("click",e=>{const r=e.target.closest("[data-cc]");if(r){m.close();verCierre(r.dataset.cc)}})}
 $("hClose").onclick=cerrarCaja;$("hHist").onclick=historialCierres;
 
