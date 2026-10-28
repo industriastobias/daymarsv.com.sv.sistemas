@@ -115,3 +115,5 @@ kbd{background:var(--chip);border:1px solid var(--line);border-radius:5px;paddin
 .vr{display:grid;grid-template-columns:1fr 78px 36px;grid-template-areas:"n q x" "b b b";gap:6px;margin:0 0 8px;align-items:center}.vr input{min-width:0;margin:0}
 .vr .vn{grid-area:n}.vr .vn input{width:100%}.vr [data-f=cantidad]{grid-area:q}.vr .vb{grid-area:b}.vr button{grid-area:x;padding:0;height:40px;width:36px}
 @media(min-width:700px){.vr{grid-template-columns:1.2fr 80px 1.2fr 36px;grid-template-areas:"n q b x"}}
+
+.rw.al{display:flex;align-items:center;gap:10px}.rw.al .aim{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none;background:var(--bg)}.rw.al .aim.ph0{display:grid;place-items:center;font:700 20px "Bricolage Grotesque",sans-serif;color:#fff;background:linear-gradient(135deg,var(--wine),var(--gold))}.rw.al .ti small{display:block}
