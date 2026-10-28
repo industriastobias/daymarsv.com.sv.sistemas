@@ -835,7 +835,23 @@ async function cerrarCaja(){
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="ccOk">Guardar cierre</button>`});
  m.q("#ccOk").onclick=async()=>{const v=m.q("[name=cc]").value.trim();if(v!==""&&!(Number(v)>=0)){m.q("#ccE").textContent="Efectivo no válido.";return}
   const id=await espera(()=>rpc("cerrar_caja",{p_fecha:d,p_contado:v===""?null:Number(v),p_nota:m.q("[name=cn]").value}),"Guardando cierre…");if(!id)return;
-  m.close();toast("Cierre de caja guardado");snd("ok");verCierre(id)}}
+  m.close();toast("Cierre de caja guardado");snd("ok");await verCierre(id);if(ADM)liberarFotos()}}
+/* Tras el cierre: quita las fotos grandes de productos agotados y deja una sola miniatura para reconocerlos */
+async function liberarFotos(){
+ try{const ids=S.prods.filter(p=>p.stock<=0).map(p=>p.id);if(!ids.length)return;
+  let R=[];for(let i=0;i<ids.length;i+=100){const {data,error}=await db.from("producto_imagenes").select("id,producto_id,url,thumb_url,path,thumb_path,orden").in("producto_id",ids.slice(i,i+100)).order("orden");if(error)return;R=R.concat(data||[])}
+  const by={};R.forEach(r=>(by[r.producto_id]=by[r.producto_id]||[]).push(r));
+  const keep=[],drop=[];Object.values(by).forEach(a=>{const k=a[0];if(k.path||k.thumb_url!==k.url)keep.push(k);a.slice(1).forEach(x=>drop.push(x))});
+  const files=[...keep.map(k=>k.path),...drop.flatMap(x=>[x.path,x.thumb_path])].filter(Boolean);
+  if(!files.length)return;
+  if(!await confirmar(`Hay <b>${Object.keys(by).length}</b> productos agotados con fotos. Se borrarán <b>${files.length}</b> archivos y a cada producto le quedará <b>una miniatura</b> para reconocerlo. Las ventas y cierres no se tocan.<p class="pw">Si vuelves a surtirlos, puedes subir una foto nueva en Compra.</p>`,{titulo:"Liberar espacio de fotos",ok:"Liberar espacio"}))return;
+  const ok=await espera(async()=>{
+   for(let i=0;i<files.length;i+=50){const {error}=await db.storage.from("productos").remove(files.slice(i,i+50));if(error)throw new Error(error.message)}
+   for(const k of keep){const {error}=await db.from("producto_imagenes").update({path:null,url:k.thumb_url||k.url}).eq("id",k.id);if(error)throw new Error(error.message)}
+   for(let i=0;i<drop.length;i+=100){const {error}=await db.from("producto_imagenes").delete().in("id",drop.slice(i,i+100).map(x=>x.id));if(error)throw new Error(error.message)}
+   return true},"Liberando espacio…");
+  if(ok){toast("Espacio liberado: "+files.length+" fotos borradas");snd("ok")}
+ }catch(e){}}
 async function verCierre(id){
  const c=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("*,profiles(nombre)").eq("id",id).single();if(error)throw new Error(error.message);return data});
  if(c)vistaDoc("Cierre de caja "+fdate(c.fecha),fm=>cierreHTML(c,fm),"cierre-caja-"+c.fecha)}
