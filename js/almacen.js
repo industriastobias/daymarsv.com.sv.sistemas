@@ -60,14 +60,20 @@ try{S.hist=JSON.parse(LS("dms_hist2")||"[]")}catch(e){}
 
 async function cargarProductos(){
  const rows=await fetchAll(()=>db.from("productos").select("id,codigo,nombre,precio_venta,precio_costo,descuento_pct,stock,stock_minimo,foto_url,codigo_barras,descripcion,fecha_compra,created_at,categorias(nombre)").eq("activo",true).order("nombre"));
- S.prods=rows.map(p=>{p.cat=p.categorias?p.categorias.nombre:"";p.fin=fin(p);p.dia=p.fecha_compra||dkey(p.created_at);return p});
+ let vs=[];try{vs=await fetchAll(()=>db.from("producto_variantes").select("id,producto_id,nombre,codigo_barras,stock,orden").order("orden").order("nombre"))}catch(e){}
+ const VB={};vs.forEach(v=>(VB[v.producto_id]=VB[v.producto_id]||[]).push(v));
+ S.prods=[];rows.forEach(p=>{p.cat=p.categorias?p.categorias.nombre:"";p.fin=fin(p);p.dia=p.fecha_compra||dkey(p.created_at);
+  const L=VB[p.id];if(!L){S.prods.push(p);return}
+  /* un producto con colores se muestra como una línea por color (cada una con su stock) */
+  let suma=0;L.forEach(v=>{suma+=v.stock;S.prods.push(Object.assign({},p,{id:p.id+"~"+v.id,real:p.id,vid:v.id,vnom:v.nombre,nombre:p.nombre+" – "+v.nombre,stock:v.stock,codigo_barras:v.codigo_barras||p.codigo_barras}))});
+  if(p.stock>suma)S.prods.push(Object.assign({},p,{id:p.id+"~0",real:p.id,vnom:"Sin color",nombre:p.nombre+" – sin color",stock:p.stock-suma}))});
  S.byId=new Map(S.prods.map(p=>[p.id,p]));S.stamp=Date.now();
  const cats=[...new Set(S.prods.map(p=>p.cat).filter(Boolean))].sort(),cur=$("fCat").value;
  $("fCat").innerHTML='<option value="">Todas</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("fCat").value=cur;
  stats()}
 function stats(){
  const v=S.prods.reduce((s,p)=>s+p.fin*(p.stock||0),0);$("totalAmount").textContent=$$(v);
- $("nTotal").textContent=S.prods.length}
+ $("nTotal").textContent=new Set(S.prods.map(p=>p.real||p.id)).size}
 const SEL_ITEMS="id,cantidad,precio_unit,precio_original,descuento_pct,nombre,codigo,codigo_barras,producto_id,es_libre,productos(foto_url,nombre,codigo,codigo_barras)";
 async function cargarPend(){
  S.pend=await fetchAll(()=>db.from("ventas").select(`*,profiles(nombre),venta_items(${SEL_ITEMS})`)
@@ -158,7 +164,7 @@ async function detalle(p){
   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn" id="dgSell">Vender</button>`});
  m.q("#dgSell").onclick=()=>{m.close();abrirVenta(p)};
  m.el.addEventListener("click",e=>{const b=e.target.closest("[data-bar]");if(b)verBarras(b.dataset.bar);const t=e.target.closest("#dgT img");if(t)m.q("#dgM").src=t.src;if(e.target.id==="dgM")verImagen(e.target.src)});
- try{const {data}=await db.from("producto_imagenes").select("url,thumb_url").eq("producto_id",p.id).order("orden");
+ try{const {data}=await db.from("producto_imagenes").select("url,thumb_url").eq("producto_id",p.real||p.id).order("orden");
   if(data&&data.length){m.q("#dgM").src=data[0].url;if(data.length>1)m.q("#dgT").innerHTML=data.map(i=>`<img src="${esc(i.thumb_url||i.url)}" data-full="${esc(i.url)}" alt="">`).join("");
    m.q("#dgT").addEventListener("click",e=>{const i=e.target.closest("img");if(i)m.q("#dgM").src=i.dataset.full})}
   if(!p.foto_url&&!(data&&data.length))m.q("#dgM").remove()}catch(e){}}
@@ -171,8 +177,8 @@ async function editarPrecio(p){
   ${p.descuento_pct>0?`<small class="h" style="color:var(--mute)">El descuento de ${p.descuento_pct}% se aplica sobre este precio.</small>`:""}<div class="err2" id="npE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="npOk">Guardar</button>`});
  m.q("#npOk").onclick=async()=>{const v=parseFloat(m.q("#npP").value);if(isNaN(v)||v<0){m.q("#npE").textContent="Precio inválido";return}
-  const ok=await espera(async()=>{const {error}=await db.from("productos").update({precio_venta:r2(v)}).eq("id",p.id);if(error)throw error;return true});
-  if(ok){p.precio_venta=r2(v);p.fin=fin(p);m.close();filtrar(true);stats();toast("Precio actualizado");snd("ok")}}}
+  const ok=await espera(async()=>{const {error}=await db.from("productos").update({precio_venta:r2(v)}).eq("id",p.real||p.id);if(error)throw error;return true});
+  if(ok){S.prods.forEach(x=>{if((x.real||x.id)===(p.real||p.id)){x.precio_venta=r2(v);x.fin=fin(x)}});m.close();filtrar(true);stats();toast("Precio actualizado");snd("ok")}}}
 async function editarStock(p){
  if(!soloAdmin())return;if(!await pedirClave("Vas a cambiar la cantidad en stock de este producto."))return;
  const m=modal("Editar stock",`<label>Producto</label><input value="${esc(p.nombre)}" readonly><label>Stock actual</label><input value="${p.stock}" readonly>
@@ -182,7 +188,8 @@ async function editarStock(p){
   const ok=await espera(async()=>{await ajustarStock(p,v,"Ajuste manual desde Almacenamiento");return true});
   if(ok){m.close();filtrar(true);stats();toast("Stock actualizado");snd("ok")}}}
 async function ajustarStock(p,nuevo,nota){const d=nuevo-p.stock;if(!d)return;
- await rpc("registrar_movimiento",{p_producto:p.id,p_tipo:d>0?"entrada":"salida",p_cantidad:Math.abs(d),p_nota:nota});p.stock=nuevo}
+ await rpc("registrar_movimiento",{p_producto:p.real||p.id,p_tipo:d>0?"entrada":"salida",p_cantidad:Math.abs(d),p_nota:nota});
+ if(p.vid){const {error}=await db.from("producto_variantes").update({stock:nuevo}).eq("id",p.vid);if(error)throw new Error(error.message)}p.stock=nuevo}
 
 /* clientes guardados para autocompletar */
 (async()=>{try{const{data}=await DAY.db.from("clientes").select("nombre").order("nombre").limit(500);
@@ -321,7 +328,7 @@ function abrirVenta(p){
   await ajustarStock(p,ns,"Ajuste manual desde la venta");
   const np=price();if(isNaN(np)||np<0)throw new Error("Precio inválido");
   if(Math.abs(np-p.fin)>.004){const base=p.descuento_pct>=100?np:np/(1-p.descuento_pct/100);
-   const {error}=await db.from("productos").update({precio_venta:r2(base)}).eq("id",p.id);if(error)throw error;p.precio_venta=r2(base);p.fin=fin(p)}};
+   const {error}=await db.from("productos").update({precio_venta:r2(base)}).eq("id",p.real||p.id);if(error)throw error;S.prods.forEach(x=>{if((x.real||x.id)===(p.real||p.id)){x.precio_venta=r2(base);x.fin=fin(x)}})}};
  m.q("#sSave").onclick=async()=>{const ok=await espera(async()=>{await aplicarCambios();return true});if(ok){m.close();filtrar(true);stats();toast("Cambios guardados en el inventario (sin venta)");snd("ok")}};
  const vender=async()=>{
   const q=qty(),pr=price();let r;
@@ -329,7 +336,7 @@ function abrirVenta(p){
    if(q>stockEf())throw new Error("Stock insuficiente");r=of.check()}catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
   const ok=await espera(async()=>{
    if(unl)await aplicarCambios();
-   const it={producto_id:p.id,cantidad:q};if(unl)it.precio=pr;
+   const it={producto_id:p.real||p.id,cantidad:q};if(p.vid)it.variante_id=p.vid;if(unl)it.precio=pr;
    await rpc("registrar_pedido",{p_items:[it],p_opts:r.o});return true},"Registrando venta…");
   if(ok){m.close();await tras(r.o,r.t,[{id:p.id,q}])}else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})};
  m.q("#sGo").onclick=vender;m.q("#sGo2").onclick=vender;
@@ -401,7 +408,7 @@ function abrirMulti(){
   try{if(!L.length)throw new Error("Selecciona al menos un producto.");
    L.forEach(l=>{if(!Number.isInteger(l.q)||l.q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");if(l.q>l.p.stock)throw new Error("Stock insuficiente: "+l.p.nombre)});r=of.check()}
   catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
-  const ok=await espera(async()=>{await rpc("registrar_pedido",{p_items:L.map(l=>({producto_id:l.p.id,cantidad:l.q})),p_opts:r.o});return true},"Registrando venta…");
+  const ok=await espera(async()=>{await rpc("registrar_pedido",{p_items:L.map(l=>{const it={producto_id:l.p.real||l.p.id,cantidad:l.q};if(l.p.vid)it.variante_id=l.p.vid;return it}),p_opts:r.o});return true},"Registrando venta…");
   if(ok){S.sel.clear();m.close();await tras(r.o,r.t,L.map(l=>({id:l.p.id,q:l.q})));toast("Venta múltiple registrada: "+L.length+" productos en un solo pedido.")}
   else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})}}
 

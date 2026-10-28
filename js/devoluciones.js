@@ -51,6 +51,7 @@ async function elegirVenta(){
 async function formDev(v){
  const ya=await espera(async()=>{const ids=(v.venta_items||[]).map(i=>i.id);const {data,error}=await db.from("devolucion_items").select("venta_item_id,cantidad").eq("direccion","entra").in("venta_item_id",ids);if(error)throw new Error(error.message);return data});if(!ya)return;
  const P=await espera(()=>fetchAll(()=>db.from("productos").select("id,nombre,codigo,precio_venta,descuento_pct,stock").eq("activo",true).gt("stock",0).order("nombre")));if(!P)return;
+ try{const cv=await fetchAll(()=>db.from("producto_variantes").select("producto_id"));const sv=new Set(cv.map(x=>x.producto_id));P.splice(0,P.length,...P.filter(p=>!sv.has(p.id)))}catch(e){}
  const f=1-(+v.descuento_pct||0)/100,rest={};(v.venta_items||[]).forEach(i=>{rest[i.id]=i.cantidad-ya.filter(x=>x.venta_item_id===i.id).reduce((s,x)=>s+x.cantidad,0)});
  if(!Object.values(rest).some(n=>n>0)){toast("Esta venta ya fue devuelta por completo.");return}
  let modo="dev",nuevos=new Map();
