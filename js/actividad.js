@@ -2,7 +2,7 @@
 (async()=>{
 "use strict";
 const {db,esc,ymd,mountSide,requireSession}=DAY;
-const {$,fdate,ftime,deb,espera,norm}=UI;
+const {$,fdate,ftime,deb,espera,norm,fetchAll,confirmar}=UI;
 const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"actividad",me.rol);$("app").classList.remove("hidden");$("bnav").remove();
@@ -59,5 +59,19 @@ $("aSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b
  $("aSg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));const acc=b.dataset.t==="acc";
  $("pAct").classList.toggle("hidden",acc);$("pAcc").classList.toggle("hidden",!acc);$("aHint").classList.toggle("hidden",acc);
  if(acc){document.querySelector(".fl").classList.add("hidden");cargarAcc()}else document.querySelector(".fl").classList.remove("hidden")});
+/* ---------- respaldo manual ---------- */
+const TABLAS=["productos","categorias","producto_imagenes","proveedores","clientes","ventas","venta_items","movimientos_stock","facturas","factura_items","devoluciones","devolucion_items","fin_movimientos","fin_cuentas","fin_banco","capital_movs","cierres_caja","promo_codigos","descuentos_programados","config_negocio","profiles","invitaciones","bitacora","accesos"];
+function ultimoRespaldo(){try{return localStorage.getItem("dms_backup")}catch(e){return null}}
+function textoRespaldo(){const u=ultimoRespaldo();return u?"Último respaldo en este dispositivo: "+fdate(u)+" "+ftime(u):"Aún no has descargado un respaldo desde este dispositivo."}
+$("bBackup").onclick=async()=>{
+ if(!await confirmar("Se descargará un archivo ZIP con una copia de <b>todos tus datos</b> (productos, ventas, clientes, finanzas…). Contiene información del negocio y de tus clientes: <b>guárdalo en un lugar seguro</b>.<p class=\"pw\">"+esc(textoRespaldo())+"</p>",{titulo:"Descargar respaldo",ok:"Descargar"}))return;
+ await espera(async()=>{const zip=new JSZip(),res=[];let n=0;
+  for(const t of TABLAS){try{const rows=await fetchAll(()=>db.from(t).select("*").order("id"));zip.file(t+".json",JSON.stringify(rows,null,1));res.push(t+": "+rows.length+" registros");n+=rows.length}catch(e){res.push(t+": no se pudo leer ("+(e.message||"error")+")")}}
+  const fch=new Date().toISOString();
+  zip.file("LEEME.txt","Respaldo de DAYMAR-SHOP\nGenerado: "+fch+"\nPor: "+(DAY.me?DAY.me.nombre:"")+"\n\nContenido:\n"+res.join("\n")+"\n\nNota: las fotos de productos no van dentro del ZIP; los archivos traen su dirección (url) y siguen guardadas en el sistema.\nLos datos están en formato JSON (se abren con cualquier editor de texto).\n");
+  const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="respaldo-daymar-"+fch.slice(0,10)+".zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  try{localStorage.setItem("dms_backup",fch)}catch(e){}return n},"Preparando respaldo…");
+ DAY.toast("Respaldo descargado")};
+$("aRes").textContent=textoRespaldo();
 await todo();cargarAcc();
 })();

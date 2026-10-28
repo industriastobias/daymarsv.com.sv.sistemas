@@ -243,10 +243,49 @@ const MSG=(o,t,extra)=>o.tipo==="cod"?"Pedido contra entrega guardado. Total a c
  o.tipo==="entrega_pendiente"?"Venta pendiente de entrega registrada. Total: "+$$(t.total/100):
  o.tipo==="cobro_pendiente"?`Venta pendiente de cobro registrada. Cliente: ${o.cliente}. Abonado: ${$$(t.paid/100)}. Debe: ${$$(t.pend/100)}`:
  `Venta registrada (${o.metodo})`+(extra||"");
+/* ---------- ticket de venta ---------- */
+function imprimir(html){const f=document.createElement("iframe");f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(f);
+ const d=f.contentWindow.document;d.open();d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Ticket</title><style>@page{margin:6mm}html,body{margin:0;background:#fff}</style></head><body>${html}</body></html>`);d.close();
+ setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("No se pudo abrir la impresión")}setTimeout(()=>f.remove(),120000)},350)}
+const TK_SEL="*,profiles(nombre),venta_items(cantidad,precio_unit,nombre,productos(nombre))";
+function ticketData(v,cf){const L=(v.venta_items||[]).map(i=>({q:i.cantidad,n:itName(i),p:+i.precio_unit}));
+ const f=new Date(v.created_at),fh=f.toLocaleDateString("es-SV")+" "+f.toLocaleTimeString("es-SV",{hour:"2-digit",minute:"2-digit"});
+ const tipo={cod:"Contra entrega",entrega_pendiente:"Pendiente de entrega",cobro_pendiente:"Pendiente de cobro"}[v.tipo]||"";
+ return {L,fh,tipo,neg:cf.nombre||"DAYMAR-SHOP",pie:cf.pie||"¡Gracias por tu compra!",tel:cf.telefono||""}}
+function ticketHTML(v,cf){const d=ticketData(v,cf);
+ return `<div class="tkt" style="font-family:'Courier New',monospace;background:#fff;color:#111;width:300px;max-width:100%;margin:0 auto;padding:16px 14px;font-size:13px;line-height:1.4">
+ <div style="text-align:center"><b style="font-size:16px">${esc(d.neg)}</b>${d.tel?`<br>${esc(d.tel)}`:""}<br>Ticket de venta #${v.numero}<br>${esc(d.fh)}</div>
+ <hr style="border:0;border-top:1px dashed #999;margin:10px 0">
+ ${d.L.map(i=>`<div style="display:flex;justify-content:space-between;gap:8px"><span>${i.q}× ${esc(i.n)}</span><span>${$$(i.q*i.p)}</span></div>${i.q>1?`<div style="color:#666;font-size:11px">&nbsp;&nbsp;${$$(i.p)} c/u</div>`:""}`).join("")}
+ <hr style="border:0;border-top:1px dashed #999;margin:10px 0">
+ <div style="display:flex;justify-content:space-between;font-size:16px"><b>TOTAL</b><b>${$$(v.total)}</b></div>
+ <div style="margin-top:4px">Pago: ${esc(v.metodo_pago||"")}${d.tipo?" · "+d.tipo:""}</div>
+ ${v.cliente_nombre?`<div>Cliente: ${esc(v.cliente_nombre)}</div>`:""}${v.profiles?`<div>Atendió: ${esc(v.profiles.nombre)}</div>`:""}
+ <div style="text-align:center;margin-top:12px">${esc(d.pie)}</div></div>`}
+function ticketTexto(v,cf){const d=ticketData(v,cf);
+ return [d.neg,"Ticket de venta #"+v.numero,d.fh,"",...d.L.map(i=>`${i.q}× ${i.n} — ${$$(i.q*i.p)}`),"",`TOTAL: ${$$(v.total)}`,`Pago: ${v.metodo_pago||""}${d.tipo?" ("+d.tipo+")":""}`,"",d.pie].join("\n")}
+async function abrirTicket(v,nuevo){
+ const cf=await ensureCfg(),html=ticketHTML(v,cf);
+ const m=modal(nuevo?"Venta registrada · #"+v.numero:"Ticket · venta #"+v.numero,`<div id="tkB" style="background:#eee;border-radius:12px;padding:10px">${html}</div>
+  <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px"><input type="checkbox" id="tkPref" ${LS("dms_ticket")!=="0"?"checked":""} style="width:18px;height:18px"> Mostrar el ticket al terminar cada venta</label>`,
+  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button><button class="btn g" id="tkI">Compartir imagen</button><button class="btn" id="tkW">Enviar por WhatsApp</button>`});
+ m.q("#tkPref").onchange=e=>LS("dms_ticket",e.target.checked?"1":"0");
+ m.q("#tkP").onclick=()=>imprimir(html);
+ m.q("#tkW").onclick=async()=>{let cli=null;try{const {data}=await db.from("clientes").select("nombre,telefono");const n=norm(v.cliente_nombre||"").trim();cli=n?(data||[]).find(x=>norm(x.nombre).trim()===n):null}catch(e){}
+  const t=await DAY.input("Número de WhatsApp del cliente (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");if(t===null)return;
+  const dig=t.replace(/\D/g,""),tel=dig.length===8?"503"+dig:dig;if(tel.length<10||tel.length>15){await DAY.say("Ese número no es válido.");return}
+  window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(ticketTexto(v,cf)),"_blank")};
+ m.q("#tkI").onclick=async()=>{await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+  const c=await html2canvas(m.q(".tkt"),{backgroundColor:"#ffffff",scale:2,logging:false}),b=await new Promise(r=>c.toBlob(r,"image/png")),f=new File([b],"ticket-"+v.numero+".png",{type:"image/png"});
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Ticket #"+v.numero})}catch(e){}}
+  else{const a=document.createElement("a");a.download=f.name;a.href=URL.createObjectURL(b);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Imagen del ticket descargada")}},"Preparando imagen…")}}
+async function ticketUltima(){if(LS("dms_ticket")==="0")return;
+ try{const {data}=await db.from("ventas").select(TK_SEL).eq("usuario_id",me.id).order("created_at",{ascending:false}).limit(1);if(data&&data[0])abrirTicket(data[0],true)}catch(e){}}
 async function tras(o,t,lines){ /* refresco local tras una venta */
  (lines||[]).forEach(l=>{const p=S.byId.get(l.id);if(p)p.stock-=l.q});
  filtrar(true);stats();toast(MSG(o,t));snd("ok");
- if(o.tipo!=="inmediata")cargarPend().catch(()=>{});else badges().catch(()=>{})}
+ if(o.tipo!=="inmediata")cargarPend().catch(()=>{});else badges().catch(()=>{});
+ ticketUltima()}
 
 /* ---------- venta de un producto ---------- */
 function abrirVenta(p){
@@ -503,7 +542,7 @@ async function ventasRango(desde,hasta){
 const filaVenta=v=>`<div class="sv2"><div class="sv2h"><div class="th">${(v.venta_items||[]).slice(0,3).map(i=>itImg(i)?`<img src="${esc(itImg(i))}" alt="" loading="lazy">`:`<div class="ph">${inicial(itName(i))}</div>`).join("")}</div>
  <div class="sv2t"><b>${resumenItems(v)}</b><small>${fdate(v.created_at)} · ${ftime(v.created_at)}</small></div><b class="sv2p">${$$(v.total)}</b></div>
  <div class="sv2m">${tipoBd(v.tipo)} ${pagoBd(v.metodo_pago)}${v.cliente_nombre?`<span class="sv2c">👤 ${esc(v.cliente_nombre)}</span>`:""}${v.profiles?`<span class="sv2c">Vendió: ${esc(v.profiles.nombre)}</span>`:""}</div>
- <div class="sv2a"><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<a class="btn g sm" href="devoluciones.html#v=${v.id}">Devolver</a><button class="btn g sm dn" data-an="${v.id}">Anular</button><button class="btn g sm dn" data-el="${v.id}">Eliminar</button>`:""}</div></div>`;
+ <div class="sv2a"><button class="btn g sm" data-tk="${v.id}">Ticket</button><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<a class="btn g sm" href="devoluciones.html#v=${v.id}">Devolver</a><button class="btn g sm dn" data-an="${v.id}">Anular</button><button class="btn g sm dn" data-el="${v.id}">Eliminar</button>`:""}</div></div>`;
 async function anular(id,after){
  if(!soloAdmin())return;if(!await pedirClave("Vas a anular esta venta."))return;
  const v=[...S.ventas,...S.pend].find(x=>x.id===id);
@@ -954,7 +993,7 @@ $("bClean").onclick=async()=>{if(!soloAdmin())return;const t=S.pt;
  if(!await pedirClave("Vas a limpiar de esta lista los pedidos ya completados."))return;
  if(!await confirmar("Se quitarán de la lista los pedidos completados de <b>"+TIPO[t][0]+"</b>. No se modifican el stock ni las ventas registradas.",{titulo:"Limpiar completados",ok:"Limpiar",peligro:true}))return;
  const n=await espera(()=>rpc("ocultar_pendientes",{p_tipo:t}));if(n!==undefined){toast(n+" registros limpiados");await cargarPend();pintarPend()}};
-["hList","vList"].forEach(id=>$(id).addEventListener("click",e=>{const a=e.target.closest("[data-an]"),x=e.target.closest("[data-el]"),R=()=>id==="hList"?pintarHoy():pintarVentas();if(a)anular(a.dataset.an,R);if(x)eliminarVenta(x.dataset.el,R)}));
+["hList","vList"].forEach(id=>$(id).addEventListener("click",async e=>{const tk=e.target.closest("[data-tk]");if(tk){const {data}=await db.from("ventas").select(TK_SEL).eq("id",tk.dataset.tk).single();if(data)abrirTicket(data);return}const a=e.target.closest("[data-an]"),x=e.target.closest("[data-el]"),R=()=>id==="hList"?pintarHoy():pintarVentas();if(a)anular(a.dataset.an,R);if(x)eliminarVenta(x.dataset.el,R)}));
 $("hDate").onchange=pintarHoy;$("hToday").onclick=()=>{$("hDate").value=ymd(new Date());pintarHoy()};
 ["vFrom","vTo"].forEach(i=>$(i).addEventListener("change",()=>{$("vQuick").value=$("vFrom").value||$("vTo").value?"custom":"all";if($("vQuick").value==="custom"&&![...$("vQuick").options].some(o=>o.value==="custom"))$("vQuick").add(new Option("Personalizado","custom"));$("vQuick").value="custom";pintarVentas()}));
 $("vQuick").onchange=()=>{if($("vQuick").value==="all"){$("vFrom").value="";$("vTo").value=""}pintarVentas()};
