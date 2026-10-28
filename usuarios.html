@@ -21,7 +21,7 @@
  <div class="alert warn hidden" id="soloP"><div><b>Solo lectura</b>Únicamente el administrador principal puede invitar personas o cambiar roles.</div></div>
  <div class="pan" id="inv" style="margin-bottom:14px">
   <h3>Invitar a una persona</h3>
-  <p class="hint">1) Escribe su correo y elige el rol. 2) Esa persona abre el sistema, toca <b>“Crear cuenta”</b> y se registra con <b>ese mismo correo</b>. Nadie sin invitación puede crear una cuenta.</p>
+  <p class="hint">1) Escribe su correo y elige el rol. 2) Envíale este enlace de registro: <b id="lnkReg"></b>. Se registra con <b>ese mismo correo</b>. El botón “Crear cuenta” no aparece en el inicio normal, y además nadie sin invitación puede crear una cuenta.</p>
   <div class="fl"><div><label for="iEm">Correo</label><input id="iEm" type="email" autocomplete="off" placeholder="persona@correo.com"></div>
   <div><label for="iNom">Nombre <small>(opcional)</small></label><input id="iNom" maxlength="60" autocomplete="off"></div>
   <div><label for="iRol">Rol</label><select id="iRol"><option value="vendedor">Vendedor</option><option value="admin">Administrador</option></select></div>
@@ -38,4 +38,4 @@
 <script src="js/app.js"></script>
 <script src="js/comun.js"></script>
 <script src="js/usuarios.js"></script>
-</body></html>
+<script>document.getElementById("lnkReg").textContent=new URL("index.html?registro=1",location.href).href</script></body></html>

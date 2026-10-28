@@ -19,7 +19,7 @@
 <div id="rg" class="hidden"><label for="rn">Tu nombre</label><input id="rn" autocomplete="name" maxlength="60">
 <label for="p2">Repite la contraseña</label><input id="p2" type="password" autocomplete="new-password"></div>
 <div class="err" id="le" role="alert"></div><button class="btn" id="lb">Ingresar</button>
-<button type="button" id="tg" class="tg">¿Te invitaron? Crear cuenta</button>
+<button type="button" id="tg" class="tg hidden">¿Te invitaron? Crear cuenta</button>
 <div class="foot">© DAYMAR-SHOP · Acceso solo para usuarios autorizados</div></form></section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
@@ -29,6 +29,7 @@
 if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
 else{const {data}=await db.auth.getSession();if(data.session)location.replace("menu.html")}
 let reg=false;
+if(/[?&]registro=1/.test(location.search))$("tg").classList.remove("hidden");
 $("eye").onclick=()=>{const s=$("p").type==="password";$("p").type=s?"text":"password";$("eye").textContent=s?"Ocultar":"Mostrar"};
 $("tg").onclick=()=>{reg=!reg;$("ht").textContent=reg?"Crea tu cuenta":"Bienvenido";$("hs").textContent=reg?"Usa el correo con el que te invitaron.":"Inicia sesión para continuar.";$("rg").classList.toggle("hidden",!reg);$("lb").textContent=reg?"Crear cuenta":"Ingresar";$("tg").textContent=reg?"Ya tengo cuenta: iniciar sesión":"¿Te invitaron? Crear cuenta";$("p").autocomplete=reg?"new-password":"current-password";$("le").textContent="";$("le").style.color=""};
 $("lf").onsubmit=async e=>{e.preventDefault();$("le").textContent="";$("le").style.color="";$("lb").disabled=true;
