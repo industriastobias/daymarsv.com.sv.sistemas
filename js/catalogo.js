@@ -50,7 +50,7 @@ function pintar(){
  if(barras&&window.JsBarcode)$("kL").querySelectorAll("svg.bc").forEach(s=>{try{JsBarcode(s,s.dataset.c,{format:"CODE128",width:1.4,height:34,displayValue:true,fontSize:11,margin:0})}catch(e){s.remove()}})}
 function tarjeta(p){
  const f=p.fotos[0];
- return `<div class="kc" data-id="${p.id}"><div class="ph ${f?"":"ph0"}" ${f?"data-g":""}>${f?`<img src="${esc(f.th)}" alt="" loading="lazy">`:esc(ini(p.nombre))}${p.fotos.length>1?`<span class="nf">${p.fotos.length} fotos</span>`:""}${p.desc>0?`<span class="of">-${p.desc}%</span>`:""}</div>
+ return `<div class="kc" data-id="${p.id}"><div class="ph ${f?"":"ph0"}" ${f?"data-g":""}>${f?`<img src="${esc(DAY.grande(f.url))}" onerror="this.onerror=null;this.src='${esc(f.th)}'" alt="" loading="lazy">`:esc(ini(p.nombre))}${p.fotos.length>1?`<span class="nf">${p.fotos.length} fotos</span>`:""}${p.desc>0?`<span class="of">-${p.desc}%</span>`:""}</div>
  <div class="kb"><span class="ct">${esc(p.cat)}</span><h3>${esc(p.nombre)}</h3>
  <div class="pr">${$$(p.fin)}${p.desc>0?`<s>${$$(p.base)}</s>`:""}</div><div class="pl">${esc(enLetras(p.fin))}</div>
  <div class="st"><span class="bd ${p.stk>0?(p.stk<=3?"wa":"ok"):"or"}">${p.stk>0?"Stock "+p.stk:"Agotado"}</span>${p.codigo_barras?`<small style="color:var(--mute)">${esc(p.codigo_barras)}</small>`:""}</div>

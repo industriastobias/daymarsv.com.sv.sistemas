@@ -128,7 +128,7 @@ function filtrar(keep){
  const nf=[cat,mn,mx<Infinity,bc,dt,low].filter(Boolean).length;$("fTog").textContent=nf?"Filtros ("+nf+")":"Filtros";
  pintarInv()}
 const sIcon=p=>p.stock<=0?"zero":p.stock<=p.stock_minimo?"low":"";
-const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(p.foto_url)}" alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
+const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(cls==="ph"?DAY.grande(p.foto_url):p.foto_url)}" ${cls==="ph"?`onerror="this.onerror=null;this.src='${esc(p.foto_url)}'" `:""}alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
 const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>DAY.colorDot(v.vnom)+esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
 const selQ=p=>p.vars?p.vars.reduce((s,v)=>s+(S.sel.get(v.id)||0),0):(S.sel.get(p.id)||0);
 function chk(p){return S.multi?`<label class="mchk"><input type="checkbox" data-a="sel" data-id="${p.id}" ${selQ(p)?"checked":""} ${p.stock<1?"disabled":""}> Vender${selQ(p)?` <b data-qs="${p.id}" class="qb">×${selQ(p)}</b>`:""}</label>`:""}
