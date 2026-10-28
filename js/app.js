@@ -29,7 +29,7 @@ const ICON={
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 const GRUPOS=[
  {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"traslados.html"},{k:"reservas",n:"Reservas",i:"cal",h:"reservas.html"}]},
- {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"store",h:"gastos.html"}]},
+ {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"fotos",n:"Fotos",i:"store",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"store",h:"gastos.html"}]},
  {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"usuarios",n:"Usuarios",i:"users",h:"usuarios.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"clock",h:"actividad.html",ok:1,adm:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 const visibles=(g,rol)=>g.m.filter(m=>!m.adm||rol==="admin");

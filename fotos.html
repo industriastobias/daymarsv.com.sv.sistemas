@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Fotos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css?v=202610281223">
+<link rel="stylesheet" href="css/compra.css?v=202610281223">
+<link rel="stylesheet" href="css/almacen.css?v=202610281223">
+<link rel="stylesheet" href="css/paginas.css?v=202610281223"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Fotos</h1><small>Fotos de los productos por código de barras</small></div>
+  <div class="hact"><button class="btn" id="fZip" type="button" style="white-space:nowrap">Descargar fotos</button></div>
+ </div>
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+ <div class="kp" id="fK" style="grid-template-columns:repeat(3,1fr)"></div>
+ <div class="ctl"><input id="fQ" type="search" placeholder="Buscar producto…" style="flex:1;min-width:140px;width:auto"><select id="fF" style="width:auto"><option value="">Todos</option><option value="con">Con foto</option><option value="sin">Sin foto</option><option value="nb">Sin código de barras</option></select></div>
+ <div id="fL"></div>
+ <p class="hint">El ZIP trae una foto por archivo, con el código de barras como nombre (si hay varias fotos: <code>codigo_2.jpg</code>, <code>codigo_3.jpg</code>…). Si un producto no tiene código de barras se usa su SKU y se avisa al terminar.</p>
+</main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js?v=202610281223"></script>
+<script src="js/comun.js?v=202610281223"></script>
+<script src="js/fotos.js?v=202610281223"></script>
+</body></html>
