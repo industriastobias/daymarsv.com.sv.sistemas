@@ -58,3 +58,4 @@ dialog.cfgd{border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-heig
 .cfcv{width:140px;height:140px;border-radius:50%;border:2px solid var(--line);touch-action:none;cursor:grab;display:block}
 .cf-z{margin:4px 0 8px}.cf-z input[type=range]{width:100%;padding:0;min-height:30px}
 .side .sbar .brand{white-space:nowrap;font-size:19px}
+.shell.nosd main,.shell.nosd main.wide{max-width:none;margin:0;padding-right:32px}
