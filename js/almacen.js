@@ -70,7 +70,7 @@ function stats(){
  $("nTotal").textContent=S.prods.length}
 const SEL_ITEMS="id,cantidad,precio_unit,precio_original,descuento_pct,nombre,codigo,codigo_barras,producto_id,es_libre,productos(foto_url,nombre,codigo,codigo_barras)";
 async function cargarPend(){
- S.pend=await fetchAll(()=>db.from("ventas").select(`*,venta_items(${SEL_ITEMS})`)
+ S.pend=await fetchAll(()=>db.from("ventas").select(`*,profiles(nombre),venta_items(${SEL_ITEMS})`)
   .or("estado.eq.pendiente,and(estado.eq.completada,tipo.in.(entrega_pendiente,cobro_pendiente),oculto_pendientes.eq.false)").order("created_at",{ascending:false}));
  badges()}
 async function badges(){
@@ -446,17 +446,29 @@ function editarPedido(v){
 const dayRange=(a,b)=>{const [y1,m1,d1]=a.split("-").map(Number),[y2,m2,d2]=b.split("-").map(Number);
  return [new Date(y1,m1-1,d1,0,0,0).toISOString(),new Date(y2,m2-1,d2+1,0,0,0).toISOString()]};
 async function ventasRango(desde,hasta){
- return fetchAll(()=>{let q=db.from("ventas").select(`*,venta_items(${SEL_ITEMS})`).eq("estado","completada").order("created_at",{ascending:false});
+ return fetchAll(()=>{let q=db.from("ventas").select(`*,profiles(nombre),venta_items(${SEL_ITEMS})`).eq("estado","completada").order("created_at",{ascending:false});
   if(desde&&hasta){const r=dayRange(desde,hasta);q=q.gte("created_at",r[0]).lt("created_at",r[1])}return q})}
 const filaVenta=v=>`<div class="sv"><div class="th">${(v.venta_items||[]).slice(0,3).map(i=>itImg(i)?`<img src="${esc(itImg(i))}" alt="" loading="lazy">`:`<div class="ph">${inicial(itName(i))}</div>`).join("")}</div>
- <div class="ti"><b>${resumenItems(v)}</b><small>${fdate(v.created_at)} ${ftime(v.created_at)}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</small><br>${tipoBd(v.tipo)} ${pagoBd(v.metodo_pago)}</div>
- <div class="am2"><b>${$$(v.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<button class="btn g sm" data-an="${v.id}" style="color:var(--bad)">Anular</button>`:""}</div></div></div>`;
+ <div class="ti"><b>${resumenItems(v)}</b><small>${fdate(v.created_at)} ${ftime(v.created_at)}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}${v.profiles?" · Vendió: "+esc(v.profiles.nombre):""}</small><br>${tipoBd(v.tipo)} ${pagoBd(v.metodo_pago)}</div>
+ <div class="am2"><b>${$$(v.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<button class="btn g sm" data-an="${v.id}" style="color:var(--bad)">Anular</button><button class="btn g sm" data-el="${v.id}" style="color:var(--bad)">Eliminar</button>`:""}</div></div></div>`;
 async function anular(id,after){
  if(!soloAdmin())return;if(!await pedirClave("Vas a anular esta venta."))return;
  const v=[...S.ventas,...S.pend].find(x=>x.id===id);
  if(!await confirmar((v?lineas(v)+`<p>Total: <b>${$$(v.total)}</b></p>`:"")+`<p>La venta se anulará y <b>se devolverá el stock</b> al inventario.</p>`,{titulo:"Anular venta",ok:"Anular",peligro:true}))return;
  const ok=await espera(async()=>{await rpc("anular_venta",{p_venta:id});return true});
  if(ok){toast("Venta anulada y stock devuelto");snd("ok");await cargarProductos();filtrar(true);await after()}}
+async function eliminarVenta(id,after){
+ if(!soloAdmin())return;if(!await pedirClave("Vas a eliminar esta venta."))return;
+ const v=[...S.ventas,...S.pend].find(x=>x.id===id);
+ const m=modal("Eliminar venta",(v?lineas(v)+`<p>Total: <b>${$$(v.total)}</b>${v.profiles?" · Vendió: "+esc(v.profiles.nombre):""}</p>`:"")+
+  `<p class="pw">La venta desaparece por completo de ventas, reportes y cierres futuros. <b>No se puede deshacer.</b> Elige qué pasa con el stock:</p>
+  <label class="cf-c"><input type="radio" name="evd" value="1" checked> Devolver los productos al stock</label>
+  <label class="cf-c"><input type="radio" name="evd" value="0"> No devolver (el stock se queda como está)</label>
+  <p class="hint">Si solo quieres corregir un error y dejar constancia, usa <b>Anular</b>: la venta queda en el historial.</p>`,
+  {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn dg" id="evOk">Eliminar</button>`});
+ m.q("#evOk").onclick=async()=>{const dev=m.q("[name=evd]:checked").value==="1";
+  const ok=await espera(async()=>{await rpc("eliminar_venta",{p_venta:id,p_devolver:dev});return true});
+  if(ok){m.close();toast(dev?"Venta eliminada y stock devuelto":"Venta eliminada");snd("ok");await cargarProductos();filtrar(true);await after()}}}
 async function pintarHoy(){
  const d=$("hDate").value||ymd(new Date());$("hDate").value=d;
  const L=await espera(()=>ventasRango(d,d));if(!L)return;S.ventas=L;
@@ -849,7 +861,7 @@ $("bClean").onclick=async()=>{if(!soloAdmin())return;const t=S.pt;
  if(!await pedirClave("Vas a limpiar de esta lista los pedidos ya completados."))return;
  if(!await confirmar("Se quitarán de la lista los pedidos completados de <b>"+TIPO[t][0]+"</b>. No se modifican el stock ni las ventas registradas.",{titulo:"Limpiar completados",ok:"Limpiar",peligro:true}))return;
  const n=await espera(()=>rpc("ocultar_pendientes",{p_tipo:t}));if(n!==undefined){toast(n+" registros limpiados");await cargarPend();pintarPend()}};
-["hList","vList"].forEach(id=>$(id).addEventListener("click",e=>{const a=e.target.closest("[data-an]");if(a)anular(a.dataset.an,()=>id==="hList"?pintarHoy():pintarVentas())}));
+["hList","vList"].forEach(id=>$(id).addEventListener("click",e=>{const a=e.target.closest("[data-an]"),x=e.target.closest("[data-el]"),R=()=>id==="hList"?pintarHoy():pintarVentas();if(a)anular(a.dataset.an,R);if(x)eliminarVenta(x.dataset.el,R)}));
 $("hDate").onchange=pintarHoy;$("hToday").onclick=()=>{$("hDate").value=ymd(new Date());pintarHoy()};
 ["vFrom","vTo"].forEach(i=>$(i).addEventListener("change",()=>{$("vQuick").value=$("vFrom").value||$("vTo").value?"custom":"all";if($("vQuick").value==="custom"&&![...$("vQuick").options].some(o=>o.value==="custom"))$("vQuick").add(new Option("Personalizado","custom"));$("vQuick").value="custom";pintarVentas()}));
 $("vQuick").onchange=()=>{if($("vQuick").value==="all"){$("vFrom").value="";$("vTo").value=""}pintarVentas()};

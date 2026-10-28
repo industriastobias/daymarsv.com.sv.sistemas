@@ -45,6 +45,14 @@
   <div class="pan" style="margin-bottom:12px"><h3>Saldo según tu banco</h3><div class="fl"><div><label for="bFec">Fecha</label><input id="bFec" type="date"></div><div><label for="bSal">Saldo ($)</label><input id="bSal" type="number" step="0.01" inputmode="decimal"></div><div class="full"><button class="btn" id="bSave" type="button">Guardar saldo</button></div></div></div>
   <p class="hint">Marca los movimientos que ya aparecen en tu estado de cuenta del banco.</p><div id="bL"></div>
  </section>
+ <section id="p-cap" class="hidden">
+  <div class="kp" id="kK" style="grid-template-columns:repeat(2,1fr)"></div>
+  <div class="pan" style="margin-bottom:12px"><h3>Préstamos recibidos</h3><div id="kP"></div></div>
+  <div class="seg2" id="kSg"><button data-t="all" class="on">Todo</button><button data-t="inversion">Inversión</button><button data-t="retiro">Retiros</button><button data-t="prestamo">Préstamos</button><button data-t="pago_prestamo">Pagos</button></div>
+  <div class="ctl"><span class="grow"></span><button class="btn" id="kNew" type="button">Nuevo registro</button></div>
+  <div id="kL"></div>
+  <p class="hint" style="margin-top:10px">El capital no cuenta como ingreso ni gasto del negocio: la plata que pones, retiras o te prestan no cambia tu ganancia. La ganancia del negocio es la de ventas, costos y gastos de todo el tiempo.</p>
+ </section>
  <section id="p-prov" class="hidden">
   <div class="ctl"><span class="grow"></span><button class="btn" id="pNew" type="button">Nuevo proveedor</button></div><div id="pL"></div>
  </section>

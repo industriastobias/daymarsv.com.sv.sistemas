@@ -6,8 +6,8 @@ const {$,r2,cents,norm,fdate,money,ic,deb,rpc,fetchAll,espera,modal,confirmar,pe
 const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
-const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',ban:'<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/>',prov:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/>'};
-const S={q:"month",desde:"",hasta:"",V:[],M:[],C:[],PR:[],B:[],inv:0,tipo:"all",cu:"cobrar",ready:false,all:[]};
+const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',cap:'<path d="M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',ban:'<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/>',prov:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/>'};
+const S={q:"month",desde:"",hasta:"",V:[],M:[],C:[],PR:[],B:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",ready:false,all:[]};
 const CATS=["Alquiler","Servicios (luz, agua, internet)","Salarios","Publicidad","Transporte y envíos","Empaque","Impuestos","Mercadería","Flete","Comisiones","Materiales","Otros ingresos","Otros gastos"];
 const TN={ingreso:["Ingreso","ok"],gasto:["Gasto","or"],costo:["Costo directo","wa"]};
 const mkey=d=>String(d).slice(0,7);
@@ -21,6 +21,8 @@ async function cargarPeriodo(){
   fetchAll(()=>db.from("fin_movimientos").select("*,proveedores(nombre)").gte("fecha",S.desde).lte("fecha",S.hasta).order("fecha",{ascending:false}).order("created_at",{ascending:false}))]);
  if(v.error)throw new Error(v.error.message);S.V=v.data||[];S.M=m}
 async function cargarGeneral(){
+ const [kk,va,ma]=await Promise.all([db.from("capital_movs").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}),db.rpc("fin_ventas_mensuales",{p_desde:"2000-01-01",p_hasta:ymd(new Date())}),fetchAll(()=>db.from("fin_movimientos").select("tipo,monto"))]);
+ if(kk.error)throw new Error(kk.error.message);if(va.error)throw new Error(va.error.message);S.K=kk.data;S.VA=va.data||[];S.MA=ma;
  const [c,p,b,pr,all]=await Promise.all([db.from("fin_cuentas").select("*").order("vence",{ascending:true,nullsFirst:false}),db.from("proveedores").select("*").order("nombre"),db.from("fin_banco").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}).limit(12),
   fetchAll(()=>db.from("productos").select("stock,precio_costo").eq("activo",true)),fetchAll(()=>db.from("fin_movimientos").select("id,fecha,tipo,monto,conciliado,descripcion,categoria").order("fecha",{ascending:false}).limit(1000))]);
  [c,p,b].forEach(x=>{if(x.error)throw new Error(x.error.message)});
@@ -161,12 +163,54 @@ function formProv(p){p=p||{};
   const ok=await espera(async()=>{const {error}=await db.from("proveedores").delete().eq("id",p.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Proveedor eliminado");await refrescar()}}}
 $("pNew").onclick=()=>formProv();$("pL").addEventListener("click",e=>{const b=e.target.closest("[data-pe]");if(b)formProv(S.PR.find(x=>x.id===b.dataset.pe))});
 
+/* ---------- Capital: inversión, retiros y préstamos ---------- */
+const KT={inversion:["Inversión","ok"],retiro:["Retiro","or"],prestamo:["Préstamo recibido","bl2"],pago_prestamo:["Pago de préstamo","wa"]};
+const $n=n=>n<0?"−"+$$(-n):$$(n);
+const sumK=t=>S.K.filter(k=>k.tipo===t).reduce((s,k)=>s+ +k.monto,0);
+function gananciaTotal(){const v=S.VA.reduce((s,x)=>s+ +x.ventas-+x.costo,0),m=t=>S.MA.filter(x=>x.tipo===t).reduce((s,x)=>s+ +x.monto,0);return v+m("ingreso")-m("gasto")-m("costo")}
+function pintarCap(){
+ const inv=sumK("inversion"),ret=sumK("retiro"),pre=sumK("prestamo"),pag=sumK("pago_prestamo"),gan=gananciaTotal();
+ $("kK").innerHTML=`<div><span>Invertido en el negocio</span><b>${$$(inv)}</b></div><div><span>Ganancia del negocio</span><b class="${gan>=0?"pos":"neg"}">${$n(gan)}</b><small>todo el tiempo</small></div>
+  <div><span>Retirado (dinero que tomaste)</span><b>${$$(ret)}</b></div><div><span>Ganancia sin retirar</span><b class="${gan-ret>=0?"pos":"neg"}">${$n(gan-ret)}</b></div>
+  <div><span>Debes por préstamos</span><b class="${pre-pag>0?"neg":""}">${$$(pre-pag)}</b><small>recibido ${$$(pre)} · pagado ${$$(pag)}</small></div><div><span>Inversión recuperada</span><b>${inv?Math.min(100,Math.max(0,ret/inv*100)).toFixed(0)+"%":"—"}</b><small>retiros ÷ inversión</small></div>`;
+ const T={};S.K.filter(k=>k.tipo==="prestamo"||k.tipo==="pago_prestamo").forEach(k=>{const n=(k.tercero||"Sin nombre").trim();T[n]=T[n]||{r:0,p:0};if(k.tipo==="prestamo")T[n].r+=+k.monto;else T[n].p+=+k.monto});
+ const ks=Object.keys(T);
+ $("kP").innerHTML=ks.length?ks.map(n=>{const t=T[n],pc=t.r?Math.min(100,t.p/t.r*100):0;return `<div class="rw"><div class="ti"><b>${esc(n)}</b><small>Recibido ${$$(t.r)} · pagado ${$$(t.p)}</small><div class="bar ${t.r-t.p<=0.005?"ok":""}" style="margin-top:6px"><i style="width:${pc}%"></i></div></div><div class="am2"><b>${$$(t.r-t.p)}</b><br><small>${t.r-t.p<=0.005?"Pagado":"saldo"}</small></div></div>`}).join(""):`<p class="hint" style="margin:0">Aún no hay préstamos registrados.</p>`;
+ $("kSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.kt));
+ const L=S.K.filter(k=>S.kt==="all"||k.tipo===S.kt);
+ $("kL").innerHTML=L.length?L.slice(0,300).map(k=>`<div class="rw"><div class="ti"><b>${esc(k.tercero||KT[k.tipo][0])}${k.descripcion?" · "+esc(k.descripcion):""}</b><small>${fdate(k.fecha)} · ${esc(k.metodo||"")}</small></div>
+  <div class="am2"><span class="bd ${KT[k.tipo][1]}">${KT[k.tipo][0]}</span> <b class="${k.tipo==="inversion"||k.tipo==="prestamo"?"pos":"neg"}">${k.tipo==="inversion"||k.tipo==="prestamo"?"+":"−"}${$$(k.monto)}</b></div><button class="btn g sm" data-ke="${k.id}">Editar</button></div>`).join(""):`<div class="empty card">No hay registros.</div>`}
+function formCap(k){
+ k=k||{tipo:"inversion",fecha:ymd(new Date()),tercero:"",descripcion:"",monto:"",metodo:"Efectivo"};
+ const AYU={inversion:"Dinero tuyo que pones al negocio (para comprar mercadería, equipo…).",retiro:"Dinero que tomas de las ventas o de la ganancia para ti.",prestamo:"Dinero que te prestó alguien (familiar, banco…). Escribe quién.",pago_prestamo:"Dinero que devuelves de un préstamo. Escribe a quién."};
+ const d=modal(k.id?"Editar registro":"Nuevo registro de capital",`<div class="tp" id="kfT">${Object.keys(KT).map(t=>`<button type="button" data-t="${t}" class="${t===k.tipo?"on":""}">${KT[t][0]}</button>`).join("")}</div><p class="hint" id="kfA" style="margin-top:8px">${AYU[k.tipo]}</p>
+  <div class="fg"><div><label>Fecha</label><input name="f" type="date" value="${k.fecha}"></div><div><label>Monto ($)</label><input name="mo" type="number" min="0.01" step="0.01" inputmode="decimal" value="${k.monto}"></div>
+  <div><label id="kfTl">Persona o entidad <small>(opcional)</small></label><input name="t" list="dlKt" maxlength="80" value="${esc(k.tercero||"")}"><datalist id="dlKt">${[...new Set(S.K.filter(x=>x.tercero).map(x=>x.tercero))].map(x=>`<option>${esc(x)}`).join("")}</datalist></div>
+  <div><label>Método</label><select name="me">${["Efectivo","Transferencia","Tarjeta"].map(x=>`<option ${x===k.metodo?"selected":""}>${x}</option>`).join("")}</select></div>
+  <div class="full"><label>Nota <small>(opcional)</small></label><input name="d" maxlength="160" value="${esc(k.descripcion||"")}"></div></div><div class="err2" id="kfE" role="alert"></div>`,
+  {foot:`${k.id?'<button class="btn g" id="kfDel" style="color:var(--bad);margin-right:auto">Eliminar</button>':""}<button class="btn g" data-x>Cancelar</button><button class="btn" id="kfOk">Guardar</button>`});
+ let tipo=k.tipo;
+ d.q("#kfT").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b)return;tipo=b.dataset.t;d.el.querySelectorAll("#kfT button").forEach(x=>x.classList.toggle("on",x===b));d.q("#kfA").textContent=AYU[tipo]});
+ const g=n=>d.q(`[name=${n}]`).value.trim();
+ d.q("#kfOk").onclick=async()=>{const mo=Number(g("mo"));if(!(mo>0)){d.q("#kfE").textContent="Escribe un monto mayor a cero.";return}if(!g("f")){d.q("#kfE").textContent="Elige la fecha.";return}
+  if((tipo==="prestamo"||tipo==="pago_prestamo")&&!g("t")){d.q("#kfE").textContent="Escribe quién prestó o a quién le pagas.";return}
+  const row={tipo,fecha:g("f"),monto:r2(mo),tercero:g("t")||null,descripcion:g("d")||null,metodo:g("me")};
+  if(tipo==="pago_prestamo"){const sal=S.K.filter(x=>x.tercero===row.tercero&&x.id!==k.id).reduce((s,x)=>s+(x.tipo==="prestamo"?+x.monto:x.tipo==="pago_prestamo"?-x.monto:0),0);
+   if(row.monto>sal+.005&&!await confirmar(`Ese pago (${$$(row.monto)}) es mayor que lo que debes a ${esc(row.tercero)} (${$$(Math.max(0,sal))}). ¿Guardarlo igual?`,{titulo:"Revisa el pago",ok:"Guardar igual"}))return}
+  const ok=await espera(async()=>{const {error}=k.id?await db.from("capital_movs").update(row).eq("id",k.id):await db.from("capital_movs").insert({...row,creado_por:me.id});if(error)throw new Error(error.message);return true});
+  if(ok){d.close();toast("Registro guardado");await refrescar()}};
+ const del=d.q("#kfDel");if(del)del.onclick=async()=>{if(!await pedirClave("Vas a eliminar este registro de capital."))return;
+  const ok=await espera(async()=>{const {error}=await db.from("capital_movs").delete().eq("id",k.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Registro eliminado");await refrescar()}}}
+$("kNew").onclick=()=>formCap();
+$("kL").addEventListener("click",e=>{const b=e.target.closest("[data-ke]");if(b)formCap(S.K.find(x=>x.id===b.dataset.ke))});
+$("kSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.kt=b.dataset.t;pintarCap()}});
+
 /* ---------- periodo y arranque ---------- */
-function pintarTodo(){pintarRes();pintarMov();pintarCue();pintarInf();pintarBan();pintarProv();
+function pintarTodo(){pintarRes();pintarMov();pintarCue();pintarInf();pintarBan();pintarProv();pintarCap();
  $("fBar").querySelectorAll("[data-q]").forEach(b=>b.classList.toggle("on",b.dataset.q===S.q))}
 async function refrescar(){await espera(async()=>{await Promise.all([cargarPeriodo(),cargarGeneral()])},"Actualizando…");pintarTodo()}
 $("fBar").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(!b)return;S.q=b.dataset.q;refrescar()});
 ["fD","fH"].forEach(i=>$(i).addEventListener("change",()=>{if($("fD").value&&$("fH").value&&$("fD").value<=$("fH").value){S.q="custom";S.desde=$("fD").value;S.hasta=$("fH").value;refrescar()}else toast("Revisa las fechas")}));
-pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Cuentas",IC.cue],["inf","Informes",IC.inf],["ban","Banco",IC.ban],["prov","Proveedores",IC.prov]],k=>{$("fBar").parentElement.classList.toggle("hidden",!["res","mov","inf"].includes(k))});
+pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Cuentas",IC.cue],["inf","Informes",IC.inf],["ban","Banco",IC.ban],["cap","Capital",IC.cap],["prov","Proveedores",IC.prov]],k=>{$("fBar").parentElement.classList.toggle("hidden",!["res","mov","inf"].includes(k))});
 await refrescar();
 })();
