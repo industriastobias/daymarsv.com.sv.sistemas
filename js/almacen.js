@@ -268,17 +268,22 @@ async function abrirTicket(v,nuevo){
  const cf=await ensureCfg(),html=ticketHTML(v,cf);
  const m=modal(nuevo?"Venta registrada · #"+v.numero:"Ticket · venta #"+v.numero,`<div id="tkB" style="background:#eee;border-radius:12px;padding:10px">${html}</div>
   <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px"><input type="checkbox" id="tkPref" ${LS("dms_ticket")!=="0"?"checked":""} style="width:18px;height:18px"> Mostrar el ticket al terminar cada venta</label>`,
-  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button><button class="btn g" id="tkI">Compartir imagen</button><button class="btn" id="tkW">Enviar por WhatsApp</button>`});
+  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button><button class="btn" id="tkW">Enviar PDF por WhatsApp</button>`});
  m.q("#tkPref").onchange=e=>LS("dms_ticket",e.target.checked?"1":"0");
  m.q("#tkP").onclick=()=>imprimir(html);
- m.q("#tkW").onclick=async()=>{let cli=null;try{const {data}=await db.from("clientes").select("nombre,telefono");const n=norm(v.cliente_nombre||"").trim();cli=n?(data||[]).find(x=>norm(x.nombre).trim()===n):null}catch(e){}
+ m.q("#tkW").onclick=async()=>{
+  let cli=null;try{const {data}=await db.from("clientes").select("nombre,telefono");const n=norm(v.cliente_nombre||"").trim();cli=n?(data||[]).find(x=>norm(x.nombre).trim()===n):null}catch(e){}
   const t=await DAY.input("Número de WhatsApp del cliente (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");if(t===null)return;
   const dig=t.replace(/\D/g,""),tel=dig.length===8?"503"+dig:dig;if(tel.length<10||tel.length>15){await DAY.say("Ese número no es válido.");return}
-  window.open("https://wa.me/"+tel+"?text="+encodeURIComponent(ticketTexto(v,cf)),"_blank")};
- m.q("#tkI").onclick=async()=>{await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-  const c=await html2canvas(m.q(".tkt"),{backgroundColor:"#ffffff",scale:2,logging:false}),b=await new Promise(r=>c.toBlob(r,"image/png")),f=new File([b],"ticket-"+v.numero+".png",{type:"image/png"});
-  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Ticket #"+v.numero})}catch(e){}}
-  else{const a=document.createElement("a");a.download=f.name;a.href=URL.createObjectURL(b);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("Imagen del ticket descargada")}},"Preparando imagen…")}}
+  const f=await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+   const c=await html2canvas(m.q(".tkt"),{backgroundColor:"#ffffff",scale:3,logging:false}),W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H]});
+   p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,W,c.height*W/c.width);
+   return new File([p.output("blob")],"ticket-"+v.numero+".pdf",{type:"application/pdf"})},"Preparando PDF…");
+  if(!f)return;
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Ticket #"+v.numero,text:"Ticket de tu compra en "+(cf.nombre||"DAYMAR-SHOP")});return}catch(e){if(e&&e.name==="AbortError")return}}
+  const a=document.createElement("a");a.download=f.name;a.href=URL.createObjectURL(f);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+  window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("Hola, te comparto el ticket de tu compra en "+(cf.nombre||"DAYMAR-SHOP")+" (venta #"+v.numero+"). Adjunto el PDF."),"_blank");
+  toast("PDF descargado: adjúntalo en el chat de WhatsApp")}}
 async function ticketUltima(){if(LS("dms_ticket")==="0")return;
  try{const {data}=await db.from("ventas").select(TK_SEL).eq("usuario_id",me.id).order("created_at",{ascending:false}).limit(1);if(data&&data[0])abrirTicket(data[0],true)}catch(e){}}
 async function tras(o,t,lines){ /* refresco local tras una venta */
