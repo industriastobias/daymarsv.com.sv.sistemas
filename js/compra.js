@@ -90,7 +90,7 @@ async function comprimir(file,max,q){
  const s=Math.min(1,max/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(w*s));c.height=Math.max(1,Math.round(h*s));
  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);
  return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
-const par=async f=>({main:await comprimir(f,600,.5),thumb:await comprimir(f,200,.4)});
+const par=async f=>({main:await comprimir(f,1600,.85),thumb:await comprimir(f,320,.7)});
 function renderPrevs(urls){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=urls;$("prevs").innerHTML=urls.map((u,i)=>`<img src="${u}" alt="Vista previa ${i+1}">`).join("")}
 async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.type&&f.type.startsWith("image/"));if(!fs.length)return false;
  busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));imgsTemp=acumular?imgsTemp.concat(n):n;renderPrevs(imgsTemp.map(i=>URL.createObjectURL(i.thumb)))}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
