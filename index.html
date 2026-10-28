@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Iniciar sesión</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610281108"><link rel="stylesheet" href="css/login.css?v=202610281121"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202610281108"><link rel="stylesheet" href="css/login.css?v=202610281125"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
 <div class="lx"><i class="o o1"></i><i class="o o2"></i><i class="o o3"></i>
 <form class="lc" id="lf">
  <div class="lc-logo"><img src="logo.png" alt="DAYMAR"></div>
@@ -14,8 +14,7 @@
  <div id="rg" class="hidden"><div class="fld"><input id="rn" autocomplete="name" maxlength="60" placeholder=" "><label for="rn">Tu nombre</label></div>
  <div class="fld"><input id="p2" type="password" autocomplete="new-password" placeholder=" "><label for="p2">Repite la contraseña</label></div></div>
  <div class="err" id="le" role="alert"></div><button class="btn" id="lb">Ingresar</button>
- <p class="inv" id="inv">🔒 El registro es <b>solo por invitación</b>. Si aún no tienes acceso, pídeselo al administrador.</p>
- <button type="button" id="tg" class="tg hidden">¿Te invitaron? Crear cuenta</button>
+  <button type="button" id="tg" class="tg hidden">¿Te invitaron? Crear cuenta</button>
 </form>
 <div class="lx-ft">© DAYMAR-SHOP · Acceso solo para usuarios autorizados</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
@@ -25,7 +24,7 @@
 if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
 else{const {data}=await db.auth.getSession();if(data.session)location.replace("menu.html")}
 let reg=false;
-if(/[?&]registro=1/.test(location.search)){$("tg").classList.remove("hidden");$("inv").classList.add("hidden")}
+if(/[?&]registro=1/.test(location.search))$("tg").classList.remove("hidden");
 $("eye").onclick=()=>{const s=$("p").type==="password";$("p").type=s?"text":"password";$("eye").textContent=s?"Ocultar":"Mostrar"};
 $("tg").onclick=()=>{reg=!reg;$("ht").textContent=reg?"Crea tu cuenta":"Bienvenido";$("hs").textContent=reg?"Usa el correo con el que te invitaron.":"Inicia sesión para continuar.";$("rg").classList.toggle("hidden",!reg);$("lb").textContent=reg?"Crear cuenta":"Ingresar";$("tg").textContent=reg?"Ya tengo cuenta: iniciar sesión":"¿Te invitaron? Crear cuenta";$("p").autocomplete=reg?"new-password":"current-password";$("le").textContent="";$("le").style.color=""};
 $("lf").onsubmit=async e=>{e.preventDefault();$("le").textContent="";$("le").style.color="";$("lb").disabled=true;
