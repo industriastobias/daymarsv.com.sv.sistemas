@@ -34,9 +34,7 @@ function pintar(){
  const cs=Object.entries(d.cats).sort((a,b)=>b[1].v-a[1].v);
  $("cTab").innerHTML=cs.map(([n,c])=>{const pc=d.valor?c.v/d.valor*100:0,avg=c.n?c.u/c.n:0;
   return `<tr><td><b>${esc(n)}</b></td><td class="r">${c.n}</td><td class="r">${c.u}</td><td class="r">${$$(c.v)}</td><td class="r">${avg.toFixed(1)}</td><td style="min-width:110px"><div class="bar"><i style="width:${pc.toFixed(1)}%"></i></div><small>${pc.toFixed(1)}%</small></td><td>${c.u===0?'<span class="bd or">Agotado</span>':avg<=2?'<span class="bd wa">Bajo</span>':'<span class="bd ok">OK</span>'}</td></tr>`}).join("")||`<tr><td colspan="7" class="empty">Sin datos</td></tr>`;
- $("tTab").innerHTML=d.top.map((p,i)=>`<tr><td><span class="bd bl2">#${i+1}</span></td><td><b>${esc(p.nombre)}</b><br><small>${esc(p.codigo||"")}</small></td><td>${esc(p.cat)}</td><td class="r">${p.stock}</td><td class="r">${$$(p.fin)}</td><td class="r"><b>${$$(p.val)}</b></td><td class="r">${d.valor?(p.val/d.valor*100).toFixed(1):0}%</td></tr>`).join("")||`<tr><td colspan="7" class="empty">Sin datos</td></tr>`;
- $("aList").innerHTML=d.aten.length?d.aten.map(p=>`<div class="rw"><div class="ti"><b>${esc(p.nombre)} <span class="bd ${p.stock===0?"or":"wa"}">${p.stock===0?"AGOTADO":"CRÍTICO"}</span></b><small>${esc(p.codigo||"")} · ${esc(p.cat)} · Stock ${p.stock}</small></div><div class="am2"><b>${$$(p.fin)}</b><br><small>precio unitario</small></div></div>`).join("")
-  :`<div class="empty card">Ningún producto en estado crítico. ¡Buen trabajo!</div>`;
+ listaProd();
  const cats=Object.keys(d.cats).sort();
  ["dCat","dCat2"].forEach(i=>{const cur=$(i).value;$(i).innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option value="${esc(c)}">${esc(c)} (${d.cats[c].n})</option>`).join("");$(i).value=cur});
  const enCat=c=>P.filter(p=>!c||p.cat===c);
@@ -116,6 +114,46 @@ async function excelInv(){
  if(!P.length){toast("No hay productos para exportar");return}
  await excel("inventario-daymar",[{n:"Inventario",c:[["Código",14],["Producto",34],["Categoría",18],["Código de barras",20],["Stock",9],["Stock mínimo",12],["Precio",12,"money"],["Descuento %",12],["Precio final",12,"money"],["Valor en stock",14,"money"]].concat(ADM?[["Costo",12,"money"]]:[]),
   f:P.map(p=>[p.codigo||"",p.nombre,p.cat,p.codigo_barras||"",p.stock,p.stock_minimo,+p.precio_venta,+p.descuento_pct||0,p.fin,r2(p.val)].concat(ADM?[+p.precio_costo]:[]))}])}
+/* ---------- pestaña Productos: lista completa con buscador, filtros y ficha ---------- */
+let pF="",pLim=30;
+function grupos(){
+ const M=new Map();
+ P.forEach(p=>{let g=M.get(p.id);if(!g){g={id:p.id,p,nombre:p.color?p.base:p.nombre,stock:0,val:0,cols:[],minimo:mini(p)};M.set(p.id,g)}
+  g.stock+=p.stock;g.val+=p.val;if(p.color)g.cols.push({c:p.color,s:p.stock,cb:p.codigo_barras})});
+ return [...M.values()]}
+function listaProd(){
+ const G=grupos(),d=datos(),cats=[...new Set(G.map(g=>g.p.cat))].sort(),cur=$("pC").value;
+ $("pC").innerHTML='<option value="">Todas</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("pC").value=cats.includes(cur)?cur:"";
+ const q=norm($("pQ").value),c=$("pC").value,o=$("pO").value,topIds=new Set(d.top.map(x=>x.id)),atenIds=new Set(d.aten.map(x=>x.id));
+ let L=G.filter(g=>(!c||g.p.cat===c)&&(!q||norm([g.nombre,g.p.codigo,g.p.codigo_barras,...g.cols.map(x=>x.c+" "+(x.cb||""))].join(" ")).includes(q))&&
+  (!pF||(pF==="top"?topIds.has(g.id):pF==="aten"?atenIds.has(g.id):pF==="agot"?g.stock===0:pF==="bajo"?(g.stock>0&&g.stock<=g.minimo):!g.p.foto_url)));
+ const ord={nombre:(a,b)=>a.nombre.localeCompare(b.nombre),stock:(a,b)=>a.stock-b.stock||a.nombre.localeCompare(b.nombre),stockmax:(a,b)=>b.stock-a.stock,valor:(a,b)=>b.val-a.val,precio:(a,b)=>b.p.fin-a.p.fin};
+ L.sort(pF==="top"&&o==="nombre"?ord.valor:ord[o]);
+ $("pSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.f===pF));
+ $("pInfo").textContent=`${L.length} producto(s)${L.length?` · ${L.reduce((s,g)=>s+g.stock,0)} unidades · valor ${$$(L.reduce((s,g)=>s+g.val,0))}`:""}`;
+ const V=L.slice(0,pLim);
+ $("pL").innerHTML=V.length?V.map(g=>{const p=g.p,e=g.stock===0?["Agotado","or"]:g.stock<=g.minimo?["Stock bajo","wa"]:["Disponible","ok"];
+  return `<div class="pr2" data-id="${g.id}">${p.foto_url?`<img class="pim" src="${esc(p.foto_url)}" alt="" loading="lazy">`:`<div class="pim ph0">${esc((g.nombre||"?")[0].toUpperCase())}</div>`}
+  <div class="ptx"><b>${esc(g.nombre)}</b><small>${esc(p.cat)}${p.codigo?" · "+esc(p.codigo):""}</small>${g.cols.length?`<div class="pcl">${g.cols.map(x=>`<span>${DAY.colorDot(x.c)}${esc(x.c)} ${x.s}</span>`).join("")}</div>`:""}</div>
+  <div class="pmt"><b>${$$(p.fin)}</b>${+p.descuento_pct?`<small><s>${$$(p.precio_venta)}</s> -${+p.descuento_pct}%</small>`:""}<span class="bd ${e[1]}">${e[0]} · ${g.stock}</span></div></div>`}).join(""):'<div class="empty card">Ningún producto coincide con los filtros.</div>';
+ $("pMas").classList.toggle("hidden",L.length<=pLim);$("pMas").textContent=`Ver más (${L.length-pLim})`}
+async function ficha(id){
+ const g=grupos().find(x=>x.id===id);if(!g)return;const p=g.p;let im=[],vend=null;
+ try{const {data}=await db.from("producto_imagenes").select("url,thumb_url").eq("producto_id",id).order("orden");im=data||[]}catch(e){}
+ if(!im.length&&p.foto_url)im=[{url:p.foto_url,thumb_url:p.foto_url}];
+ if(ADM)try{const {data}=await db.from("venta_items").select("cantidad,ventas!inner(estado)").eq("producto_id",id).eq("ventas.estado","completada");if(data)vend=data.reduce((s,x)=>s+x.cantidad,0)}catch(e){}
+ const f=(k,v)=>`<div class="fk"><span>${k}</span><b>${v}</b></div>`;
+ const m=modal(esc(g.nombre),`<div class="kgal">${im.length?`<img class="main" id="fM" src="${esc(im[0].url)}" alt="" style="width:100%;max-height:50vh;object-fit:contain;border-radius:10px;background:var(--bg)"><div class="th" style="display:flex;gap:6px;flex-wrap:wrap">${im.map(i=>`<img src="${esc(i.thumb_url||i.url)}" data-u="${esc(i.url)}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;cursor:pointer" alt="">`).join("")}</div>`:""}</div>
+  <div class="fkg">${f("Categoría",esc(p.cat))}${ADM?f("Código",esc(p.codigo||"—"))+(g.cols.length?"":f("Código de barras",esc(p.codigo_barras||"—"))):""}
+  ${f("Precio de venta",$$(p.fin)+(+p.descuento_pct?` <small>(−${+p.descuento_pct}%)</small>`:""))}${ADM?f("Costo",$$(p.precio_costo)):""}
+  ${f("Stock total",g.stock+" <small>(mínimo "+g.minimo+")</small>")}${ADM?f("Valor en stock",$$(g.val)):""}${ADM&&vend!==null?f("Unidades vendidas (histórico)",vend):""}</div>
+  ${g.cols.length?`<h3 class="sect">Colores</h3>${g.cols.map(x=>`<div class="rw"><div class="ti"><b>${DAY.colorDot(x.c)}${esc(x.c)}</b>${ADM&&x.cb?`<small>Barras: ${esc(x.cb)}</small>`:""}</div><div class="am2"><b>${x.s}</b></div></div>`).join("")}`:""}
+  ${p.descripcion?`<p class="hint">${esc(p.descripcion)}</p>`:""}`,{big:true,foot:'<button class="btn g" data-x>Cerrar</button>'});
+ m.el.addEventListener("click",e=>{const t=e.target.closest("[data-u]");if(t&&m.q("#fM"))m.q("#fM").src=t.dataset.u})}
+$("pSg").onclick=e=>{const b=e.target.closest("button");if(!b)return;pF=b.dataset.f;pLim=30;listaProd()};
+["pC","pO"].forEach(i=>$(i).addEventListener("change",()=>{pLim=30;listaProd()}));
+$("pQ").addEventListener("input",deb(()=>{pLim=30;listaProd()},200));$("pMas").onclick=()=>{pLim+=30;listaProd()};
+$("pL").addEventListener("click",e=>{const r=e.target.closest("[data-id]");if(r)ficha(r.dataset.id)});
 $("rAlert").addEventListener("click",e=>{const a=e.target.closest("[data-al]");if(!a)return;const ag=a.dataset.al==="agot",L=(ag?datos().agot:datos().bajo).slice().sort((x,y)=>x.stock-y.stock||x.nombre.localeCompare(y.nombre));
  modal(ag?"Productos agotados":"Productos con stock bajo",`<p class="hint" style="margin-top:0">${L.length} producto(s)${ag?"":" · de menor a mayor stock"}</p>${L.map(p=>`<div class="rw al">${p.foto_url?`<img class="aim" src="${esc(p.foto_url)}" alt="" loading="lazy">`:`<div class="aim ph0">${esc((p.nombre||"?")[0].toUpperCase())}</div>`}<div class="ti"><b>${DAY.colorDot(p.color||"")}${esc(p.nombre)}</b>${ADM?`<small>Código: ${esc(p.codigo||"—")} · Barras: ${esc(p.codigo_barras||"—")}</small><small>${esc(p.cat)} · Costo ${$$(p.precio_costo)}${+p.descuento_pct?` · Descuento ${+p.descuento_pct}%`:""}</small>`:""}<small>Stock ${p.stock}${ag?"":" (mínimo "+mini(p)+")"}</small></div>${ADM?`<div class="am2"><b>${$$(p.fin)}</b><br><small>precio de venta</small></div>`:""}</div>`).join("")}`,{big:true,foot:'<button class="btn g" data-x>Cerrar</button>'})});
 $("bPdf").onclick=reportePdf;$("bCat").onclick=catalogoPdf;$("bEtq").onclick=etiquetas;$("bXls").onclick=excelInv;$("bRef").onclick=async()=>{await espera(cargar,"Actualizando…");pintar();toast("Datos actualizados")};
