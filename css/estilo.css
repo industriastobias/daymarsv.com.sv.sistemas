@@ -59,3 +59,4 @@ dialog.cfgd{border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-heig
 .cf-z{margin:4px 0 8px}.cf-z input[type=range]{width:100%;padding:0;min-height:30px}
 .side .sbar .brand{white-space:nowrap;font-size:19px}
 .shell.nosd main,.shell.nosd main.wide{max-width:none;margin:0;padding-right:32px}
+button.av{padding:0}.av img{border-radius:50%}
