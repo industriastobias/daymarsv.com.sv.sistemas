@@ -9,7 +9,7 @@
 .top h1{font-size:26px;line-height:1.15}.top small{color:var(--mute);display:block;text-transform:capitalize}
 .who{display:flex;align-items:center;gap:8px}
 .kp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
-.kp a{display:block;text-decoration:none;color:inherit}
+.kp a{display:block;text-decoration:none;color:inherit}.kp a .c{height:100%;box-sizing:border-box}
 .kp .c b{font-size:24px}
 .gt{font:700 13px "DM Sans",sans-serif;color:var(--mute);margin:18px 0 8px}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -18,10 +18,10 @@
 .tile.off{opacity:.55}.tile.off:after{content:"Pronto";position:absolute;top:6px;right:8px;font-size:10px;color:var(--mute)}
 .tile:active{background:var(--chip)}
 @media(min-width:800px){
- .tiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+ main{max-width:1240px;margin:0}
+ .tiles,.kp{grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
  .tile{align-items:flex-start;text-align:left;padding:16px;min-height:96px;font-size:14px}
  .tile:hover{border-color:var(--wine)}
- .kp{max-width:520px}
 }
 @media(min-width:800px){.top h1{font-size:30px}}
 </style><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
