@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Devoluciones</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css">
+<link rel="stylesheet" href="css/compra.css">
+<link rel="stylesheet" href="css/almacen.css">
+<link rel="stylesheet" href="css/paginas.css"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Devoluciones</h1><small>Devoluciones y cambios de productos</small></div>
+  <div class="hact"></div>
+ </div>
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+
+ <div class="kp" id="dK" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"></div>
+ <div class="prd" id="dP"><button class="btn g" data-p="month">Este mes</button><button class="btn g" data-p="prev">Mes anterior</button><button class="btn g" data-p="year">Este año</button><button class="btn g" data-p="all">Todo</button></div>
+ <div class="ctl"><input id="dQ" type="search" placeholder="Buscar por número, cliente o motivo" style="flex:1;min-width:140px;width:auto"><button class="btn" id="dNew" type="button">Nueva devolución o cambio</button></div>
+ <div id="dL"></div>
+ <p class="hint" style="margin-top:10px">Cada devolución descuenta lo vendido en finanzas y en el cierre de caja. Si el producto vuelve en buen estado, regresa al inventario; si está dañado, no.</p>
+
+</main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js"></script>
+<script src="js/comun.js"></script>
+<script src="js/devoluciones.js"></script>
+</body></html>

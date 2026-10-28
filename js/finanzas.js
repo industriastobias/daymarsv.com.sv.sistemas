@@ -7,7 +7,7 @@ const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',cap:'<path d="M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',ban:'<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/>',prov:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/>'};
-const S={q:"month",desde:"",hasta:"",V:[],M:[],C:[],PR:[],B:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",ready:false,all:[]};
+const S={q:"month",desde:"",hasta:"",V:[],M:[],C:[],PR:[],B:[],CL:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",ready:false,all:[]};
 const CATS=["Alquiler","Servicios (luz, agua, internet)","Salarios","Publicidad","Transporte y envíos","Empaque","Impuestos","Mercadería","Flete","Comisiones","Materiales","Otros ingresos","Otros gastos"];
 const TN={ingreso:["Ingreso","ok"],gasto:["Gasto","or"],costo:["Costo directo","wa"]};
 const mkey=d=>String(d).slice(0,7);
@@ -21,8 +21,8 @@ async function cargarPeriodo(){
   fetchAll(()=>db.from("fin_movimientos").select("*,proveedores(nombre)").gte("fecha",S.desde).lte("fecha",S.hasta).order("fecha",{ascending:false}).order("created_at",{ascending:false}))]);
  if(v.error)throw new Error(v.error.message);S.V=v.data||[];S.M=m}
 async function cargarGeneral(){
- const [kk,va,ma]=await Promise.all([db.from("capital_movs").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}),db.rpc("fin_ventas_mensuales",{p_desde:"2000-01-01",p_hasta:ymd(new Date())}),fetchAll(()=>db.from("fin_movimientos").select("tipo,monto"))]);
- if(kk.error)throw new Error(kk.error.message);if(va.error)throw new Error(va.error.message);S.K=kk.data;S.VA=va.data||[];S.MA=ma;
+ const [kk,va,ma,cl]=await Promise.all([db.from("capital_movs").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}),db.rpc("fin_ventas_mensuales",{p_desde:"2000-01-01",p_hasta:ymd(new Date())}),fetchAll(()=>db.from("fin_movimientos").select("tipo,monto")),fetchAll(()=>db.from("clientes").select("id,nombre").order("nombre"))]);
+ if(kk.error)throw new Error(kk.error.message);if(va.error)throw new Error(va.error.message);S.K=kk.data;S.VA=va.data||[];S.MA=ma;S.CL=cl;
  const [c,p,b,pr,all]=await Promise.all([db.from("fin_cuentas").select("*").order("vence",{ascending:true,nullsFirst:false}),db.from("proveedores").select("*").order("nombre"),db.from("fin_banco").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}).limit(12),
   fetchAll(()=>db.from("productos").select("stock,precio_costo").eq("activo",true)),fetchAll(()=>db.from("fin_movimientos").select("id,fecha,tipo,monto,conciliado,descripcion,categoria").order("fecha",{ascending:false}).limit(1000))]);
  [c,p,b].forEach(x=>{if(x.error)throw new Error(x.error.message)});
@@ -96,15 +96,16 @@ function pintarCue(){
  const L=S.C.filter(c=>c.tipo===S.cu),hoy=ymd(new Date()),p=L.filter(c=>c.estado==="pendiente");
  $("cK").innerHTML=`<div><span>${S.cu==="cobrar"?"Por cobrar":"Por pagar"}</span><b>${$$(p.reduce((s,c)=>s+c.monto-c.abonado,0))}</b><small>${p.length} pendiente(s)</small></div><div><span>Vencidas</span><b class="neg">${p.filter(c=>c.vence&&c.vence<hoy).length}</b></div>`;
  $("cL").innerHTML=L.length?L.map(c=>{const pc=c.monto?c.abonado/c.monto*100:0,v=c.estado==="pendiente"&&c.vence&&c.vence<hoy;
-  return `<div class="rw"><div class="ti"><b>${esc(c.tercero)}</b><small>${esc(c.concepto||"")}${c.concepto?" · ":""}${c.vence?"vence "+fdate(c.vence):"sin vencimiento"}</small><div class="bar ${c.estado==="pagada"?"ok":""}" style="margin-top:6px"><i style="width:${pc}%"></i></div></div>
+  return `<div class="rw"><div class="ti"><b>${esc(c.tercero)}</b><small>${c.cliente_id?"Cliente guardado · ":""}${esc(c.concepto||"")}${c.concepto?" · ":""}${c.vence?"vence "+fdate(c.vence):"sin vencimiento"}</small><div class="bar ${c.estado==="pagada"?"ok":""}" style="margin-top:6px"><i style="width:${pc}%"></i></div></div>
   <div class="am2"><b>${$$(c.monto-c.abonado)}</b><br><small>de ${$$(c.monto)}</small></div>${c.estado==="pagada"?'<span class="bd ok">Pagada</span>':v?'<span class="bd or">Vencida</span>':""}
   ${c.estado==="pendiente"?`<button class="btn sm" data-ab="${c.id}">Abonar</button>`:""}<button class="btn g sm" data-cd="${c.id}" style="color:var(--bad)">Eliminar</button></div>`}).join(""):`<div class="empty card">No hay cuentas ${S.cu==="cobrar"?"por cobrar":"por pagar"}.</div>`}
 $("cSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.cu=b.dataset.t;pintarCue()}});
-$("cNew").onclick=()=>{const d=modal("Nueva cuenta por "+(S.cu==="cobrar"?"cobrar":"pagar"),`<div class="fg"><div class="full"><label>${S.cu==="cobrar"?"Cliente":"Proveedor / acreedor"}</label><input name="t" maxlength="100"></div><div class="full"><label>Concepto <small>(opcional)</small></label><input name="c" maxlength="160"></div>
+$("cNew").onclick=()=>{const d=modal("Nueva cuenta por "+(S.cu==="cobrar"?"cobrar":"pagar"),`<div class="fg">${S.cu==="cobrar"?`<div class="full"><label>Cliente guardado</label><select name="cl"><option value="">— Otra persona (escribir nombre) —</option>${S.CL.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join("")}</select></div>`:""}<div class="full"><label>${S.cu==="cobrar"?"Nombre":"Proveedor / acreedor"}</label><input name="t" maxlength="100"></div><div class="full"><label>Concepto <small>(opcional)</small></label><input name="c" maxlength="160"></div>
   <div><label>Monto ($)</label><input name="m" type="number" min="0.01" step="0.01" inputmode="decimal"></div><div><label>Vence <small>(opcional)</small></label><input name="v" type="date"></div></div><div class="err2" id="cnE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cnOk">Guardar</button>`});
  const g=n=>d.q(`[name=${n}]`).value.trim();
+ const sel=d.q("[name=cl]");if(sel)sel.addEventListener("change",()=>{const c=S.CL.find(x=>x.id===sel.value);d.q("[name=t]").value=c?c.nombre:"";d.q("[name=t]").readOnly=!!c});
  d.q("#cnOk").onclick=async()=>{if(!g("t")){d.q("#cnE").textContent="Escribe el nombre.";return}if(!(Number(g("m"))>0)){d.q("#cnE").textContent="Escribe un monto mayor a cero.";return}
-  const ok=await espera(async()=>{const {error}=await db.from("fin_cuentas").insert({tipo:S.cu,tercero:g("t"),concepto:g("c")||null,monto:r2(Number(g("m"))),vence:g("v")||null});if(error)throw new Error(error.message);return true});
+  const ok=await espera(async()=>{const {error}=await db.from("fin_cuentas").insert({tipo:S.cu,tercero:g("t"),concepto:g("c")||null,monto:r2(Number(g("m"))),vence:g("v")||null,cliente_id:(sel&&sel.value)||null});if(error)throw new Error(error.message);return true});
   if(ok){d.close();toast("Cuenta registrada");await refrescar()}}};
 $("cL").addEventListener("click",async e=>{const a=e.target.closest("[data-ab]"),x=e.target.closest("[data-cd]");
  if(a){const c=S.C.find(z=>z.id===a.dataset.ab),sal=r2(c.monto-c.abonado);

@@ -450,7 +450,7 @@ async function ventasRango(desde,hasta){
   if(desde&&hasta){const r=dayRange(desde,hasta);q=q.gte("created_at",r[0]).lt("created_at",r[1])}return q})}
 const filaVenta=v=>`<div class="sv"><div class="th">${(v.venta_items||[]).slice(0,3).map(i=>itImg(i)?`<img src="${esc(itImg(i))}" alt="" loading="lazy">`:`<div class="ph">${inicial(itName(i))}</div>`).join("")}</div>
  <div class="ti"><b>${resumenItems(v)}</b><small>${fdate(v.created_at)} ${ftime(v.created_at)}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}${v.profiles?" · Vendió: "+esc(v.profiles.nombre):""}</small><br>${tipoBd(v.tipo)} ${pagoBd(v.metodo_pago)}</div>
- <div class="am2"><b>${$$(v.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<button class="btn g sm" data-an="${v.id}" style="color:var(--bad)">Anular</button><button class="btn g sm" data-el="${v.id}" style="color:var(--bad)">Eliminar</button>`:""}</div></div></div>`;
+ <div class="am2"><b>${$$(v.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<button class="btn g sm" data-an="${v.id}" style="color:var(--bad)">Anular</button><a class="btn g sm" href="devoluciones.html#v=${v.id}">Devolver</a><button class="btn g sm" data-el="${v.id}" style="color:var(--bad)">Eliminar</button>`:""}</div></div></div>`;
 async function anular(id,after){
  if(!soloAdmin())return;if(!await pedirClave("Vas a anular esta venta."))return;
  const v=[...S.ventas,...S.pend].find(x=>x.id===id);
@@ -619,8 +619,8 @@ async function facHTML(f,fmt){
  <div class="ft">${qr?`<div class="qr">${qr}</div>`:""}<div><b>${esc(c.pie||"")}</b><br><small>Código de validación: ${esc(f.codigo)}</small></div></div></div>`}
 async function cierreHTML(c,fmt){
  const cf=await ensureCfg(),R=c.resumen||{};
- const N={ef:"Efectivo",tr:"Transferencia",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)"};
- const rows=Object.keys(N).map(k=>`<tr><td>${N[k]}</td><td class="r">${(R[k]||{}).n||0}</td><td class="r">${money((R[k]||{}).total||0)}</td></tr>`).join("");
+ const N={ef:"Efectivo",tr:"Transferencia",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)",dev:"Devoluciones y cambios (neto)"};
+ const rows=Object.keys(N).filter(k=>k!=="dev"||R.dev).map(k=>`<tr><td>${N[k]}</td><td class="r">${(R[k]||{}).n||0}</td><td class="r">${money((R[k]||{}).total||0)}</td></tr>`).join("");
  const util=+c.total_ventas-+c.costo_total;
  return `<div class="fx fx-${fmt}"><style>${DOC_CSS}</style>
  <div class="top"><div><h1>${esc(cf.nombre||"DAYMAR-SHOP")}</h1><div class="sl">Cierre de caja</div></div>
@@ -807,9 +807,10 @@ async function cerrarCaja(){
  const d=$("hDate").value||hoyD(),L=await espera(()=>ventasRango(d,d));if(!L)return;
  const g={ef:[0,0],tr:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
  L.forEach(v=>{const k=v.tipo==="entrega_pendiente"?"ent":v.tipo==="cod"?"cod":v.tipo==="cobro_pendiente"?"cob":v.metodo_pago==="Transferencia"?"tr":"ef";g[k][0]+=+v.total;g[k][1]++});
- const tot=Object.values(g).reduce((s,x)=>s+x[0],0);
+ let dv={n:0,t:0,ef:0};try{const r=await db.from("devoluciones").select("diferencia,metodo,monto_devuelto,monto_nuevo").eq("fecha",d);(r.data||[]).forEach(x=>{dv.n++;dv.t+=+x.monto_nuevo-+x.monto_devuelto;if(x.metodo==="Efectivo")dv.ef+=+x.diferencia})}catch(e){}
+ g.ef[0]+=dv.ef;const tot=Object.values(g).reduce((s,x)=>s+x[0],0)-dv.ef+dv.t;
  const m=modal("Cerrar caja · "+fdate(d),`<div class="stats"><div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Ventas</span><b>${L.length}</b></div><div><span>Efectivo esperado</span><b>${$$(g.ef[0])}</b></div><div><span>Transferencias</span><b>${$$(g.tr[0])}</b></div></div>
-  <p class="pw">Cuenta el efectivo que hay en caja y escríbelo para ver la diferencia. Cerrar la caja <b>guarda un registro</b> del día; no borra ventas ni cambia el inventario.</p>
+  ${dv.n?`<p class="hint">Incluye ${dv.n} devolución(es) o cambio(s) del día: ${dv.t<0?"−":""}${$$(Math.abs(dv.t))} en ventas netas${dv.ef?` y ${dv.ef<0?"salieron":"entraron"} ${$$(Math.abs(dv.ef))} en efectivo`:""}.</p>`:""}<p class="pw">Cuenta el efectivo que hay en caja y escríbelo para ver la diferencia. Cerrar la caja <b>guarda un registro</b> del día; no borra ventas ni cambia el inventario.</p>
   <div class="fg"><div><label>Efectivo contado <small>(opcional)</small></label><input name="cc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="${g.ef[0].toFixed(2)}"></div><div><label>Nota <small>(opcional)</small></label><input name="cn" maxlength="200"></div></div><div class="err2" id="ccE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="ccOk">Guardar cierre</button>`});
  m.q("#ccOk").onclick=async()=>{const v=m.q("[name=cc]").value.trim();if(v!==""&&!(Number(v)>=0)){m.q("#ccE").textContent="Efectivo no válido.";return}
