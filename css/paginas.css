@@ -34,4 +34,5 @@
 /* Pestañas: si son muchas, se desplazan en vez de salirse del diseño */
 .bnav{overflow-x:auto;scrollbar-width:none}.bnav::-webkit-scrollbar{display:none}
 .bnav button{min-width:64px;white-space:nowrap}
-@media(min-width:800px){.bnav{max-width:100%;width:fit-content}.bnav button{flex:0 0 auto;padding:9px 16px}}
+@media(min-width:800px){.bnav{max-width:max-content}.bnav button{flex:0 0 auto;padding:9px 16px}}
+.shell>main{min-width:0}
