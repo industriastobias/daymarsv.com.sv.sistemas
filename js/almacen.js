@@ -121,7 +121,7 @@ function filtrar(keep){
  pintarInv()}
 const sIcon=p=>p.stock<=0?"zero":p.stock<=p.stock_minimo?"low":"";
 const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(p.foto_url)}" alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
-function chk(p){return S.multi?`<label class="mchk"><input type="checkbox" data-a="sel" data-id="${p.id}" ${S.sel.has(p.id)?"checked":""} ${p.stock<1?"disabled":""}> Vender</label>`:""}
+function chk(p){return S.multi?`<label class="mchk"><input type="checkbox" data-a="sel" data-id="${p.id}" ${S.sel.has(p.id)?"checked":""} ${p.stock<1?"disabled":""}> Vender${S.sel.has(p.id)?` <b data-qs="${p.id}" class="qb">×${S.sel.get(p.id)}</b>`:""}</label>`:""}
 function btns(p){return `<button class="btn sm" data-a="sell" data-id="${p.id}" title="Vender">Vender</button>`+(ADM?`<button class="btn g sm" data-a="price" data-id="${p.id}" title="Editar precio">Precio</button><button class="btn g sm" data-a="stock" data-id="${p.id}" title="Editar stock">Stock</button>`:"")}
 function pintarInv(){
  const q=$("fSearch").value.trim(),tot=Math.max(1,Math.ceil(S.filt.length/S.size));if(S.page>tot)S.page=tot;
@@ -184,18 +184,22 @@ async function editarStock(p){
 async function ajustarStock(p,nuevo,nota){const d=nuevo-p.stock;if(!d)return;
  await rpc("registrar_movimiento",{p_producto:p.id,p_tipo:d>0?"entrada":"salida",p_cantidad:Math.abs(d),p_nota:nota});p.stock=nuevo}
 
+/* clientes guardados para autocompletar */
+(async()=>{try{const{data}=await DAY.db.from("clientes").select("nombre").order("nombre").limit(500);
+ if(data&&data.length){const d=document.createElement("datalist");d.id="dlCli";d.innerHTML=data.map(c=>`<option value="${esc(c.nombre)}">`).join("");document.body.appendChild(d)}}catch(e){}})();
 /* ---------- formulario de tipo de venta (compartido por venta, rápida y múltiple) ---------- */
 const INP=(n,ph,extra)=>`<div class="ig"><span>$</span><input name="${n}" type="number" min="0" step="0.01" placeholder="${ph||"0.00"}" ${extra||""}></div>`;
 function optHTML(){return `
  <div class="tp" data-g="ty"><button type="button" data-ty="inmediata" class="on">Inmediata</button><button type="button" data-ty="cod">Contra entrega</button><button type="button" data-ty="entrega_pendiente">Pend. entrega</button><button type="button" data-ty="cobro_pendiente">Pend. cobro</button></div>
  <div class="tp pm"><button type="button" data-pm="Efectivo" class="on">Efectivo</button><button type="button" data-pm="Transferencia">Transferencia</button></div>
+ <div class="cfg" data-cfg="cash"><div class="fg"><div class="full"><label>Efectivo recibido (opcional)</label>${INP("recibe")}</div><div class="full cambio" data-cambio></div></div></div>
  <div class="cfg hidden" data-cfg="cod"><div class="fg">
   <div class="full"><label>¿Quién paga la comisión?</label><div class="tp"><button type="button" data-who="client" class="on">El cliente</button><button type="button" data-who="we">Nosotros</button></div></div>
   <div><label>Envío</label>${INP("envio")}</div><div><label>Seguro</label>${INP("seguro")}</div>
   <div><label>Tipo de comisión</label><select name="ctipo"><option value="percentage">Porcentaje (%)</option><option value="fixed">Monto fijo ($)</option></select></div>
   <div><label data-clab>Comisión (%)</label><input name="cval" type="number" min="0" step="0.01" placeholder="0"></div></div></div>
  <div class="cfg hidden" data-cfg="entrega_pendiente"><div class="fg"><div><label>Envío</label>${INP("envio2")}</div><div><label>Comisión (%)</label><input name="cval2" type="number" min="0" max="100" step="0.01" placeholder="0"></div></div></div>
- <div class="cfg hidden" data-cfg="cobro_pendiente"><div class="fg"><div class="full"><label>Nombre del cliente *</label><input name="cli" maxlength="80" placeholder="¿Quién debe el saldo?"></div><div class="full"><label>Monto abonado</label>${INP("abono")}</div></div></div>
+ <div class="cfg hidden" data-cfg="cobro_pendiente"><div class="fg"><div class="full"><label>Nombre del cliente *</label><input name="cli" maxlength="80" list="dlCli" autocomplete="off" placeholder="¿Quién debe el saldo?"></div><div class="full"><label>Monto abonado</label>${INP("abono")}</div></div></div>
  <div class="calc" data-calc></div><div class="err2" data-err role="alert"></div>`}
 function optForm(root,getSub,onChange){
  const st={ty:"inmediata",pm:"Efectivo",who:"client"},q=s=>root.querySelector(s);
@@ -222,17 +226,19 @@ function optForm(root,getSub,onChange){
    if(o.tipo==="cobro_pendiente"){rows.push(["Abonado",m(t.paid)]);rows.push(["Pendiente por cobrar",m(t.pend)])}
    const lab=o.tipo==="cod"||o.tipo==="entrega_pendiente"?"Total a cobrar":"Total";
    box.innerHTML=rows.map(r=>`<div><span>${r[0]}</span><span>${r[1]}</span></div>`).join("")+`<div class="t"><span>${lab}</span><b>${m(t.total)}</b></div>`;er.textContent="";
+   const cb=q("[data-cambio]");if(cb){const rc=cents(+q("[name=recibe]").value||0);cb.innerHTML=o.tipo==="inmediata"&&o.metodo==="Efectivo"&&rc>0?(rc>=t.total?`Cambio a devolver: <b style="color:var(--ok)">${m(rc-t.total)}</b>`:`<b style="color:var(--bad,#b3261e)">Faltan ${m(t.total-rc)}</b>`):""}
    q("[data-clab]").textContent=o.comision_tipo==="fixed"?"Comisión ($)":"Comisión (%)";
    onChange&&onChange(t,o,true);return {o,t}}
   catch(e){er.textContent=e.message;box.innerHTML="";onChange&&onChange(null,null,false);return null}}
+ const cfgVis=()=>root.querySelectorAll("[data-cfg]").forEach(c=>c.classList.toggle("hidden",c.dataset.cfg==="cash"?!(st.ty==="inmediata"&&st.pm==="Efectivo"):c.dataset.cfg!==st.ty));
  root.addEventListener("click",e=>{
   const ty=e.target.closest("[data-ty]"),pm=e.target.closest("[data-pm]"),wh=e.target.closest("[data-who]");
   if(ty){st.ty=ty.dataset.ty;root.querySelectorAll("[data-ty]").forEach(b=>b.classList.toggle("on",b===ty));
-   root.querySelectorAll("[data-cfg]").forEach(c=>c.classList.toggle("hidden",c.dataset.cfg!==st.ty));calc()}
-  if(pm){st.pm=pm.dataset.pm;root.querySelectorAll("[data-pm]").forEach(b=>b.classList.toggle("on",b===pm));calc()}
+   cfgVis();calc()}
+  if(pm){st.pm=pm.dataset.pm;root.querySelectorAll("[data-pm]").forEach(b=>b.classList.toggle("on",b===pm));cfgVis();calc()}
   if(wh){st.who=wh.dataset.who;wh.parentNode.querySelectorAll("[data-who]").forEach(b=>b.classList.toggle("on",b===wh));calc()}});
  root.addEventListener("input",calc);root.addEventListener("change",calc);
- calc();return {read,check,calc,st}}
+ cfgVis();calc();return {read,check,calc,st}}
 const MSG=(o,t,extra)=>o.tipo==="cod"?"Pedido contra entrega guardado. Total a cobrar: "+$$(t.total/100):
  o.tipo==="entrega_pendiente"?"Venta pendiente de entrega registrada. Total: "+$$(t.total/100):
  o.tipo==="cobro_pendiente"?`Venta pendiente de cobro registrada. Cliente: ${o.cliente}. Abonado: ${$$(t.paid/100)}. Debe: ${$$(t.pend/100)}`:
@@ -244,7 +250,7 @@ async function tras(o,t,lines){ /* refresco local tras una venta */
 
 /* ---------- venta de un producto ---------- */
 function abrirVenta(p){
- if(S.multi){togSel(p.id,true);return}
+ if(S.multi){addSel(p.id);return}
  snd("beep");let unl=false;
  const m=modal("Vender producto",`
   <div class="sp">${p.foto_url?`<img class="sim" src="${esc(p.foto_url)}" alt="" data-img="${esc(p.foto_url)}">`:`<div class="ph">${inicial(p.nombre)}</div>`}
@@ -307,6 +313,11 @@ function ventaRapida(){
   if(ok){m.close();await tras(r.o,r.t,[])}}}
 
 /* ---------- venta múltiple ---------- */
+function addSel(id,n){const p=S.byId.get(id);if(!p)return;if(p.stock<1){toast("Sin stock: "+p.nombre);snd("err");return}
+ const c=S.sel.get(id)||0;if(c>=p.stock){toast("Ya tienes todo el stock de "+p.nombre);snd("err");return}
+ S.sel.set(id,c+(n||1));snd("beep");toast((c?"+1 ":"Agregado: ")+p.nombre);
+ document.querySelectorAll(`[data-a="sel"][data-id="${id}"]`).forEach(c=>c.checked=true);resumenMulti();
+ pintarInv()}
 function togSel(id,on){const p=S.byId.get(id);if(!p)return;if(on&&p.stock>=1){if(!S.sel.has(id))S.sel.set(id,1)}else S.sel.delete(id);
  document.querySelectorAll(`[data-a="sel"][data-id="${id}"]`).forEach(c=>c.checked=S.sel.has(id));resumenMulti()}
 function lineasMulti(){return [...S.sel].map(([id,q])=>({p:S.byId.get(id),q})).filter(l=>l.p)}
@@ -319,7 +330,7 @@ function modoMulti(on){S.multi=on===undefined?!S.multi:on;if(!S.multi)S.sel.clea
  if(S.tab!=="inv")tab("inv");pintarInv()}
 function abrirMulti(){
  const L=lineasMulti();if(!L.length){toast("Marca al menos un producto");return}
- const m=modal("Venta múltiple",`<div class="ml" id="mlL"></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
+ const m=modal("Venta múltiple",`<div class="mladd"><input id="mlS" type="search" autocomplete="off" placeholder="Agregar otro producto: nombre, código o barras"><div id="mlR" class="mlr hidden"></div></div><div class="ml" id="mlL"></div><div style="text-align:right;margin-top:6px"><button class="btn g sm" id="mlClr" type="button">Vaciar</button></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
  const sub=()=>lineasMulti().reduce((s,l)=>s+(Number.isInteger(l.q)&&l.q>0?cents(l.p.fin)*l.q:0),0);
  const of=optForm(m.q("#mlO"),sub,null);
  const draw=()=>{const L=lineasMulti();
@@ -333,6 +344,14 @@ function abrirMulti(){
   if(st){const id=st.dataset.id,p=S.byId.get(id),n=Math.min(p.stock,Math.max(1,(S.sel.get(id)||1)+(+st.dataset.st)));S.sel.set(id,n);draw()}});
  m.q("#mlL").addEventListener("input",e=>{const i=e.target.closest("[data-q]");if(!i)return;const id=i.dataset.q,p=S.byId.get(id),n=parseInt(i.value,10);
   S.sel.set(id,n);const sb=m.q(`[data-sub="${id}"]`);if(sb)sb.textContent=Number.isInteger(n)&&n>0?$$(p.fin*n):"—";of.calc();resumenMulti()});
+ const bs=m.q("#mlS"),br=m.q("#mlR");
+ bs.addEventListener("input",()=>{const q=norm(bs.value.trim());if(!q){br.classList.add("hidden");return}
+  const R=S.prods.filter(p=>p.stock>=1&&norm((p.nombre||"")+" "+(p.codigo||"")+" "+(p.codigo_barras||"")).includes(q)).slice(0,6);
+  br.innerHTML=R.length?R.map(p=>`<button type="button" data-add="${p.id}"><span>${esc(p.nombre)}</span><small>${$$(p.fin)} · Stock ${p.stock}</small></button>`).join(""):`<div class="empty">Sin resultados</div>`;br.classList.remove("hidden")});
+ const addP=id=>{const p=S.byId.get(id);if(!p)return;const c=S.sel.get(id)||0;if(c>=p.stock){toast("Ya tienes todo el stock");return}S.sel.set(id,c+1);bs.value="";br.classList.add("hidden");draw();bs.focus()};
+ br.addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(b)addP(b.dataset.add)});
+ bs.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=bs.value.trim(),x=S.prods.find(p=>p.codigo_barras&&p.codigo_barras===q)||(br.querySelector("[data-add]")&&S.byId.get(br.querySelector("[data-add]").dataset.add));if(x)addP(x.id)}});
+ m.q("#mlClr").onclick=async()=>{if(!S.sel.size)return;if(await confirmar("Se quitarán todos los productos de esta venta.",{titulo:"Vaciar venta",ok:"Vaciar",peligro:true})){S.sel.clear();draw()}};
  draw();
  m.q("#mlGo").onclick=async()=>{let r;const L=lineasMulti();
   try{if(!L.length)throw new Error("Selecciona al menos un producto.");
@@ -846,9 +865,10 @@ $("pager").addEventListener("click",e=>{const b=e.target.closest("[data-pg]");if
 $("invList").addEventListener("click",e=>{
  const img=e.target.closest("[data-img]");if(img){verImagen(img.dataset.img);return}
  const bar=e.target.closest("[data-bar]");if(bar){verBarras(bar.dataset.bar);return}
- const sel=e.target.closest('[data-a="sel"]');if(sel){togSel(sel.dataset.id,sel.checked);return}
+ const sel=e.target.closest('[data-a="sel"]');if(sel){togSel(sel.dataset.id,sel.checked);pintarInv();return}
  if(e.target.closest(".mchk"))return;
- const a=e.target.closest("[data-a]"),row=e.target.closest("[data-id]");const id=a?a.dataset.id:row&&row.dataset.id;const p=id&&S.byId.get(id);if(!p)return;
+ const a=e.target.closest("[data-a]"),row=e.target.closest("[data-id]");
+ if(S.multi&&!a&&row&&!e.target.closest("button,a,input")){const pp=S.byId.get(row.dataset.id);if(pp&&pp.stock>=1){togSel(pp.id,!S.sel.has(pp.id));pintarInv()}return}const id=a?a.dataset.id:row&&row.dataset.id;const p=id&&S.byId.get(id);if(!p)return;
  if(a){if(a.dataset.a==="sell")abrirVenta(p);else if(a.dataset.a==="price")editarPrecio(p);else if(a.dataset.a==="stock")editarStock(p);return}
  if(S.multi)return;detalle(p)});
 
@@ -884,9 +904,8 @@ document.addEventListener("click",()=>{mm.classList.remove("on");$("bMore").setA
 async function refrescar(){await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()]);filtrar(true);if(S.tab==="pend")pintarPend();if(S.tab==="hoy")await pintarHoy();if(S.tab==="ven")await pintarVentas()},"Actualizando…");toast("Datos actualizados")}
 mm.addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)return;const k=b.dataset.m;
  if(k==="refresh")refrescar();else if(k==="excel")excel();
- else if(k==="full"){if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});else document.exitFullscreen().catch(()=>{})}
  else if(k==="keys")modal("Atajos de teclado",`<div class="sk"><span>Enfocar código de barras</span><kbd>Ctrl</kbd></div><div class="sk"><span>Cerrar ventana / cámara</span><kbd>Esc</kbd></div><div class="sk"><span>Lector USB</span><span>Activa "Lector USB" y escanea</span></div>`.replace("<kbd>Ctrl</kbd>","<kbd>Ctrl + B</kbd>"),{foot:""})
- else if(k==="theme")toggleTheme();else if(k==="out"){DAY.salir()}});
+ else if(k==="out"){DAY.salir()}});
 
 /* Si vuelves a la página tras un rato (por ejemplo desde Compra), se actualizan los datos */
 document.addEventListener("visibilitychange",async()=>{
