@@ -3,10 +3,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Actividad</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610281108">
-<link rel="stylesheet" href="css/compra.css?v=202610281108">
-<link rel="stylesheet" href="css/almacen.css?v=202610281108">
-<link rel="stylesheet" href="css/paginas.css?v=202610281108"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202610281129">
+<link rel="stylesheet" href="css/compra.css?v=202610281129">
+<link rel="stylesheet" href="css/almacen.css?v=202610281129">
+<link rel="stylesheet" href="css/paginas.css?v=202610281129"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -17,7 +17,8 @@
  </div>
  <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
 
- <div class="kp" id="aK" style="grid-template-columns:repeat(3,1fr)"></div>
+ <div class="seg2" id="aSg"><button data-t="act" class="on">Cambios</button><button data-t="acc">Inicios de sesión <span class="badge hidden" id="aNb"></span></button></div>
+ <div id="pAct"><div class="kp" id="aK" style="grid-template-columns:repeat(3,1fr)"></div>
  <div class="fl" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
   <div><label for="aU">Usuario</label><select id="aU"><option value="">Todos los usuarios</option></select></div>
   <div><label for="aT">Qué</label><select id="aT"></select></div>
@@ -27,14 +28,16 @@
  <div class="ctl"><input id="aQ" type="search" placeholder="Buscar (producto, cliente, número…)" style="flex:1;min-width:140px;width:auto"></div>
  <div id="aL"></div>
  <div class="ctl"><span class="grow"></span><button class="btn g hidden" id="aMas" type="button">Ver más</button><span class="grow"></span></div>
- <p class="hint">Aquí se guarda quién creó, editó o anuló cada cosa, y cuándo. Los cambios de stock por ventas ya aparecen en la venta y en el inventario.</p>
+</div>
+ <div id="pAcc" class="hidden"><div id="aAl"></div><div id="aAcc"></div><p class="hint">Se guarda quién entró, cuándo, desde qué tipo de dispositivo y la dirección IP. Un “dispositivo nuevo” es uno desde el que esa persona nunca había iniciado sesión. Se conservan 6 meses.</p></div>
+ <p class="hint" id="aHint">Aquí se guarda quién creó, editó o anuló cada cosa, y cuándo. Los cambios de stock por ventas ya aparecen en la venta y en el inventario.</p>
 
 </main>
 </div>
 <div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="js/app.js?v=202610281108"></script>
-<script src="js/comun.js?v=202610281108"></script>
-<script src="js/actividad.js?v=202610281108"></script>
+<script src="js/app.js?v=202610281129"></script>
+<script src="js/comun.js?v=202610281129"></script>
+<script src="js/actividad.js?v=202610281129"></script>
 </body></html>

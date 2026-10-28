@@ -42,5 +42,20 @@ const rec=async()=>{lim=100;const ok=await espera(async()=>{await cargar();retur
 ["aU","aT","aD","aH"].forEach(i=>$(i).addEventListener("change",rec));
 $("aQ").addEventListener("input",deb(pintar,150));
 $("aMas").onclick=async()=>{lim+=200;const ok=await espera(async()=>{await cargar();return true});if(ok)pintar()};
-await todo();
+/* ---------- inicios de sesión ---------- */
+let AC2=[];
+const ICO={Celular:"📱",Tablet:"📲",Computadora:"💻"};
+function pintarAcc(){const u=$("aU").value;
+ const R=AC2.filter(x=>!u||x.usuario_id===u);
+ const nuevos=AC2.filter(x=>x.nuevo&&x.exito&&Date.now()-new Date(x.created_at)<7*864e5),fall=AC2.filter(x=>!x.exito&&Date.now()-new Date(x.created_at)<864e5);
+ $("aAl").innerHTML=(nuevos.length?`<div class="alert warn"><div><b>${nuevos.length} inicio(s) desde un dispositivo nuevo esta semana</b>${nuevos.slice(0,3).map(x=>esc(x.nombre||x.email)+" ("+esc(x.dispositivo)+" · "+esc(x.navegador)+")").join(", ")}${nuevos.length>3?"…":""}. Si no los reconoces, cambia la contraseña de esa cuenta.</div></div>`:"")+(fall.length>=3?`<div class="alert bad"><div><b>${fall.length} intentos fallidos en las últimas 24 horas</b>Revisa la lista de abajo.</div></div>`:"");
+ $("aAcc").innerHTML=R.length?R.map(x=>`<div class="rw"><div class="th ph">${ICO[x.dispositivo]||"💻"}</div><div class="ti"><b>${esc(x.nombre||x.email||"—")}</b> ${x.exito?"":'<span class="bd or">Intento fallido</span>'} ${x.nuevo&&x.exito?'<span class="bd wa">Dispositivo nuevo</span>':""}
+  <small style="display:block">${esc(x.dispositivo||"")} · ${esc(x.sistema||"")} · ${esc(x.navegador||"")}</small><small style="display:block">${fdate(x.created_at)} ${ftime(x.created_at)}${x.ip?" · IP "+esc(x.ip):""}</small></div></div>`).join(""):`<div class="empty card">Aún no hay inicios de sesión registrados. Se irán anotando desde ahora.</div>`;
+ const nb=$("aNb"),n=nuevos.length;nb.textContent=n;nb.classList.toggle("hidden",!n)}
+async function cargarAcc(){const {data,error}=await db.from("accesos").select("*").order("created_at",{ascending:false}).limit(300);if(!error)AC2=data||[];pintarAcc()}
+$("aSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b)return;
+ $("aSg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));const acc=b.dataset.t==="acc";
+ $("pAct").classList.toggle("hidden",acc);$("pAcc").classList.toggle("hidden",!acc);$("aHint").classList.toggle("hidden",acc);
+ if(acc){document.querySelector(".fl").classList.add("hidden");cargarAcc()}else document.querySelector(".fl").classList.remove("hidden")});
+await todo();cargarAcc();
 })();
