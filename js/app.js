@@ -78,7 +78,7 @@ function abrirConfig(){
  const me=DAY.me||{nombre:"",avatar:null};let foto=me.avatar||null,quitar=false,nueva=false;
  const d=document.createElement("dialog");d.className="cfgd";
  d.innerHTML=`<div class="cf-h"><h2>Configuración</h2><button type="button" class="x" data-x aria-label="Cerrar">×</button></div><div class="cf-b">
-  <h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Alejar / acercar</label><input type="range" id="cfZ" min="0.4" max="3" step="0.05" value="0.7"><small class="cf-m">El círculo recorta las esquinas: con el control alejas la foto hasta que entre completa, o la acercas para enfocar. Arrastra para moverla.</small></div>
+  <h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Acercar</label><input type="range" id="cfZ" min="1" max="4" step="0.02" value="1"><small class="cf-m">La foto llena todo el círculo. Arrastra para encuadrar tu cara y usa el control para acercar.</small></div>
   <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small>
   <h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select>
   <h3>Menú</h3><label class="cf-c"><input type="checkbox" id="cfS"> Ocultar el menú lateral (computadora)</label><label class="cf-c"><input type="checkbox" id="cfB"> Ocultar el nombre DAYMAR-SHOP</label>
@@ -86,8 +86,8 @@ function abrirConfig(){
   <div class="cf-f"><button type="button" class="btn g" id="cfOut">Cerrar sesión</button><span style="flex:1"></span><button type="button" class="btn g" data-x>Cancelar</button><button type="button" class="btn" id="cfOk">Guardar</button></div>`;
  document.body.appendChild(d);
  const q=s=>d.querySelector(s),cerrar=()=>{try{d.close()}catch(e){}d.remove()};
-let im=null,z=0.7,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=cv.height=240;cv.className="cfcv";cv.title="Arrastra para mover";
- const dibujar=()=>{const x=cv.getContext("2d");x.fillStyle="#efe7e4";x.fillRect(0,0,240,240);const sc=240/Math.max(im.width,im.height)*z,w=im.width*sc,h=im.height*sc;x.drawImage(im,120-w/2+ox,120-h/2+oy,w,h)};
+let im=null,z=1,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=cv.height=240;cv.className="cfcv";cv.title="Arrastra para mover";
+ const dibujar=()=>{const x=cv.getContext("2d"),sc=240/Math.min(im.width,im.height)*z,w=im.width*sc,h=im.height*sc,mx=(w-240)/2,my=(h-240)/2;ox=Math.max(-mx,Math.min(mx,ox));oy=Math.max(-my,Math.min(my,oy));x.fillStyle="#efe7e4";x.fillRect(0,0,240,240);x.drawImage(im,120-w/2+ox,120-h/2+oy,w,h)};
  const pAv=()=>{const a=q("#cfAv");if(im){if(cv.parentNode!==a){a.innerHTML="";a.appendChild(cv)}q("#cfZw").classList.remove("hidden")}else{a.innerHTML=avatarHTML({nombre:q("#cfN").value||me.nombre,avatar:foto},"big");q("#cfZw").classList.add("hidden")}};
  q("#cfT").value=PREF("dms_th")||"auto";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfB").checked=PREF("dms_nobrand")==="1";pAv();
  q("#cfN").addEventListener("input",pAv);
@@ -95,7 +95,7 @@ let im=null,z=0.7,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=c
  q("#cfFoto").onclick=()=>q("#cfFile").click();
 q("#cfQuit").onclick=()=>{foto=null;quitar=true;nueva=false;im=null;pAv()};
 q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new Image();
-  t.onload=()=>{im=t;z=0.7;ox=oy=0;q("#cfZ").value=0.7;nueva=true;quitar=false;pAv();dibujar()};
+  t.onload=()=>{im=t;z=1;ox=oy=0;q("#cfZ").value=1;nueva=true;quitar=false;pAv();dibujar()};
   t.onerror=()=>{q("#cfE").textContent="No se pudo leer esa imagen."};t.src=URL.createObjectURL(f)};
  q("#cfZ").addEventListener("input",()=>{z=+q("#cfZ").value;if(im)dibujar()});
  let dr=null;cv.addEventListener("pointerdown",e=>{dr=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
