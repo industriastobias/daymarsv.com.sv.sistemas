@@ -997,11 +997,22 @@ $("mGo").onclick=abrirMulti;
 const hid=LS("dms_hide")==="1";const setEye=h=>{$("totalAmount").classList.toggle("hid",h);$("bEye").textContent=h?"Mostrar":"Ocultar";LS("dms_hide",h?"1":"0")};setEye(hid);
 $("bEye").onclick=()=>setEye(!$("totalAmount").classList.contains("hid"));
 
+/* ---------- modo kiosco: pantalla simple y grande para vender; salir pide la contraseña ---------- */
+function kiosco(on,quiet){document.body.classList.toggle("kiosco",on);LS("dms_kiosco",on?"1":"0");
+ let x=$("kSal");if(on&&!x){x=document.createElement("button");x.id="kSal";x.type="button";x.className="btn g";x.textContent="Salir del kiosco";document.body.appendChild(x);
+  x.onclick=async()=>{if(await pedirClave("Para salir del modo kiosco.")){kiosco(false)}}}
+ if(!on&&x)x.remove();
+ if(on){S.view="cards";try{if(S.byId.size)pintarInv()}catch(e){}
+  if(S.tab&&S.tab!=="inv")try{tab("inv")}catch(e){}
+  if(!quiet&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}
+ else if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+ if(!quiet)toast(on?"Modo kiosco activado":"Modo kiosco desactivado")}
+if(LS("dms_kiosco")==="1"){kiosco(true,true);S.view="cards"}
 const mm=$("mMore");$("bMore").onclick=e=>{e.stopPropagation();const on=mm.classList.toggle("on");$("bMore").setAttribute("aria-expanded",on)};
 document.addEventListener("click",()=>{mm.classList.remove("on");$("bMore").setAttribute("aria-expanded","false")});
 async function refrescar(){await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()]);filtrar(true);if(S.tab==="pend")pintarPend();if(S.tab==="hoy")await pintarHoy();if(S.tab==="ven")await pintarVentas()},"Actualizando…");toast("Datos actualizados")}
 mm.addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)return;const k=b.dataset.m;
- if(k==="refresh")refrescar();else if(k==="excel")excel();
+ if(k==="kiosk")kiosco(true);else if(k==="refresh")refrescar();else if(k==="excel")excel();
  else if(k==="keys")modal("Atajos de teclado",`<div class="sk"><span>Enfocar código de barras</span><kbd>Ctrl</kbd></div><div class="sk"><span>Cerrar ventana / cámara</span><kbd>Esc</kbd></div><div class="sk"><span>Lector USB</span><span>Activa "Lector USB" y escanea</span></div>`.replace("<kbd>Ctrl</kbd>","<kbd>Ctrl + B</kbd>"),{foot:""})
  else if(k==="out"){DAY.salir()}});
 
