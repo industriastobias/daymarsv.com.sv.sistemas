@@ -65,22 +65,6 @@ const bajar=(blob,nombre)=>{const a=document.createElement("a");a.href=URL.creat
 function excel(L){
  UI.excel("catalogo",[{n:"Catálogo",c:[["Código",14],["Código de barras",18],["Producto",36],["Categoría",20],["Descripción",40],["Precio",11,"money"],["Descuento %",11],["Precio final",12,"money"],["Stock",9],["Colores",28],...(ADM?[["Costo",11,"money"]]:[]),["Foto principal",44]],
   f:L.map(p=>[p.codigo||"",p.codigo_barras||"",p.nombre,p.cat,p.descripcion||"",p.base,p.desc,p.fin,p.stk,p.vars.map(v=>`${v.nombre} (${v.stock})`).join(", "),...(ADM?[+p.precio_costo||0]:[]),(p.fotos[0]||{}).url||""])}])}
-/* CSV de Wix: misma cabecera de 91 columnas que exporta Wix. Las fotos van como direcciones web (separadas por ;) */
-const WIX=["handle","fieldType","name","visible","plainDescription","media","mediaAltText","ribbon","brand","price","strikethroughPrice","baseUnit","baseUnitMeasurement","totalUnits","totalUnitsMeasurement","cost","inventory","preOrderEnabled","preOrderMessage","preOrderLimit","sku","barcode","weight",
- ...[1,2,3,4,5,6].flatMap(i=>[`productOptionName${i}`,`productOptionType${i}`,`productOptionChoices${i}`]),
- ...Array.from({length:10},(_,k)=>k+1).flatMap(i=>[`modifierName${i}`,`modifierType${i}`,`modifierCharLimit${i}`,`modifierMandatory${i}`,`modifierDescription${i}`])];
-const cs=v=>{v=String(v??"");return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
-function wix(L){
- const rows=[WIX],ix=k=>WIX.indexOf(k),usados=new Set();
- const handle=p=>{let h=String(p.codigo||p.codigo_barras||p.id).trim().replace(/[^\w.-]+/g,"-"),b=h,n=1;while(usados.has(h))h=b+"-"+(++n);usados.add(h);return h};
- const fila=o=>{const r=new Array(WIX.length).fill("");for(const k in o)r[ix(k)]=o[k];rows.push(r)};
- for(const p of L){
-  const h=handle(p),conv=p.vars.length>0,media=p.fotos.slice(0,15).map(f=>f.url).join(";");
-  fila({handle:h,fieldType:"PRODUCT",name:p.nombre,visible:"TRUE",plainDescription:p.descripcion||p.nombre,media,mediaAltText:p.fotos.length?p.nombre:"",ribbon:p.desc>0?"Oferta":"",price:p.fin.toFixed(2),strikethroughPrice:p.desc>0?p.base.toFixed(2):"",...(ADM?{cost:(+p.precio_costo||0).toFixed(2)}:{}),
-   inventory:conv?"":Math.max(0,p.stk),sku:p.codigo||"",barcode:conv?"":(p.codigo_barras||""),
-   ...(conv?{productOptionName1:"Color",productOptionType1:"DROP_DOWN",productOptionChoices1:p.vars.map(v=>v.nombre).join(";")}:{})});
-  if(conv)p.vars.forEach((v,k)=>fila({handle:h,fieldType:"VARIANT",productOptionName1:"Color",productOptionChoices1:v.nombre,inventory:Math.max(0,+v.stock||0),sku:(p.codigo||h)+"-"+String(k+1),barcode:v.codigo_barras||"",visible:"TRUE"}))}
- return "﻿"+rows.map(r=>r.map(cs).join(",")).join("\r\n")}
 /* PDF: cuadrícula de 3 columnas con foto reducida para que el archivo pese poco */
 async function fotoPequena(url,max=360){
  try{const b=await (await fetch(url,{mode:"cors"})).blob(),bm=await createImageBitmap(b),s=Math.min(1,max/Math.max(bm.width,bm.height)),c=document.createElement("canvas");
@@ -128,11 +112,9 @@ function descargar(){
   <button class="ob" data-d="pdf"><div><b>PDF para clientes</b><small>Cuadrícula con foto, nombre y precio. Ideal para enviar por WhatsApp o imprimir.</small></div></button>
   <div class="kck" id="kOp"><b style="font-size:13px">Opciones del PDF</b><label><input type="checkbox" id="oA" checked> Separar por categoría</label><label><input type="checkbox" id="oL"> Precio en letras</label><label><input type="checkbox" id="oB"> Código de barras</label><label><input type="checkbox" id="oS"> Mostrar disponibilidad (stock)</label></div>
   <button class="ob" data-d="xls"><div><b>Excel</b><small>Todos los datos: códigos, precios, descuento, stock, colores${ADM?", costo":""} y enlace de la foto.</small></div></button>
-  <button class="ob" data-d="wix"><div><b>CSV para Wix</b><small>Listo para importar en Wix Store: nombre, descripción, precio (con precio tachado si hay descuento), inventario, SKU, código de barras, <b>fotos</b> y los colores como opciones del producto.</small></div></button>
   ${ADM?'<a class="ob" href="fotos.html" style="text-decoration:none"><div><b>Fotos en ZIP</b><small>Todas las fotos con el código de barras como nombre (página Fotos).</small></div></a>':""}</div>`,{foot:'<button class="btn g" data-x>Cerrar</button>'});
  m.el.addEventListener("click",async e=>{const b=e.target.closest("[data-d]");if(!b)return;const k=b.dataset.d;
   if(k==="xls"){m.close();excel(L)}
-  else if(k==="wix"){m.close();bajar(new Blob([wix(L)],{type:"text/csv;charset=utf-8"}),"wix-productos-"+ymd(new Date())+".csv");toast(`CSV de Wix generado (${L.length} productos)`)}
   else if(k==="pdf"){if(L.length>600&&!await confirmar(`Son ${L.length} productos: el PDF tardará varios minutos y pesará bastante. Conviene filtrar por categoría.`,{titulo:"PDF muy grande",ok:"Continuar"}))return;
    const o={agrupar:m.q("#oA").checked,letras:m.q("#oL").checked,barras:m.q("#oB").checked,stock:m.q("#oS").checked};m.close();
    await espera(()=>pdf(L,o),"Generando PDF…").catch(()=>{})}})}
