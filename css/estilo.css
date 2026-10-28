@@ -60,3 +60,5 @@ dialog.cfgd{border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-heig
 .side .sbar .brand{white-space:nowrap;font-size:19px}
 .shell.nosd main,.shell.nosd main.wide{max-width:none;margin:0;padding-right:32px}
 button.av{padding:0}.av img{border-radius:50%}
+/* En el iPhone, un texto menor a 16px hace que la pantalla se agrande sola al escribir */
+@media(max-width:800px){input,select,textarea,dialog.dday input{font-size:16px!important}}
