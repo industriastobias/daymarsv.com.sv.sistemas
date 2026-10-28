@@ -9,7 +9,7 @@ mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',cap:'<path d="M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',ban:'<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/>',prov:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/>'};
 const S={q:"month",desde:"",hasta:"",V:[],M:[],C:[],PR:[],B:[],CL:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",ready:false,all:[]};
 const CATS=["Alquiler","Servicios (luz, agua, internet)","Salarios","Publicidad","Transporte y envíos","Empaque","Impuestos","Mercadería","Flete","Comisiones","Materiales","Otros ingresos","Otros gastos"];
-const TN={ingreso:["Ingreso","ok"],gasto:["Gasto","or"],costo:["Costo directo","wa"]};
+const TN={ingreso:["Ingreso","ok"],gasto:["Gasto","or"],costo:["Costo directo","wa"],compra:["Compra de mercadería","wa"]};
 const mkey=d=>String(d).slice(0,7);
 const mes=k=>{const [y,m]=k.split("-");return["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"][+m-1]+" "+y.slice(2)};
 
@@ -59,7 +59,7 @@ function pintarRes(){
 function filtradosMov(){const q=norm($("mQ").value);return S.M.filter(m=>(S.tipo==="all"||m.tipo===S.tipo)&&(!q||norm(m.categoria+" "+(m.descripcion||"")+" "+(m.referencia||"")+" "+(m.proveedores?m.proveedores.nombre:"")).includes(q)))}
 function pintarMov(){
  const L=filtradosMov(),t=k=>L.filter(m=>m.tipo===k).reduce((s,m)=>s+ +m.monto,0);
- $("mK").innerHTML=`<div><span>Ingresos</span><b class="pos">${$$(t("ingreso"))}</b></div><div><span>Gastos</span><b class="neg">${$$(t("gasto"))}</b></div><div><span>Costos directos</span><b>${$$(t("costo"))}</b></div>`;
+ $("mK").innerHTML=`<div><span>Ingresos</span><b class="pos">${$$(t("ingreso"))}</b></div><div><span>Gastos</span><b class="neg">${$$(t("gasto"))}</b></div><div><span>Costos directos</span><b>${$$(t("costo"))}</b></div><div><span>Compras de mercadería</span><b>${$$(t("compra"))}</b><small>Inventario, no baja la utilidad</small></div>`;
  $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.tipo));
  $("mL").innerHTML=L.length?L.slice(0,300).map(m=>`<div class="rw"><div class="ti"><b>${esc(m.categoria)}${m.descripcion?" · "+esc(m.descripcion):""}</b><small>${fdate(m.fecha)} · ${esc(m.metodo||"")}${m.proveedores?" · "+esc(m.proveedores.nombre):""}${m.referencia?" · Ref. "+esc(m.referencia):""}</small></div>
   <div class="am2"><span class="bd ${TN[m.tipo][1]}">${TN[m.tipo][0]}</span> <b class="${m.tipo==="ingreso"?"pos":"neg"}">${m.tipo==="ingreso"?"+":"−"}${$$(m.monto)}</b></div><button class="btn g sm" data-me="${m.id}">Editar</button></div>`).join("")
