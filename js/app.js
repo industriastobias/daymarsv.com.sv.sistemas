@@ -139,7 +139,7 @@ function abrirConfig(){
   <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small></section>
   <section class="cf-s hidden" data-s="ap"><h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select><small class="cf-m">Se guarda solo en este dispositivo.</small></section>
   <section class="cf-s hidden" data-s="pa"><h3>Pantalla</h3>
-   ${sw("cfK","Modo kiosco","Pantalla simple y con botones grandes para vender en el mostrador. Para salir se pide tu contraseña.")}
+   ${sw("cfK","Modo kiosco","Pone el sistema en pantalla completa y, para salir, pide tu contraseña. No cambia el diseño de las páginas.")}
    ${sw("cfS","Ocultar el menú lateral","Solo en computadora; el menú sigue en la página de inicio.")}
    ${sw("cfB","Ocultar el nombre DAYMAR-SHOP","Quita el nombre de la barra para ganar espacio.")}</section>
   ${me.rol==="admin"?`<section class="cf-s hidden" data-s="dt"><h3>Respaldo</h3><div class="cf-card"><p class="cf-m" id="cfBkT" style="margin:0 0 10px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button></div>

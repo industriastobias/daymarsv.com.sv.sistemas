@@ -181,16 +181,3 @@ body:has(#bMulti.on) #invList tr[data-id],body:has(#bMulti.on) #invList .pc{curs
 .cpk button.on{background:var(--card);color:var(--wine);box-shadow:0 1px 3px #0002}
 @media(min-width:520px){.cpk{grid-template-columns:repeat(5,1fr)}}
 .cpf{margin-top:12px;grid-template-columns:1fr 1fr}.cpf>div{min-width:0}.cpf input{width:100%;min-width:0}
-
-/* Modo kiosco */
-body.kiosco.pos .back,body.kiosco.pos .tot,body.kiosco.pos #bnav,body.kiosco.pos .bnav,body.kiosco.pos #bUsb,body.kiosco.pos #fl .fx,body.kiosco.pos #hist,body.kiosco.pos .ctl,body.kiosco.pos .ac .btn.g,body.kiosco.pos .head small{display:none!important}
-
-body.kiosco.pos .head{padding-top:6px}body.kiosco.pos .head h1{font-size:26px}
-body.kiosco.pos .hact .btn{min-height:52px;font-size:17px}
-body.kiosco.pos #fSearch{min-height:56px;font-size:19px}
-body.kiosco.pos .pg{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
-body.kiosco.pos .pc .ac .btn{min-height:50px;font-size:18px;width:100%}
-body.kiosco.pos .pc .bc{display:none}
-body.kiosco.pos #fl .full{grid-column:1/-1}body.kiosco.pos #fSearch{width:100%}
-body.kiosco.pos main{padding-bottom:70px}body.kiosco.pos .more .btn{min-height:52px;font-size:17px}body.kiosco.pos #mMore [data-m=kiosk]{display:none}
-body.kiosco.pos .back{display:none!important}

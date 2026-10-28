@@ -998,14 +998,11 @@ const hid=LS("dms_hide")==="1";const setEye=h=>{$("totalAmount").classList.toggl
 $("bEye").onclick=()=>setEye(!$("totalAmount").classList.contains("hid"));
 
 /* ---------- modo kiosco: pantalla simple y grande para vender; salir pide la contraseña ---------- */
-function kiosco(on){DAY.kiosco(on)}
-document.addEventListener("kiosco",e=>{if(e.detail){S.view="cards";try{if(S.byId.size)pintarInv()}catch(x){}if(S.tab&&S.tab!=="inv")try{tab("inv")}catch(x){}}});
-if(LS("dms_kiosco")==="1")S.view="cards";
 const mm=$("mMore");$("bMore").onclick=e=>{e.stopPropagation();const on=mm.classList.toggle("on");$("bMore").setAttribute("aria-expanded",on)};
 document.addEventListener("click",()=>{mm.classList.remove("on");$("bMore").setAttribute("aria-expanded","false")});
 async function refrescar(){await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()]);filtrar(true);if(S.tab==="pend")pintarPend();if(S.tab==="hoy")await pintarHoy();if(S.tab==="ven")await pintarVentas()},"Actualizando…");toast("Datos actualizados")}
 mm.addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)return;const k=b.dataset.m;
- if(k==="kiosk")kiosco(true);else if(k==="refresh")refrescar();else if(k==="excel")excel();
+ if(k==="kiosk")DAY.kiosco(true);else if(k==="refresh")refrescar();else if(k==="excel")excel();
  else if(k==="keys")modal("Atajos de teclado",`<div class="sk"><span>Enfocar código de barras</span><kbd>Ctrl</kbd></div><div class="sk"><span>Cerrar ventana / cámara</span><kbd>Esc</kbd></div><div class="sk"><span>Lector USB</span><span>Activa "Lector USB" y escanea</span></div>`.replace("<kbd>Ctrl</kbd>","<kbd>Ctrl + B</kbd>"),{foot:""})
  else if(k==="out"){DAY.salir()}});
 
