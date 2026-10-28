@@ -36,3 +36,4 @@
 .bnav button{min-width:64px;white-space:nowrap}
 @media(min-width:800px){.bnav{max-width:max-content}.bnav button{flex:0 0 auto;padding:9px 16px}}
 .shell>main{min-width:0}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
