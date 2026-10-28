@@ -22,7 +22,7 @@ async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:Mat
 async function fetchAll(mk){const out=[];for(let f=0;;f+=1000){const r=await mk().range(f,f+999);if(r.error){toast(r.error.message);throw r.error}out.push(...r.data);if(r.data.length<1000)break}return out}
 function openDlg(id){const d=$(id);if(!d.open)d.showModal()}
 document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>$(b.dataset.x).close());
-["dgTrash","dgRegen","dgStock0","dgDet","dgKeys"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))$(id).close()}));
+["dgTrash","dgStock0","dgDet","dgKeys"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))$(id).close()}));
 
 /* ---------- carga de datos ---------- */
 async function load(){
@@ -220,10 +220,6 @@ $("bStock0Go").onclick=async()=>{const pw=$("passStock0").value;$("errPass").tex
  busy(true,"Enviando a la papelera…");try{await ok(db.from("productos").update({activo:false,eliminado_en:new Date().toISOString()}).in("id",zero.map(p=>p.id)));$("dgStock0").close();await refresh();toast(`${zero.length} productos con stock 0 enviados a la papelera`)}catch(x){}busy(false)};
 $("passStock0").addEventListener("keydown",e=>{if(e.key==="Enter")$("bStock0Go").click()});
 
-/* ---------- regenerar códigos ---------- */
-$("lenBtns").onclick=e=>{const b=e.target.closest("button");if(!b)return;regenMode=b.dataset.l;document.querySelectorAll("#lenBtns button").forEach(x=>x.classList.toggle("on",x===b))};
-$("bRegenGo").onclick=async()=>{if(!inv.length)return toast("No hay productos");if(!await DAY.ask(`¿Regenerar TODOS los códigos de barras? Se actualizarán ${inv.length} productos.`))return;
- $("dgRegen").close();busy(true,"Regenerando códigos…");try{await ok(db.rpc("regenerar_codigos_barras",{p_longitud:regenMode==="mixed"?null:+regenMode}));await refresh();toast("Códigos regenerados")}catch(x){}busy(false)};
 
 /* ---------- detalle ---------- */
 let detUrls=[];
@@ -478,7 +474,7 @@ $("seg").onclick=e=>{const b=e.target.closest("button");if(b)setPane(b.dataset.p
 const mm=$("mMore");$("bMore").onclick=e=>{e.stopPropagation();const on=mm.classList.toggle("on");$("bMore").setAttribute("aria-expanded",on)};
 document.addEventListener("click",()=>{mm.classList.remove("on");$("bMore").setAttribute("aria-expanded","false")});
 mm.onclick=e=>{const b=e.target.closest("button");if(!b)return;const m=b.dataset.m;
- if(m==="trash"){renderTrash();openDlg("dgTrash")}else if(m==="stock0")openStock0();else if(m==="keys")openDlg("dgKeys");else if(m==="regen")openDlg("dgRegen");else if(m==="theme")toggleTheme();else if(m==="out")DAY.salir()};
+ if(m==="trash"){renderTrash();openDlg("dgTrash")}else if(m==="stock0")openStock0();else if(m==="keys")openDlg("dgKeys");else if(m==="theme")toggleTheme();else if(m==="out")DAY.salir()};
 document.addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey))return;const k=e.key.toLowerCase();
  if(k==="n"){e.preventDefault();resetForm();setPane("f");$("name").focus();toast("Nuevo producto")}
  else if(k==="b"){e.preventDefault();setPane("i");$("searchBox").focus()}

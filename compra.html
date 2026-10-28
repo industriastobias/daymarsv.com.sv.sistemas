@@ -3,8 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMAR-SHOP – Compra</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610281606">
-<link rel="stylesheet" href="css/compra.css?v=202610281606"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202610281609">
+<link rel="stylesheet" href="css/compra.css?v=202610281609"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -17,7 +17,7 @@
    <div class="more"><button class="btn g" id="bMore" aria-haspopup="true" aria-expanded="false">Más ▾</button>
     <div class="menu" id="mMore" role="menu">
      <button data-m="trash">Papelera</button><button data-m="stock0" class="dg">Eliminar productos con stock 0</button><button data-m="keys">Atajos de teclado</button><hr>
-     <button data-m="regen">Regenerar códigos de barras</button><button data-m="theme">Cambiar tema</button><hr><button data-m="out">Cerrar sesión</button>
+     <button data-m="theme">Cambiar tema</button><hr><button data-m="out">Cerrar sesión</button>
     </div></div>
   </div>
  </div>
@@ -104,15 +104,6 @@
  <div class="df"><span style="margin-right:auto;font-size:12px;color:var(--mute)">Se eliminan para siempre a los 30 días.</span><button class="btn dg" id="bTrashAll" type="button">Vaciar papelera</button></div>
 </dialog>
 
-<!-- Regenerar códigos -->
-<dialog id="dgRegen">
- <div class="dh"><h2>Regenerar códigos de barras</h2><button class="x" data-x="dgRegen" aria-label="Cerrar">×</button></div>
- <div class="db"><p style="margin-top:0">Crea códigos nuevos para todos los productos del inventario. Elige la longitud:</p>
-  <div class="bl" id="lenBtns"><button type="button" class="on" data-l="mixed">Variado (4–8)</button><button type="button" data-l="4">4 dígitos</button><button type="button" data-l="5">5</button><button type="button" data-l="6">6</button><button type="button" data-l="7">7</button><button type="button" data-l="8">8</button></div>
-  <div class="note"><b>Ojo:</b> los códigos actuales se reemplazan. Si ya imprimiste etiquetas, tendrás que imprimirlas otra vez.</div></div>
- <div class="df"><button class="btn g" data-x="dgRegen" type="button">Cancelar</button><button class="btn" id="bRegenGo" type="button">Regenerar códigos</button></div>
-</dialog>
-
 <!-- Eliminar stock 0 -->
 <dialog id="dgStock0">
  <div class="dh"><h2>Eliminar productos sin stock</h2><button class="x" data-x="dgStock0" aria-label="Cerrar">×</button></div>
@@ -147,6 +138,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<script src="js/app.js?v=202610281606"></script>
-<script src="js/compra.js?v=202610281606"></script>
+<script src="js/app.js?v=202610281609"></script>
+<script src="js/compra.js?v=202610281609"></script>
 </body></html>
