@@ -117,3 +117,4 @@ kbd{background:var(--chip);border:1px solid var(--line);border-radius:5px;paddin
 @media(min-width:700px){.vr{grid-template-columns:1.2fr 80px 1.2fr 36px;grid-template-areas:"n q b x"}}
 
 .rw.al{display:flex;align-items:center;gap:10px}.rw.al .aim{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none;background:var(--bg)}.rw.al .aim.ph0{display:grid;place-items:center;font:700 20px "Bricolage Grotesque",sans-serif;color:#fff;background:linear-gradient(135deg,var(--wine),var(--gold))}.rw.al .ti small{display:block}
+@media(max-width:639px){.dgal{gap:10px}.dgal .main{aspect-ratio:auto;height:32vh;height:32dvh;max-height:300px;object-fit:contain}.dgal .th img{width:40px;height:40px}}
