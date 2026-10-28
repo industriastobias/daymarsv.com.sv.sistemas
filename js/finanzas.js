@@ -30,10 +30,10 @@ async function cargarGeneral(){
 const sumM=(t)=>S.M.filter(m=>m.tipo===t).reduce((s,m)=>s+ +m.monto,0);
 function calc(){
  const ventas=S.V.reduce((s,x)=>s+ +x.ventas,0),costoV=S.V.reduce((s,x)=>s+ +x.costo,0),nV=S.V.reduce((s,x)=>s+ +x.n,0);
- const oi=sumM("ingreso"),ga=sumM("gasto"),co=sumM("costo");
+ const oi=sumM("ingreso"),ga=sumM("gasto"),co=sumM("costo"),cm=sumM("compra");
  const ingresos=ventas+oi,egresos=costoV+co+ga,util=ingresos-egresos;
  const dias=Math.max(1,Math.round((new Date(S.hasta)-new Date(S.desde))/864e5)+1);
- return {ventas,costoV,nV,oi,ga,co,ingresos,egresos,util,dias,bruta:ventas-costoV}}
+ return {ventas,costoV,nV,oi,ga,co,cm,ingresos,egresos,util,dias,bruta:ventas-costoV}}
 const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+(c.monto-c.abonado),0);
 
 /* ---------- Resumen ---------- */
@@ -50,7 +50,7 @@ function grafico(){
  return s+"</svg>"}
 function pintarRes(){
  const c=calc();
- $("rK").innerHTML=`<div><span>Ingresos</span><b>${$$(c.ingresos)}</b><small>ventas ${$$(c.ventas)}</small></div><div><span>Egresos</span><b>${$$(c.egresos)}</b><small>costo de ventas + costos + gastos</small></div><div><span>Utilidad neta</span><b class="${c.util>=0?"pos":"neg"}">${$$(c.util)}</b><small>${c.ingresos?(c.util/c.ingresos*100).toFixed(1):"0.0"}% de margen</small></div><div><span>Por cobrar</span><b>${$$(pend("cobrar"))}</b></div><div><span>Por pagar</span><b>${$$(pend("pagar"))}</b></div>`;
+ $("rK").innerHTML=`<div><span>Ingresos</span><b>${$$(c.ingresos)}</b><small>ventas ${$$(c.ventas)}</small></div><div><span>Egresos</span><b>${$$(c.egresos)}</b><small>costo de ventas + costos + gastos</small></div><div><span>Utilidad neta</span><b class="${c.util>=0?"pos":"neg"}">${$$(c.util)}</b><small>${c.ingresos?(c.util/c.ingresos*100).toFixed(1):"0.0"}% de margen</small></div><div><span>Compras de mercadería</span><b>${$$(c.cm)}</b><small>inventario: no baja la utilidad</small></div><div><span>Por cobrar</span><b>${$$(pend("cobrar"))}</b></div><div><span>Por pagar</span><b>${$$(pend("pagar"))}</b></div>`;
  $("rG").innerHTML=grafico();
  const ven=S.C.filter(x=>x.estado==="pendiente"&&x.vence&&x.vence<ymd(new Date()));
  $("rA").innerHTML=ven.length?`<div class="alert bad"><div><b>${ven.length} cuenta(s) vencida(s)</b>${ven.slice(0,3).map(x=>esc(x.tercero)).join(", ")}${ven.length>3?"…":""} — revísalas en Cuentas.</div></div>`:""}
