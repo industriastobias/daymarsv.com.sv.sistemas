@@ -1,3 +1,11 @@
+/* App instalada: sin franja de color bajo la barra del teléfono y cambios de página sin parpadeo */
+@view-transition{navigation:auto}
+html{background:var(--bg,#F5F2F3);min-height:100%}
+body{min-height:100vh;min-height:100dvh;padding-bottom:env(safe-area-inset-bottom)}
+.shell{animation:shIn .22s ease both}
+@keyframes shIn{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.shell{animation:none}}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.18s}
 dialog.big{height:92vh;height:92dvh;max-height:92dvh}
 .cdot{display:inline-block;width:.85em;height:.85em;border-radius:50%;border:1px solid rgba(0,0,0,.28);vertical-align:-1px;margin-right:6px;flex:none}
 .vn{position:relative;display:block;min-width:0}.vn .cdot{position:absolute;left:10px;top:50%;margin:0;transform:translateY(-50%);width:14px;height:14px}.vn .cdot+input{padding-left:32px}
