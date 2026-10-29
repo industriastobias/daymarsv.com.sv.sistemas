@@ -78,7 +78,7 @@ function pintarUsr(){const b=document.getElementById("cfg1");if(!b||!DAY.me)retu
 /* Menú lateral de escritorio (en el celular se oculta y se navega desde el menú principal) */
 function mountSide(el,activo,rol){
  el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>-SHOP</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
-  GRUPOS.map(g=>`<div class="sg">${g.t}</div>`+visibles(g,rol).map(m=>enlace(m,"",activo)).join("")).join("")+`</nav><div class="usr"><button type="button" class="ub" id="cfg1" aria-label="Configuración"></button></div><button class="lo" id="lo1">Cerrar sesión</button>`;
+  GRUPOS.filter(g=>visibles(g,rol).length).map(g=>`<div class="sg">${g.t}</div>`+visibles(g,rol).map(m=>enlace(m,"",activo)).join("")).join("")+`</nav><div class="usr"><button type="button" class="ub" id="cfg1" aria-label="Configuración"></button></div><button class="lo" id="lo1">Cerrar sesión</button>`;
  el.querySelector("#lo1").onclick=salir;
  el.querySelector("#cfg1").onclick=abrirConfig;
  el.querySelector("#hb1").onclick=()=>{PREF("dms_nosd","1");aplicarPrefs()};
