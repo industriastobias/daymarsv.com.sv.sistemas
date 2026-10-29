@@ -48,12 +48,12 @@ async function inicio(){
 
 function pintarHistorial(H){
  $("cMain").innerHTML=`<div class="card cin"><h3>Hacer un conteo físico</h3>
-  <p>El sistema guarda una foto de todo tu inventario. Tú vas contando lo que hay en el almacén (escaneando o escribiendo la cantidad) y al final ves qué productos <b>faltan</b> y cuáles <b>sobran</b>. Si quieres, el sistema se corrige solo con lo que contaste.</p>
-  <ul class="cl2"><li>Puedes parar y seguir otro día: el conteo queda abierto hasta que lo cierres.</li><li>Las ventas que se hagan mientras cuentas no se pierden ni se cuentan doble.</li><li>Los productos con colores se cuentan color por color.</li></ul>
+  <p>El sistema guarda una foto de todo tu inventario. Tú vas contando lo que hay en el almacén (escaneando o escribiendo la cantidad) y al final ves qué productos <b>faltan</b> y cuáles <b>sobran</b>. Cada producto que cuentes corrige su stock al instante, y se ve de una vez en el Punto de venta.</p>
+  <ul class="cl2"><li>Puedes parar y seguir otro día: el conteo queda abierto hasta que lo cierres.</li><li>Cada cambio de stock queda en los movimientos de stock.</li><li>Los productos con colores se cuentan color por color.</li></ul>
   <button class="btn" id="cNew" type="button">Iniciar conteo físico</button></div>
   <h3 class="sect">Conteos anteriores</h3>
   <div id="cHist">${H.length?H.map(h=>`<button type="button" class="rw chh" data-h="${h.id}"><div class="ti"><b>Conteo #${h.numero}</b><small>${fdate(h.created_at)} ${ftime(h.created_at)}${h.nota?" · "+esc(h.nota):""}</small></div>
-   <span class="bd ${h.estado==="cerrado"?"ok":"mu"}">${h.estado==="cerrado"?"Cerrado":"Cancelado"}</span>${h.estado==="cerrado"?`<span class="bd ${h.ajustado?"pu":"bl2"}">${h.ajustado?"Se ajustó el sistema":"Solo reporte"}</span>`:""}</button>`).join(""):'<div class="empty card">Todavía no has hecho ningún conteo.</div>'}</div>`;
+   <span class="bd ${h.estado==="cerrado"?"ok":"mu"}">${h.estado==="cerrado"?"Cerrado":"Cancelado"}</span>${h.estado==="cerrado"?`<span class="bd ${h.ajustado?"pu":"bl2"}">Stock corregido</span>`:""}</button>`).join(""):'<div class="empty card">Todavía no has hecho ningún conteo.</div>'}</div>`;
  $("cNew").onclick=iniciar;
  $("cHist").onclick=async e=>{const b=e.target.closest("[data-h]");if(!b)return;const h=H.find(x=>x.id===b.dataset.h);
   const L=await espera(async()=>cargarItems(h.id),"Cargando…");if(L)detalle(h,L,H)}}
@@ -166,23 +166,20 @@ function terminar(){
    <div><span>Con faltantes</span><b class="neg">${r.falt}</b><small>${r.uf} unidades · ${$$(r.vf)} al costo</small></div>
    <div><span>Con sobrantes</span><b>${r.sobr}</b><small>${r.us} unidades · ${$$(r.vs)} al costo</small></div></div>
   ${r.pend?`<div class="alert warn" style="margin:10px 0"><div><b>${r.pend===1?"Te falta 1 producto por contar":"Te faltan "+r.pend+" productos por contar"}</b>Puedes seguir contando otro día, o terminar ahora.</div></div>`:""}
-  <label class="chk"><input type="checkbox" id="tAj" checked> Corregir el inventario del sistema con lo que conté</label>
-  <small class="hint" style="display:block;margin:0 0 6px 30px">Cambia el stock de los productos con diferencia y deja el registro en los movimientos de stock.</small>
-  ${r.pend?`<label class="chk" id="tCeroW"><input type="checkbox" id="tCero"> Los productos que no conté, ponerlos en 0</label>`:""}
+  <p class="hint" style="margin:0 0 8px">Cada producto que contaste ya corrigió su stock en el sistema (Punto de venta e Inventario) en el momento de contarlo.</p>
+  ${r.pend?`<label class="chk" id="tCeroW"><input type="checkbox" id="tCero"> Los ${r.pend} que no conté, ponerlos en 0 unidades</label>`:""}
   <div class="err2" id="tE" role="alert"></div>`,
   {foot:`<button class="btn g" data-x>Seguir contando</button><button class="btn" id="tOk">Cerrar conteo</button>`});
- const sync=()=>{const w=m.q("#tCeroW");if(w)w.style.opacity=m.q("#tAj").checked?1:.45;const c=m.q("#tCero");if(c)c.disabled=!m.q("#tAj").checked};
- m.q("#tAj").onchange=sync;sync();
  m.q("#tOk").onclick=async()=>{
-  const aj=m.q("#tAj").checked,cero=aj&&!!(m.q("#tCero")&&m.q("#tCero").checked);
-  if(aj&&!await confirmar("Se cambiará el stock de los productos con diferencia. Esto no se puede deshacer.",{titulo:"Corregir inventario",ok:"Sí, corregir",peligro:true}))return;
-  const res=await espera(async()=>{const {data,error}=await db.rpc("inventario_cerrar",{p_inv:INV.id,p_ajustar:aj,p_no_contados_cero:cero});if(error)throw new Error(error.message);return data},"Cerrando el conteo…");
+  const cero=!!(m.q("#tCero")&&m.q("#tCero").checked);
+  if(cero&&!await confirmar("Los productos que no contaste quedarán con 0 unidades en el sistema.",{titulo:"Poner en 0",ok:"Sí, poner en 0",peligro:true}))return;
+  const res=await espera(async()=>{const {data,error}=await db.rpc("inventario_cerrar",{p_inv:INV.id,p_ajustar:true,p_no_contados_cero:cero});if(error)throw new Error(error.message);return data},"Cerrando el conteo…");
   if(!res)return;m.close();
-  toast(aj?`Conteo cerrado. Se corrigieron ${res.productos_ajustados} productos.`:"Conteo cerrado.");
+  toast(`Conteo cerrado. Se corrigieron ${res.productos_ajustados} productos.`);
   const L=await cargarItems(INV.id),H=await cargarInventarios();detalle(H.find(h=>h.id===INV.id),L,H)}}
 
 async function cancelar(){
- if(!await confirmar("Se descarta este conteo y no se cambia nada del inventario.",{titulo:"Cancelar conteo",ok:"Cancelar conteo",peligro:true}))return;
+ if(!await confirmar("Se descarta este conteo y se devuelve el stock de lo que ya habías contado a como estaba antes.",{titulo:"Cancelar conteo",ok:"Cancelar conteo",peligro:true}))return;
  const ok=await espera(async()=>{const {error}=await db.rpc("inventario_cancelar",{p_inv:INV.id});if(error)throw new Error(error.message);return true});
  if(ok){toast("Conteo cancelado");await inicio()}}
 
@@ -192,7 +189,7 @@ function detalle(h,L,H){
  const D=()=>filas(L).sort((a,b)=>Math.abs(dif(b)||0)-Math.abs(dif(a)||0));
  $("cMain").innerHTML=`<button class="btn g sm" id="dBack" type="button" style="margin-bottom:10px">‹ Todos los conteos</button>
   <div class="card cin"><h3>Conteo #${h.numero} <span class="bd ${h.estado==="cerrado"?"ok":"mu"}">${h.estado==="cerrado"?"Cerrado":"Cancelado"}</span></h3>
-   <p style="margin:0">${fdate(h.created_at)} ${ftime(h.created_at)}${h.cerrado_en?" → "+fdate(h.cerrado_en)+" "+ftime(h.cerrado_en):""}<br>${h.ajustado?"El inventario del sistema se corrigió con este conteo.":"Solo reporte: no se cambió el inventario."}</p></div>
+   <p style="margin:0">${fdate(h.created_at)} ${ftime(h.created_at)}${h.cerrado_en?" → "+fdate(h.cerrado_en)+" "+ftime(h.cerrado_en):""}<br>El stock de cada producto se corrigió al contarlo.</p></div>
   <div class="cres"><div><span>Contados</span><b>${r.cont} de ${r.total}</b></div><div><span>Coinciden</span><b class="pos">${r.ok}</b></div>
    <div><span>Faltantes</span><b class="neg">${r.uf}</b><small>${r.falt} productos · ${$$(r.vf)} al costo</small></div><div><span>Sobrantes</span><b>${r.us}</b><small>${r.sobr} productos · ${$$(r.vs)} al costo</small></div></div>
   <div class="ctl"><button class="btn g" id="dXls" type="button">Descargar Excel</button></div>
