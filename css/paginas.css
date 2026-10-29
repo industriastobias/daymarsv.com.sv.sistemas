@@ -37,3 +37,16 @@
 @media(min-width:800px){.bnav{max-width:max-content}.bnav button{flex:0 0 auto;padding:9px 16px}}
 .shell>main{min-width:0}
 a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+
+/* Actividad: filtros y tarjetas compactos */
+#pAct .kp{grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+#pAct .kp>div{padding:8px 10px}#pAct .kp b{font-size:17px}#pAct .kp span{font-size:11px}
+#pAct .fl{grid-template-columns:1fr 1fr;gap:6px 8px;margin-bottom:6px}
+#pAct .fl>div{min-width:0}
+#pAct .fl label{font-size:11px;margin:0 0 2px}
+#pAct .fl input,#pAct .fl select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;height:38px;min-height:38px;padding:4px 10px;font-size:14px;-webkit-appearance:none;appearance:none}
+#pAct .fl input[type=date]{display:block}
+#pAct .ctl{gap:8px;flex-wrap:nowrap;align-items:center}
+#pAct .ctl #aQ{min-height:40px;height:40px}
+#aBorrar{flex:none;white-space:nowrap;min-height:40px}
+@media(min-width:900px){#pAct .fl{grid-template-columns:1.2fr 1.2fr 1fr 1fr}}
