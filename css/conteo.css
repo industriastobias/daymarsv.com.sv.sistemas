@@ -23,3 +23,5 @@
 .cres .pos{color:var(--ok)}.cres .neg{color:var(--bad)}
 .cfin{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 @media(max-width:600px){.ci{grid-template-columns:1fr auto;grid-template-areas:"t d" "s q"}.ci .ti{grid-area:t}.ci .cd{grid-area:d}.ci .cs{grid-area:s;text-align:left;display:flex;gap:6px;align-items:baseline}.ci .cq{grid-area:q;justify-self:end}}
+.cf{display:flex;align-items:center;gap:10px;min-width:0}.cf img,.cf .ph{width:64px;height:64px;border-radius:10px;object-fit:cover;flex:none;background:var(--chip);display:flex;align-items:center;justify-content:center;font:700 22px "Bricolage Grotesque",sans-serif;color:var(--wine)}.cf img{cursor:zoom-in}.cf .ti{min-width:0}
+@media(max-width:600px){.cf img,.cf .ph{width:56px;height:56px}.ci .cf{grid-area:t}}

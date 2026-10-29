@@ -21,7 +21,13 @@ const estado=i=>{const d=dif(i);return d===null?"pend":d===0?"ok":"dif"};
 async function cargarInventarios(){
  const {data,error}=await db.from("inventarios").select("*").order("created_at",{ascending:false}).limit(60);
  if(error)throw new Error(error.message);return data||[]}
-async function cargarItems(id){return fetchAll(()=>db.from("inventario_items").select("*").eq("inventario_id",id).order("nombre").order("color"))}
+async function cargarItems(id){
+ const L=await fetchAll(()=>db.from("inventario_items").select("*").eq("inventario_id",id).order("nombre").order("color"));
+ try{const P=await fetchAll(()=>db.from("productos").select("id,foto_url").not("foto_url","is",null));
+  const M={};P.forEach(p=>M[p.id]=p.foto_url);L.forEach(i=>{i.foto=M[i.producto_id]||""})}catch(e){}
+ return L}
+const inicial=t=>esc(String(t||"?").trim().charAt(0).toUpperCase());
+function verFoto(u){modal("Foto",`<img src="${esc(DAY.grande(u))}" onerror="this.onerror=null;this.src='${esc(u)}'" alt="" style="width:100%;max-height:70vh;object-fit:contain;border-radius:10px">`)}
 
 /* ---------- resumen ---------- */
 function resumen(L){
@@ -88,7 +94,7 @@ function pintarProgreso(){
 
 const badge=i=>{const d=dif(i);return d===null?'<span class="bd mu">Pendiente</span>':d===0?'<span class="bd ok">Coincide</span>':d<0?`<span class="bd bad">Faltan ${-d}</span>`:`<span class="bd wa">Sobran ${d}</span>`};
 function fila(i,ro){
- return `<div class="ci ${estado(i)}" data-id="${i.id}"><div class="ti"><b>${esc(i.nombre)}</b>${i.color?` <span class="bd bl2">${esc(i.color)}</span>`:""}<small>${esc(i.codigo||"")}${i.codigo_barras?" · "+esc(i.codigo_barras):""}${i.categoria?" · "+esc(i.categoria):""}</small></div>
+ return `<div class="ci ${estado(i)}" data-id="${i.id}"><div class="cf">${i.foto?`<img src="${esc(i.foto)}" alt="" loading="lazy" data-foto="${esc(i.foto)}">`:`<div class="ph">${inicial(i.nombre)}</div>`}<div class="ti"><b>${esc(i.nombre)}</b>${i.color?` <span class="bd bl2">${esc(i.color)}</span>`:""}<small>${esc(i.codigo||"")}${i.codigo_barras?" · "+esc(i.codigo_barras):""}${i.categoria?" · "+esc(i.categoria):""}</small></div></div>
   <div class="cs"><small>Sistema</small><b>${base(i)}</b></div>
   <div class="cq">${ro?`<b>${i.contado==null?"—":i.contado}</b>`:`<button type="button" data-st="-1" aria-label="Menos">−</button><input type="number" min="0" step="1" inputmode="numeric" value="${i.contado==null?"":i.contado}" placeholder="—" data-q="${i.id}" aria-label="Cantidad contada"><button type="button" data-st="1" aria-label="Más">+</button>`}</div>
   <div class="cd">${badge(i)}</div></div>`}
@@ -113,6 +119,7 @@ function guardar(i,n){
 function refrescar(id){pintarProgreso();pintarLista();if(ultimo)pintarUltimo()}
 function marcar(i,n){ultimo=i.id;guardar(i,n);pintarUltimo();pintarLista()}
 function lista(e){
+ const ft=e.target.closest("[data-foto]");if(ft&&e.type==="click"){verFoto(ft.dataset.foto);return}
  const row=e.target.closest(".ci");if(!row)return;const i=IT.find(x=>x.id===row.dataset.id);if(!i)return;
  const st=e.target.closest("[data-st]");
  if(st&&e.type==="click"){const n=Math.max(0,(i.contado==null?(+st.dataset.st>0?0:0):i.contado)+(+st.dataset.st));marcar(i,n);return}
@@ -133,7 +140,7 @@ function contarUno(i){
  if(modo==="uno"){const n=(i.contado||0)+1;marcar(i,n);toast(`+1 · ${nombre(i)} → ${n}`)}
  else{ultimo=i.id;pintarUltimo();toast("Escribe la cantidad de "+nombre(i));const inp=document.querySelector(`#cUl [data-q="${i.id}"]`);if(inp){inp.focus();inp.select()}}}
 function elegir(L){
- const m=modal("¿Cuál es?",`<p style="margin:0 0 8px">Ese código es de varios colores:</p><div id="elL">${L.map((i,k)=>`<button type="button" class="sv" data-k="${k}" style="width:100%;text-align:left;cursor:pointer"><div class="ti"><b>${esc(nombre(i))}</b><small>Sistema: ${base(i)}${i.contado!=null?" · Contado: "+i.contado:""}</small></div></button>`).join("")}</div>`);
+ const m=modal("¿Cuál es?",`<p style="margin:0 0 8px">Ese código es de varios colores:</p><div id="elL">${L.map((i,k)=>`<button type="button" class="sv" data-k="${k}" style="width:100%;text-align:left;cursor:pointer">${i.foto?`<img src="${esc(i.foto)}" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;margin-right:10px;vertical-align:middle">`:""}<div class="ti" style="display:inline-block;vertical-align:middle"><b>${esc(nombre(i))}</b><small>Sistema: ${base(i)}${i.contado!=null?" · Contado: "+i.contado:""}</small></div></button>`).join("")}</div>`);
  m.q("#elL").addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b)return;const i=L[+b.dataset.k];m.close();contarUno(i)})}
 
 /* ---------- cámara ---------- */
