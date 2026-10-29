@@ -29,10 +29,10 @@ const ICON={
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 const GRUPOS=[
  {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"reservas",n:"Reservas",i:"cal",h:"reservas.html",ok:1}]},
- {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"store",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"store",h:"catalogo.html",ok:1}]},
+ {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"store",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"store",h:"catalogo.html",ok:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
  {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"usuarios",n:"Usuarios",i:"users",h:"usuarios.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"clock",h:"actividad.html",ok:1,adm:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
-const visibles=(g,rol)=>g.m.filter(m=>!m.adm||rol==="admin");
+const visibles=(g,rol)=>g.m.filter(m=>(!m.adm||rol==="admin")&&(!m.pri||DAY.principal));
 const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}" ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span></a>`;
 /* Ventanas propias (reemplazan los avisos feos del navegador) */
 function dlgCss(){if(document.getElementById("dayDlgCss"))return;const st=document.createElement("style");st.id="dayDlgCss";
@@ -205,7 +205,7 @@ async function requireSession(){
  setInterval(vigilar,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)vigilar()});
  const r=await db.from("profiles").select("*").eq("id",data.session.user.id).single();
  if(r.error||!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
- DAY.me=r.data;DAY.email=data.session.user.email;return r.data}
+ DAY.me=r.data;DAY.email=data.session.user.email;DAY.principal=r.data.rol==="admin"&&String(DAY.email).toLowerCase()==="aehtobias@gmail.com";return r.data}
 /* Puntito de color según el nombre del color (rosado → punto rosado). Si no lo reconoce, no pone nada. */
 const COLORES={rosado:"#f06292",rosa:"#f06292",blanco:"#ffffff",negro:"#1a1a1a",rojo:"#d32f2f",azul:"#1e66d0",celeste:"#5bc0eb",verde:"#2e9d57",amarillo:"#f6d332",naranja:"#f58a1f",anaranjado:"#f58a1f",morado:"#8e44ad",violeta:"#8e44ad",lila:"#b99be0",gris:"#9e9e9e",plateado:"#c0c0c0",plata:"#c0c0c0",dorado:"#d4a62a",oro:"#d4a62a",cafe:"#7b4a2a",marron:"#7b4a2a",beige:"#e8d8b8",crema:"#f3e9d2",turquesa:"#20b2aa",vino:"#7b1e3a",guinda:"#7b1e3a",fucsia:"#e0198b",coral:"#ff7f6a",mostaza:"#d9a21b",nude:"#e3bfa5",salmon:"#fa8f7d",durazno:"#ffb38a",menta:"#98e0c0",transparente:"repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/8px 8px",multicolor:"conic-gradient(red,orange,yellow,green,blue,violet,red)"};
 function mezclar(h,c,p){const n=x=>parseInt(h.slice(x,x+2),16),m=(a,b)=>Math.round(a+(b-a)*p).toString(16).padStart(2,"0");return "#"+m(n(1),c)+m(n(3),c)+m(n(5),c)}
