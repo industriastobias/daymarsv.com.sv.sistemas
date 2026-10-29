@@ -5,12 +5,26 @@
   "start_url": "menu.html",
   "scope": "./",
   "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone"],
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
   "background_color": "#6B2D3E",
   "theme_color": "#6B2D3E",
   "lang": "es",
   "icons": [
-    {"src": "favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
-  ]
+    {
+      "src": "favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "id": "./menu.html?app=daymarsv"
 }

@@ -86,7 +86,7 @@ function aplicarPrefs(){
 function pintarUsr(){const b=document.getElementById("cfg1");if(!b||!DAY.me)return;b.innerHTML=avatarHTML(DAY.me)+`<span class="un"><b>${esc(DAY.me.nombre)}</b><small>Configuración</small></span>`}
 /* Menú lateral de escritorio (en el celular se oculta y se navega desde el menú principal) */
 function mountSide(el,activo,rol){
- el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>-SHOP</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
+ el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>SV</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
   GRUPOS.filter(g=>visibles(g,rol).length).map(g=>`<div class="sg">${g.t}</div>`+visibles(g,rol).map(m=>enlace(m,"",activo)).join("")).join("")+`</nav><div class="usr"><button type="button" class="ub" id="cfg1" aria-label="Configuración"></button></div><button class="lo" id="lo1">Cerrar sesión</button>`;
  el.querySelector("#lo1").onclick=salir;
  el.querySelector("#cfg1").onclick=abrirConfig;
