@@ -63,13 +63,14 @@ await todo();cargarAcc();
 /* Solo el administrador principal puede borrar la actividad */
 db.rpc("es_principal").then(r=>{if(!r||r.data!==true)return;
  const b=document.createElement("button");b.className="btn g sm";b.type="button";b.id="aBorrar";b.style.color="var(--bad)";b.textContent="Borrar actividad";document.querySelector(".hact").appendChild(b);
- b.onclick=()=>{const m=UI.modal("Borrar actividad",`<p class="pw" style="margin-top:0">Se borrará de forma permanente. Solo tú, como administrador principal, puedes hacerlo. Quedará una nota de que lo hiciste.</p>
+ b.onclick=()=>{const m=UI.modal("Borrar actividad",`<p class="pw" style="margin-top:0">Solo se borra el historial para liberar espacio: las ventas, productos y demás datos no se tocan. Es permanente y solo tú, como administrador principal, puedes hacerlo. Quedará una nota de que lo hiciste.</p>
   <label class="chk"><input type="checkbox" id="bC" checked> Historial de cambios</label>
   <label class="chk"><input type="checkbox" id="bA"> Inicios de sesión <small style="color:var(--mute)">(después, todos los dispositivos aparecerán como nuevos)</small></label>
+  <label style="margin-top:10px">Borrar solo lo anterior a <small style="color:var(--mute)">(opcional: vacío borra todo)</small></label><input id="bF" type="date">
   <label style="margin-top:10px">Para confirmar, escribe <b>BORRAR</b>:</label><input id="bT" autocomplete="off" placeholder="BORRAR"><div class="err2" id="bE" role="alert"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn dg" id="bOk">Borrar</button>`});
   m.q("#bOk").onclick=async()=>{const E=m.q("#bE"),c=m.q("#bC").checked,a=m.q("#bA").checked;E.textContent="";
    if(!c&&!a)return E.textContent="Elige qué quieres borrar.";if(m.q("#bT").value.trim()!=="BORRAR")return E.textContent="Escribe BORRAR para confirmar.";
-   const ok=await espera(async()=>{const {error}=await db.rpc("borrar_actividad",{p_cambios:c,p_accesos:a,p_confirmacion:"BORRAR"});if(error)throw new Error(error.message);return true});
+   const ok=await espera(async()=>{const {error}=await db.rpc("borrar_actividad",{p_cambios:c,p_accesos:a,p_confirmacion:"BORRAR",p_antes:m.q("#bF").value||null});if(error)throw new Error(error.message);return true});
    if(ok){m.close();UI.toast?UI.toast("Actividad borrada"):DAY.toast("Actividad borrada");await todo();await cargarAcc()}}}}).catch(()=>{});
 })();
