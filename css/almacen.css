@@ -191,3 +191,5 @@ body:has(#bMulti.on) #invList tr[data-id],body:has(#bMulti.on) #invList .pc{curs
 .qc{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .qc button{min-height:36px;padding:4px 12px;border:1px solid var(--line);background:var(--chip);border-radius:999px;font:600 13px "DM Sans",sans-serif;color:var(--wine);cursor:pointer}
 .qc button:active{background:var(--wine);color:#fff}
+
+.po{font:400 13px "DM Sans",sans-serif;color:var(--mute);margin-right:4px}

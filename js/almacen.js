@@ -14,6 +14,7 @@ const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorag
 const r2=x=>Math.round((Number(x)+Number.EPSILON)*100)/100;
 const cents=x=>Math.round((Number(x)+Number.EPSILON)*100);
 const fin=p=>r2(p.precio_venta*(1-(p.descuento_pct||0)/100));
+const pfin=p=>p.descuento_pct>0&&p.fin<p.precio_venta?`<s class="po">${$$(p.precio_venta)}</s> ${$$(p.fin)}`:$$(p.fin);
 const ic=d=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
 const IC={box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -154,7 +155,7 @@ function pintarInv(){
    <div class="pb">${chk(p)}<b class="n">${hl(p.nombre,q)}</b>${cols(p)}${p.descuento_pct>0?`<span class="dsc">${p.descuento_pct}% de descuento</span>`:""}
    <div class="mt"><small>${esc(p.codigo||"")} · ${esc(p.cat||"Sin categoría")}</small><small class="${sIcon(p)}">Stock: ${p.stock}</small></div>
    ${p.codigo_barras?`<img class="bc" src="${bcUrl(p.codigo_barras)}" alt="" data-bar="${esc(p.codigo_barras)}">`:""}
-   <div class="pr">${$$(p.fin)}</div><div class="ac">${btns(p)}</div></div></div>`).join("")+`</div>`;
+   <div class="pr">${pfin(p)}</div><div class="ac">${btns(p)}</div></div></div>`).join("")+`</div>`;
 }
  const pgH=tot>1?`<button class="btn g sm" data-pg="-1" ${S.page<=1?"disabled":""}>‹ Anterior</button><span>Página ${S.page} de ${tot}</span><button class="btn g sm" data-pg="1" ${S.page>=tot?"disabled":""}>Siguiente ›</button>`:"";$("pagerTop").innerHTML=pgH;
  $("pager").innerHTML=tot>1?`<button class="btn g sm" data-pg="-1" ${S.page<=1?"disabled":""}>‹ Anterior</button><span>Página ${S.page} de ${tot}</span><button class="btn g sm" data-pg="1" ${S.page>=tot?"disabled":""}>Siguiente ›</button>`:"";
@@ -321,7 +322,7 @@ function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
  const m=modal("Vender producto",`
   <div class="sp">${p.foto_url?`<img class="sim" src="${esc(p.foto_url)}" alt="" data-img="${esc(p.foto_url)}">`:`<div class="ph">${inicial(p.nombre)}</div>`}
    <div><b>${esc(p.nombre)}</b><small>${esc(p.codigo||"")}</small>${p.codigo_barras?`<img class="bcs" src="${bcUrl(p.codigo_barras)}" alt="" data-bar="${esc(p.codigo_barras)}">`:""}</div></div>
-  <div class="kv"><div><span>Precio ${p.descuento_pct>0?`<span class="dsc">${p.descuento_pct}% desc.</span>`:""}</span><b id="sPr">${$$(p.fin)}</b></div><div><span>Stock disponible</span><b id="sSt">${p.stock}</b></div></div>
+  <div class="kv"><div><span>Precio ${p.descuento_pct>0?`<span class="dsc">${p.descuento_pct}% desc.</span>`:""}</span><b id="sPr">${pfin(p)}</b></div><div><span>Stock disponible</span><b id="sSt">${p.stock}</b></div></div>
   <div class="fg"><div><label>Cantidad</label><div class="stp"><button type="button" data-d="-1" aria-label="Menos">−</button><input id="sQty" class="lk" type="number" min="1" step="1" value="1" readonly><button type="button" data-d="1" aria-label="Más">+</button></div></div>
    <div><label>Precio de venta</label><div class="ig"><span>$</span><input id="sPrice" class="lk" type="number" min="0" step="0.01" value="${p.fin.toFixed(2)}" readonly></div></div>
    <div class="full hidden" id="sStockRow"><label>Stock en inventario (editable)</label><input id="sStock" type="number" min="0" step="1" value="${p.stock}"></div></div>
@@ -417,7 +418,7 @@ function abrirMulti(){
  const bs=m.q("#mlS"),br=m.q("#mlR");
  bs.addEventListener("input",()=>{const q=norm(bs.value.trim());if(!q){br.classList.add("hidden");return}
   const R=S.prods.filter(p=>p.stock>=1&&norm((p.nombre||"")+" "+(p.codigo||"")+" "+(p.codigo_barras||"")).includes(q)).slice(0,6);
-  br.innerHTML=R.length?R.map(p=>`<button type="button" data-add="${p.id}">${p.foto_url?`<img src="${esc(p.foto_url)}" alt="">`:`<i class="ph">${inicial(p.nombre)}</i>`}<span>${esc(p.nombre)}</span><small>${$$(p.fin)} · Stock ${p.stock}</small></button>`).join(""):`<div class="empty">Sin resultados</div>`;br.classList.remove("hidden")});
+  br.innerHTML=R.length?R.map(p=>`<button type="button" data-add="${p.id}">${p.foto_url?`<img src="${esc(p.foto_url)}" alt="">`:`<i class="ph">${inicial(p.nombre)}</i>`}<span>${esc(p.nombre)}</span><small>${pfin(p)} · Stock ${p.stock}</small></button>`).join(""):`<div class="empty">Sin resultados</div>`;br.classList.remove("hidden")});
  const addP=id=>{const p=S.byId.get(id);if(!p)return;if(p.vars){elegirColor(p,e=>addP(e.id));return}const c=S.sel.get(id)||0;if(c>=p.stock){toast("Ya tienes todo el stock");return}S.sel.set(id,c+1);bs.value="";br.classList.add("hidden");draw();bs.focus()};
  br.addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(b)addP(b.dataset.add)});
  bs.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=bs.value.trim(),x=S.all.find(p=>p.codigo_barras&&p.codigo_barras===q)||(br.querySelector("[data-add]")&&S.byId.get(br.querySelector("[data-add]").dataset.add));if(x)addP(x.id)}});
