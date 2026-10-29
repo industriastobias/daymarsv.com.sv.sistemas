@@ -1,15 +1,13 @@
 body{margin:0}
-.lx{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 16px;position:relative;overflow:hidden;background:linear-gradient(160deg,#4a1c2a,#2a0e17 60%,#1b0a10)}
-.o{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;pointer-events:none;animation:fl 14s ease-in-out infinite alternate}
-.o1{width:420px;height:420px;background:#8a3d52;left:-120px;top:-100px}.o2{width:360px;height:360px;background:#C9973F;right:-120px;bottom:-120px;opacity:.35;animation-delay:-5s}.o3{width:260px;height:260px;background:#6B2D3E;right:20%;top:10%;animation-delay:-9s}
-@keyframes fl{to{transform:translate(40px,30px) scale(1.12)}}
-@media(prefers-reduced-motion:reduce){.o{animation:none}}
-.lc{position:relative;width:100%;max-width:400px;background:#ffffff;border-radius:24px;padding:38px 28px 26px;box-shadow:0 30px 80px #0008;text-align:center;color:#2A1A1F}
+.lx{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px 16px;position:relative;overflow:hidden;background:linear-gradient(160deg,#fbf6f4,#f1e6e8)}
+.o{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;animation:fl 9s ease-in-out infinite alternate}
+.o1{width:420px;height:420px;background:#6B2D3E;opacity:.22;left:-120px;top:-110px}.o2{width:380px;height:380px;background:#C9973F;opacity:.32;right:-120px;bottom:-110px;animation-delay:-4s}.o3{width:240px;height:240px;background:#8a3d52;opacity:.16;right:22%;top:6%;animation-delay:-7s}
+@keyframes fl{to{transform:translate(70px,50px) scale(1.2)}}
+.lc{position:relative;width:100%;max-width:400px;background:#ffffff;border-radius:24px;padding:26px 26px 22px;box-shadow:0 24px 60px #6B2D3E2e,0 2px 0 #fff inset;text-align:center;color:#2A1A1F}
 .lc-logo{width:84px;height:84px;margin:-70px auto 12px;border-radius:22px;background:#fff;padding:8px;box-shadow:0 10px 30px #0004;border:3px solid #C9973F}
 .lc-logo img{width:100%;height:100%;object-fit:contain;border-radius:14px}
-.lc-brand{font:700 32px "Bricolage Grotesque",sans-serif;color:#6B2D3E;letter-spacing:.3px}.lc-brand i{color:#C9973F;font-style:normal}
-.lc-sl{font-size:12px;color:#7b6a70;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
-.lc h2{font:700 20px "Bricolage Grotesque",sans-serif;margin:22px 0 2px;color:#2A1A1F}.lc .sub{margin:0 0 18px;color:#7b6a70;font-size:14px}
+.lc-sl{font-size:12px;color:#7b6a70;letter-spacing:.34em;text-transform:uppercase;text-align:center;padding-left:.34em;opacity:0;animation:fi .8s 1.5s ease forwards}
+.lc h2{font:700 20px "Bricolage Grotesque",sans-serif;margin:0 0 2px;color:#2A1A1F}.lc .sub{margin:0 0 18px;color:#7b6a70;font-size:14px}
 .fld{position:relative;margin-bottom:14px;text-align:left}
 .fld input{width:100%;min-height:54px;padding:22px 14px 6px;border:1.5px solid #e6dde0;border-radius:14px;background:#fbf8f9;color:#2A1A1F;font:inherit;font-size:16px;transition:border-color .15s,box-shadow .15s}
 .fld label{margin:0;display:block;line-height:1.2;position:absolute;left:15px;top:16px;font-size:15px;color:#7b6a70;pointer-events:none;transition:all .15s}
@@ -24,3 +22,17 @@ body{margin:0}
 .lc .tg{background:none;border:0;color:#6B2D3E;font-weight:700;margin-top:12px;width:100%;cursor:pointer;padding:8px}
 .lx-ft{position:relative;color:#ead2d9;font-size:12px;text-align:center;opacity:.8}
 @media(max-width:400px){.lc{padding:32px 20px 22px}}
+
+.hero{position:relative;z-index:1;text-align:center;margin-bottom:6px}
+.wm{margin:0;display:flex;justify-content:center;font:700 clamp(40px,12vw,76px)/1 "Bricolage Grotesque",sans-serif;letter-spacing:.04em;color:#6B2D3E}
+.wm span{display:inline-block;opacity:0;transform:translateY(-60px) scale(.7);animation:pop .8s calc(.2s + var(--i)*.07s) cubic-bezier(.34,1.56,.64,1) forwards}
+.wm .sv{background:linear-gradient(120deg,#C9973F,#e9c477 50%,#C9973F);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:pop .8s calc(.2s + var(--i)*.07s) cubic-bezier(.34,1.56,.64,1) forwards,sh 3.5s 1.6s ease-in-out infinite}
+@keyframes pop{to{opacity:1;transform:none}}
+@keyframes sh{0%,100%{background-position:0 0}50%{background-position:100% 0}}
+.rule{height:3px;width:0;margin:14px auto 12px;border-radius:2px;background:linear-gradient(90deg,#6B2D3E,#C9973F);animation:rl .9s 1s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes rl{to{width:min(200px,50vw)}}
+@keyframes fi{to{opacity:1}}
+.lc{opacity:0;transform:translateY(30px);animation:up .8s 1.2s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes up{to{opacity:1;transform:none}}
+.lx-ft{color:#7b6a70;opacity:0;animation:fi .8s 1.8s ease forwards}
+@media(prefers-reduced-motion:reduce){.o,.wm span,.rule,.lc-sl,.lc,.lx-ft{animation:none;opacity:1;transform:none}.rule{width:min(200px,50vw)}.wm .sv{animation:none}}
