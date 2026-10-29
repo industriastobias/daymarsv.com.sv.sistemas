@@ -193,9 +193,16 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  d.showModal()}
 async function logout(){await db.auth.signOut();location.replace("index.html")}
 /* Si no hay sesión, manda al login. Devuelve el perfil del usuario. */
+/* Cada sesión dura como máximo 5 horas desde que se inició; después hay que volver a entrar */
+const SESION_MAX_MS=5*60*60*1000;
+const sesionVencida=ses=>{const t=Date.parse(ses&&ses.user&&ses.user.last_sign_in_at||"");return isFinite(t)&&Date.now()-t>SESION_MAX_MS};
+async function cerrarPorTiempo(){try{await db.auth.signOut()}catch(e){}location.replace("index.html?e=sesion")}
 async function requireSession(){
  const {data}=await db.auth.getSession();
  if(!data.session){location.replace("index.html");return null}
+ if(sesionVencida(data.session)){await cerrarPorTiempo();return null}
+ const vigilar=async()=>{const {data:d}=await db.auth.getSession();if(d.session&&sesionVencida(d.session))cerrarPorTiempo()};
+ setInterval(vigilar,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)vigilar()});
  const r=await db.from("profiles").select("*").eq("id",data.session.user.id).single();
  if(r.error||!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
  DAY.me=r.data;DAY.email=data.session.user.email;return r.data}
