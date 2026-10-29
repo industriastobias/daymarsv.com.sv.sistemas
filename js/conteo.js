@@ -97,10 +97,10 @@ function fila(i,ro){
  return `<div class="ci ${estado(i)}" data-id="${i.id}"><div class="cf">${i.foto?`<img src="${esc(i.foto)}" alt="" loading="lazy" data-foto="${esc(i.foto)}">`:`<div class="ph">${inicial(i.nombre)}</div>`}<div class="ti"><b>${esc(i.nombre)}</b>${i.color?` <span class="bd bl2">${esc(i.color)}</span>`:""}<small>${esc(i.codigo||"")}${i.codigo_barras?" · "+esc(i.codigo_barras):""}${i.categoria?" · "+esc(i.categoria):""}</small></div></div>
   <div class="cs"><small>Sistema</small><b>${base(i)}</b></div>
   <div class="cq">${ro?`<b>${i.contado==null?"—":i.contado}</b>`:`<button type="button" data-st="-1" aria-label="Menos">−</button><input type="number" min="0" step="1" inputmode="numeric" value="${i.contado==null?"":i.contado}" placeholder="—" data-q="${i.id}" aria-label="Cantidad contada"><button type="button" data-st="1" aria-label="Más">+</button>`}</div>
-  <div class="cd">${badge(i)}</div></div>`}
+  <div class="cd">${badge(i)}</div>${ro&&i.ajuste?`<div class="caj">Ajuste aplicado: ${i.ajuste>0?"+":""}${i.ajuste}</div>`:""}</div>`}
 function pintarLista(){
  const F=filas(IT);
- $("cL").innerHTML=F.length?F.slice(0,lim).map(i=>fila(i)).join(""):`<div class="empty card">${IT.length?"No hay productos con ese filtro.":"No hay productos."}</div>`;
+ $("cL").innerHTML=F.length?F.slice(0,lim).map(i=>fila(i)).join(""):`<div class="empty card" style="grid-column:1/-1">${IT.length?"No hay productos con ese filtro.":"No hay productos."}</div>`;
  $("cMas").classList.toggle("hidden",F.length<=lim);pintarProgreso()}
 function pintarUltimo(){
  const i=ultimo&&IT.find(x=>x.id===ultimo);
@@ -200,7 +200,7 @@ function detalle(h,L,H){
   <div class="fl"><div class="full"><input id="dQ" type="search" placeholder="Buscar producto o código" autocomplete="off"></div></div>
   <div id="cL"></div><div class="ctl"><span class="grow"></span><button class="btn g hidden" id="cMas" type="button">Ver más</button><span class="grow"></span></div>`;
  const pintar=()=>{const F=D();document.querySelectorAll("#cF [data-f]").forEach(b=>b.classList.toggle("on",b.dataset.f===filtro));
-  $("cL").innerHTML=F.length?F.slice(0,lim).map(i=>fila(i,true)+(i.ajuste?`<div class="caj">Ajuste aplicado: ${i.ajuste>0?"+":""}${i.ajuste}</div>`:"")).join(""):'<div class="empty card">No hay productos con ese filtro.</div>';
+  $("cL").innerHTML=F.length?F.slice(0,lim).map(i=>fila(i,true)).join(""):'<div class="empty card">No hay productos con ese filtro.</div>';
   $("cMas").classList.toggle("hidden",F.length<=lim)};
  $("dBack").onclick=()=>inicio();
  $("cF").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;filtro=b.dataset.f;lim=200;pintar()};
