@@ -192,7 +192,7 @@ function detalle(h,L,H){
    <p style="margin:0">${fdate(h.created_at)} ${ftime(h.created_at)}${h.cerrado_en?" → "+fdate(h.cerrado_en)+" "+ftime(h.cerrado_en):""}<br>El stock de cada producto se corrigió al contarlo.</p></div>
   <div class="cres"><div><span>Contados</span><b>${r.cont} de ${r.total}</b></div><div><span>Coinciden</span><b class="pos">${r.ok}</b></div>
    <div><span>Faltantes</span><b class="neg">${r.uf}</b><small>${r.falt} productos · ${$$(r.vf)} al costo</small></div><div><span>Sobrantes</span><b>${r.us}</b><small>${r.sobr} productos · ${$$(r.vs)} al costo</small></div></div>
-  <div class="ctl"><button class="btn g" id="dXls" type="button">Descargar Excel</button></div>
+  <div class="ctl"><button class="btn g" id="dXls" type="button">Descargar Excel</button><button class="btn g" id="dDel" type="button" style="color:var(--bad)">Borrar conteo</button></div>
   <div class="seg2" id="cF" style="overflow-x:auto"><button data-f="dif">Con diferencia</button><button data-f="todos">Todos</button><button data-f="pend">No contados</button><button data-f="ok">Coinciden</button></div>
   <div class="fl"><div class="full"><input id="dQ" type="search" placeholder="Buscar producto o código" autocomplete="off"></div></div>
   <div id="cL"></div><div class="ctl"><span class="grow"></span><button class="btn g hidden" id="cMas" type="button">Ver más</button><span class="grow"></span></div>`;
@@ -203,7 +203,14 @@ function detalle(h,L,H){
  $("cF").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;filtro=b.dataset.f;lim=200;pintar()};
  $("dQ").addEventListener("input",()=>{texto=$("dQ").value;lim=200;pintar()});
  $("cMas").onclick=()=>{lim+=200;pintar()};
- $("dXls").onclick=()=>excel(h,L);pintar()}
+ $("dXls").onclick=()=>excel(h,L);
+ $("dDel").onclick=()=>{
+  const m=modal("Borrar conteo #"+h.numero,`<p style="margin:0 0 8px">Se borra el registro de este conteo (qué faltó y qué sobró). <b>El stock actual no cambia</b> y los movimientos de stock se conservan.</p><p class="hint" style="margin:0">Si quieres guardarlo, descarga primero el Excel.</p>`,
+   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn g" id="bX">Descargar Excel</button><button class="btn dg" id="bOk">Borrar</button>`});
+  m.q("#bX").onclick=()=>excel(h,L);
+  m.q("#bOk").onclick=async()=>{const ok=await espera(async()=>{const {error}=await db.rpc("inventario_borrar",{p_inv:h.id});if(error)throw new Error(error.message);return true},"Borrando…");
+   if(ok){m.close();toast("Conteo borrado");inicio()}}};
+ pintar()}
 
 function excel(h,L){
  const f=L.slice().sort((a,b)=>Math.abs(dif(b)||0)-Math.abs(dif(a)||0)).map(i=>{const d=dif(i);return [i.codigo||"",i.codigo_barras||"",i.nombre,i.color||"",i.categoria||"",base(i),i.contado==null?"":i.contado,d==null?"No contado":d,+i.costo,d==null?0:d*(+i.costo),i.ajuste==null?"":i.ajuste]});
