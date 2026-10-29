@@ -607,7 +607,7 @@ function camara(){
  hd.addEventListener("pointerup",()=>{drag=null});
  box.querySelector("#scX").onclick=pararCamara;
  QR=new Html5Qrcode("rdr");lastScan="";
- QR.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:150}},txt=>{
+ QR.start({facingMode:"environment"},{fps:12,aspectRatio:1.6,qrbox:(w,h)=>({width:Math.max(120,Math.floor(w*.86)),height:Math.max(70,Math.floor(h*.62))})},txt=>{
   const c=txt.trim(),now=Date.now();
   if(c===lastScan&&now-lastScanT<(S.multi?1500:4000))return;
   if(!S.multi&&document.querySelector("dialog[open]"))return;
