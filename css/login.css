@@ -1,26 +1,20 @@
 body{margin:0;background:#1b0a10}
 .lx{--ok:#7ee0a5;--bad:#ffb4ab;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:28px 16px;position:relative;overflow:hidden;background:radial-gradient(120% 90% at 50% 0%,#5a2234 0%,#2a0e17 55%,#160509 100%);color:#f3e9ec}
+.hero,.lc,.lx-ft{animation:ap .7s ease both}
+@keyframes ap{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .lx:after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(70% 55% at 50% 38%,transparent 40%,#0008 100%)}
 .o{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;animation:fl 16s ease-in-out infinite alternate}
 .o1{width:440px;height:440px;background:#8a3d52;left:-140px;top:-120px;opacity:.5}
 .o2{width:380px;height:380px;background:#C9973F;right:-140px;bottom:-140px;opacity:.28;animation-delay:-5s}
 .o3{width:260px;height:260px;background:#6B2D3E;right:18%;top:8%;opacity:.55;animation-delay:-9s}
 @keyframes fl{to{transform:translate(46px,34px) scale(1.14)}}
-.ring{position:absolute;left:50%;top:30%;width:min(86vw,640px);aspect-ratio:1;translate:-50% -50%;border-radius:50%;border:1px solid #C9973F33;pointer-events:none;opacity:0;animation:rg 2.4s .2s ease-out forwards}
-.ring:before{content:"";position:absolute;inset:9%;border-radius:50%;border:1px solid #C9973F22}
-@keyframes rg{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
 .hero{position:relative;z-index:1;text-align:center}
 .wm{margin:0;display:flex;justify-content:center;font:700 clamp(44px,13vw,92px)/1 "Cormorant Garamond","Bricolage Grotesque",serif;letter-spacing:.06em;color:#f6ece9}
-.wm span{display:inline-block;opacity:0;transform:translateY(46%) scale(.92);filter:blur(14px);animation:ltr .9s calc(.25s + var(--i)*.085s) cubic-bezier(.2,.8,.2,1) forwards}
-.wm .sv{background:linear-gradient(120deg,#e9c477,#C9973F 45%,#f3dca0 60%,#C9973F);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:ltr .9s calc(.25s + var(--i)*.085s) cubic-bezier(.2,.8,.2,1) forwards,shine 5s 1.8s ease-in-out infinite}
-@keyframes ltr{to{opacity:1;transform:none;filter:blur(0)}}
-@keyframes shine{0%,100%{background-position:0 0}50%{background-position:100% 0}}
-.rule{height:2px;width:0;margin:14px auto 12px;background:linear-gradient(90deg,transparent,#C9973F,transparent);animation:rl 1.1s 1.2s cubic-bezier(.2,.8,.2,1) forwards}
-@keyframes rl{to{width:min(220px,56vw)}}
-.lc-sl{font-size:12px;color:#d9bfc7;letter-spacing:.38em;text-transform:uppercase;opacity:0;animation:fi 1s 1.7s ease forwards;padding-left:.38em}
-@keyframes fi{to{opacity:.9}}
-.lc{position:relative;z-index:1;width:100%;max-width:400px;background:linear-gradient(160deg,#ffffff14,#ffffff08);border:1px solid #C9973F33;border-radius:24px;padding:26px 24px 22px;box-shadow:0 30px 80px #0008,inset 0 1px 0 #ffffff1f;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);text-align:center;opacity:0;transform:translateY(26px);animation:up .9s 1.5s cubic-bezier(.2,.8,.2,1) forwards}
-@keyframes up{to{opacity:1;transform:none}}
+.wm span{display:inline-block}
+.wm .sv{background:linear-gradient(120deg,#e9c477,#C9973F 60%,#f3dca0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rule{height:2px;width:min(220px,56vw);margin:14px auto 12px;background:linear-gradient(90deg,transparent,#C9973F,transparent)}
+.lc-sl{font-size:12px;color:#d9bfc7;letter-spacing:.38em;text-transform:uppercase;padding-left:.38em;opacity:.9}
+.lc{position:relative;z-index:1;width:100%;max-width:400px;background:linear-gradient(160deg,#ffffff14,#ffffff08);border:1px solid #C9973F33;border-radius:24px;padding:26px 24px 22px;box-shadow:0 30px 80px #0008,inset 0 1px 0 #ffffff1f;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);text-align:center;}
 .lc h2{font:700 21px "Bricolage Grotesque",sans-serif;margin:0 0 2px;color:#f6ece9}.lc .sub{margin:0 0 18px;color:#d0bcc3;font-size:14px}
 .fld{position:relative;margin-bottom:14px;text-align:left}
 .fld input{width:100%;min-height:54px;padding:22px 14px 6px;border:1.5px solid #ffffff22;border-radius:14px;background:#00000033;color:#f6ece9;font:inherit;font-size:16px;transition:border-color .15s,box-shadow .15s,background .15s}
@@ -35,8 +29,8 @@ body{margin:0;background:#1b0a10}
 .lc .btn:disabled{opacity:.6}
 .lc .err{text-align:left}
 .lc .tg{background:none;border:0;color:#e2bd6f;font-weight:700;margin-top:12px;width:100%;cursor:pointer;padding:8px}
-.lx-ft{position:relative;z-index:1;color:#d9bfc7;font-size:12px;text-align:center;opacity:0;animation:fi 1s 2.1s ease forwards}
+.lx-ft{position:relative;z-index:1;color:#d9bfc7;font-size:12px;text-align:center;opacity:.9}
 @media(max-width:400px){.lc{padding:24px 18px 20px}}
 @media(max-height:640px){.lx{justify-content:flex-start;padding-top:22px;gap:16px}.wm{font-size:clamp(38px,11vw,64px)}.lc h2{display:none}}
-@media(prefers-reduced-motion:reduce){.o,.wm .sv{animation:none}.wm span,.ring,.rule,.lc-sl,.lc,.lx-ft{animation:none;opacity:1;transform:none;filter:none}.rule{width:min(220px,56vw)}.lc-sl,.lx-ft{opacity:.9}}
+@media(prefers-reduced-motion:reduce){.o,.hero,.lc,.lx-ft{animation:none}}
 dialog.big{height:92vh;height:92dvh;max-height:92dvh}
