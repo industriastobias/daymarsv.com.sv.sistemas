@@ -205,7 +205,7 @@ const INP=(n,ph,extra)=>`<div class="ig"><span>$</span><input name="${n}" type="
 function optHTML(){return `
  <div class="tp" data-g="ty"><button type="button" data-ty="inmediata" class="on">Inmediata</button><button type="button" data-ty="cod">Contra entrega</button><button type="button" data-ty="entrega_pendiente">Pend. entrega</button><button type="button" data-ty="cobro_pendiente">Pend. cobro</button></div>
  <div class="tp pm"><button type="button" data-pm="Efectivo" class="on">Efectivo</button><button type="button" data-pm="Transferencia">Transferencia</button></div>
- <div class="cfg" data-cfg="cash"><div class="fg"><div class="full"><label>Efectivo recibido (opcional)</label>${INP("recibe")}</div><div class="full cambio" data-cambio></div></div></div>
+ <div class="cfg" data-cfg="cash"><div class="fg"><div class="full"><label>Efectivo recibido (opcional)</label>${INP("recibe")}<div class="qc"><button type="button" data-qc="x">Exacto</button><button type="button" data-qc="5">$5</button><button type="button" data-qc="10">$10</button><button type="button" data-qc="20">$20</button><button type="button" data-qc="50">$50</button><button type="button" data-qc="100">$100</button></div></div><div class="full cambio" data-cambio></div></div></div>
  <div class="cfg hidden" data-cfg="cod"><div class="fg">
   <div class="full"><label>¿Quién paga la comisión?</label><div class="tp"><button type="button" data-who="client" class="on">El cliente</button><button type="button" data-who="we">Nosotros</button></div></div>
   <div><label>Envío</label>${INP("envio")}</div><div><label>Seguro</label>${INP("seguro")}</div>
@@ -245,6 +245,8 @@ function optForm(root,getSub,onChange){
   catch(e){er.textContent=e.message;box.innerHTML="";onChange&&onChange(null,null,false);return null}}
  const cfgVis=()=>root.querySelectorAll("[data-cfg]").forEach(c=>c.classList.toggle("hidden",c.dataset.cfg==="cash"?!(st.ty==="inmediata"&&st.pm==="Efectivo"):c.dataset.cfg!==st.ty));
  root.addEventListener("click",e=>{
+  const qc=e.target.closest("[data-qc]");
+  if(qc){const inp=q("[name=recibe]");if(qc.dataset.qc==="x"){const r=calc();if(r)inp.value=(r.t.total/100).toFixed(2)}else inp.value=qc.dataset.qc;calc();return}
   const ty=e.target.closest("[data-ty]"),pm=e.target.closest("[data-pm]"),wh=e.target.closest("[data-who]");
   if(ty){st.ty=ty.dataset.ty;root.querySelectorAll("[data-ty]").forEach(b=>b.classList.toggle("on",b===ty));
    cfgVis();calc()}
@@ -382,7 +384,7 @@ function togSel(id,on){const p=S.byId.get(id);if(!p)return;if(p.vars){if(on)eleg
  document.querySelectorAll(`[data-a="sel"][data-id="${id}"]`).forEach(c=>c.checked=S.sel.has(id));resumenMulti()}
 function lineasMulti(){return [...S.sel].map(([id,q])=>({p:S.byId.get(id),q})).filter(l=>l.p)}
 function resumenMulti(){
- $("mBar").classList.toggle("hidden",!S.multi);if(!S.multi)return;
+ $("mBar").classList.toggle("hidden",!S.multi);try{if(S.multi&&S.sel.size)sessionStorage.setItem("dms_cart",JSON.stringify([...S.sel]));else if(!S.multi||!S.sel.size)sessionStorage.removeItem("dms_cart")}catch(e){}if(!S.multi)return;
  const L=lineasMulti(),u=L.reduce((s,l)=>s+(l.q>0?l.q:0),0),sub=L.reduce((s,l)=>s+cents(l.p.fin)*(l.q>0?l.q:0),0);
  $("mCount").textContent=L.length;$("mUnits").textContent=u;$("mSub").textContent=$$(sub/100);$("mGo").disabled=!L.length}
 function modoMulti(on){S.multi=on===undefined?!S.multi:on;if(!S.multi)S.sel.clear();
@@ -390,29 +392,31 @@ function modoMulti(on){S.multi=on===undefined?!S.multi:on;if(!S.multi)S.sel.clea
  if(S.tab!=="inv")tab("inv");pintarInv()}
 function abrirMulti(){
  const L=lineasMulti();if(!L.length){toast("Marca al menos un producto");return}
- const m=modal("Venta múltiple",`<div class="mladd"><input id="mlS" type="search" autocomplete="off" placeholder="Agregar otro producto: nombre, código o barras"><div id="mlR" class="mlr hidden"></div></div><div class="ml" id="mlL"></div><div style="text-align:right;margin-top:6px"><button class="btn g sm" id="mlClr" type="button">Vaciar</button></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
+ const m=modal("Venta múltiple",`<div class="mlt" id="mlT"></div><div class="mladd"><input id="mlS" type="search" autocomplete="off" placeholder="Agregar otro producto: nombre, código o barras"><div id="mlR" class="mlr hidden"></div></div><div class="ml" id="mlL"></div><div style="text-align:right;margin-top:6px"><button class="btn g sm" id="mlClr" type="button">Vaciar</button></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
  const sub=()=>lineasMulti().reduce((s,l)=>s+(Number.isInteger(l.q)&&l.q>0?cents(l.p.fin)*l.q:0),0);
  const of=optForm(m.q("#mlO"),sub,null);
  const draw=()=>{const L=lineasMulti();
   m.q("#mlL").innerHTML=L.length?L.map(l=>`<div class="mi" data-id="${l.p.id}">${l.p.foto_url?`<img src="${esc(l.p.foto_url)}" alt="">`:`<div class="ph">${inicial(l.p.nombre)}</div>`}
    <div><b>${esc(l.p.nombre)}</b><br><small>${$$(l.p.fin)} / unidad · Stock: ${l.p.stock} · ${esc(l.p.codigo_barras||l.p.codigo||"")}</small></div>
-   <button class="btn g sm" data-rm="${l.p.id}" aria-label="Quitar">Quitar</button>
+   <button class="btn g sm mrm" data-rm="${l.p.id}" aria-label="Quitar ${esc(l.p.nombre)}" title="Quitar">✕</button>
    <div class="q"><div class="stp"><button type="button" data-st="-1" data-id="${l.p.id}">−</button><input type="number" min="1" max="${l.p.stock}" step="1" value="${l.q}" data-q="${l.p.id}"><button type="button" data-st="1" data-id="${l.p.id}">+</button></div><b data-sub="${l.p.id}">${$$(l.p.fin*l.q)}</b></div></div>`).join(""):`<div class="empty">Tu selección está vacía.</div>`;
+  const U=L.reduce((a,l)=>a+(Number.isInteger(l.q)&&l.q>0?l.q:0),0),SB=L.reduce((a,l)=>a+(Number.isInteger(l.q)&&l.q>0?cents(l.p.fin)*l.q:0),0);
+  m.q("#mlT").innerHTML=L.length?`<span><b>${L.length}</b> producto${L.length===1?"":"s"} · <b>${U}</b> unidad${U===1?"":"es"}</span><b class="mtt">${$$(SB/100)}</b>`:"";m.q("#mlGo").textContent=L.length?"Confirmar venta · "+$$(SB/100):"Confirmar venta";
   of.calc();resumenMulti()};
  m.q("#mlL").addEventListener("click",e=>{const rm=e.target.closest("[data-rm]"),st=e.target.closest("[data-st]");
   if(rm){togSel(rm.dataset.rm,false);draw()}
   if(st){const id=st.dataset.id,p=S.byId.get(id),n=Math.min(p.stock,Math.max(1,(S.sel.get(id)||1)+(+st.dataset.st)));S.sel.set(id,n);draw()}});
  m.q("#mlL").addEventListener("input",e=>{const i=e.target.closest("[data-q]");if(!i)return;const id=i.dataset.q,p=S.byId.get(id),n=parseInt(i.value,10);
-  S.sel.set(id,n);const sb=m.q(`[data-sub="${id}"]`);if(sb)sb.textContent=Number.isInteger(n)&&n>0?$$(p.fin*n):"—";of.calc();resumenMulti()});
+  S.sel.set(id,n);const sb=m.q(`[data-sub="${id}"]`);if(sb)sb.textContent=Number.isInteger(n)&&n>0?$$(p.fin*n):"—";const L2=lineasMulti(),U2=L2.reduce((a,l)=>a+(Number.isInteger(l.q)&&l.q>0?l.q:0),0),S2=sub();m.q("#mlT").innerHTML=`<span><b>${L2.length}</b> producto${L2.length===1?"":"s"} · <b>${U2}</b> unidad${U2===1?"":"es"}</span><b class="mtt">${$$(S2/100)}</b>`;m.q("#mlGo").textContent="Confirmar venta · "+$$(S2/100);of.calc();resumenMulti()});
  const bs=m.q("#mlS"),br=m.q("#mlR");
  bs.addEventListener("input",()=>{const q=norm(bs.value.trim());if(!q){br.classList.add("hidden");return}
   const R=S.prods.filter(p=>p.stock>=1&&norm((p.nombre||"")+" "+(p.codigo||"")+" "+(p.codigo_barras||"")).includes(q)).slice(0,6);
-  br.innerHTML=R.length?R.map(p=>`<button type="button" data-add="${p.id}"><span>${esc(p.nombre)}</span><small>${$$(p.fin)} · Stock ${p.stock}</small></button>`).join(""):`<div class="empty">Sin resultados</div>`;br.classList.remove("hidden")});
+  br.innerHTML=R.length?R.map(p=>`<button type="button" data-add="${p.id}">${p.foto_url?`<img src="${esc(p.foto_url)}" alt="">`:`<i class="ph">${inicial(p.nombre)}</i>`}<span>${esc(p.nombre)}</span><small>${$$(p.fin)} · Stock ${p.stock}</small></button>`).join(""):`<div class="empty">Sin resultados</div>`;br.classList.remove("hidden")});
  const addP=id=>{const p=S.byId.get(id);if(!p)return;if(p.vars){elegirColor(p,e=>addP(e.id));return}const c=S.sel.get(id)||0;if(c>=p.stock){toast("Ya tienes todo el stock");return}S.sel.set(id,c+1);bs.value="";br.classList.add("hidden");draw();bs.focus()};
  br.addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(b)addP(b.dataset.add)});
  bs.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=bs.value.trim(),x=S.all.find(p=>p.codigo_barras&&p.codigo_barras===q)||(br.querySelector("[data-add]")&&S.byId.get(br.querySelector("[data-add]").dataset.add));if(x)addP(x.id)}});
  m.q("#mlClr").onclick=async()=>{if(!S.sel.size)return;if(await confirmar("Se quitarán todos los productos de esta venta.",{titulo:"Vaciar venta",ok:"Vaciar",peligro:true})){S.sel.clear();draw()}};
- draw();
+ draw();if(matchMedia("(pointer:fine)").matches)setTimeout(()=>bs.focus(),50);
  m.q("#mlGo").onclick=async()=>{let r;const L=lineasMulti();
   try{if(!L.length)throw new Error("Selecciona al menos un producto.");
    L.forEach(l=>{if(!Number.isInteger(l.q)||l.q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");if(l.q>l.p.stock)throw new Error("Stock insuficiente: "+l.p.nombre)});r=of.check()}
@@ -1016,6 +1020,7 @@ document.addEventListener("visibilitychange",async()=>{
 drawHist();
 await db.rpc("aplicar_programados");
 await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()])},"Cargando inventario…");
+try{const c=JSON.parse(sessionStorage.getItem("dms_cart")||"[]"),ok=c.filter(([id,q])=>S.byId.has(id)&&q>0&&q<=S.byId.get(id).stock);if(ok.length){S.sel=new Map(ok);S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");toast("Recuperé tu venta múltiple en curso")}}catch(e){}
 {const h0=(location.hash||"").slice(1);tab(["pend","hoy","ven","fac"].includes(h0)?h0:"inv")}filtrar();
 addEventListener("hashchange",()=>{const h=(location.hash||"").slice(1);if(["inv","pend","hoy","ven","fac"].includes(h))tab(h)});
 })();

@@ -53,6 +53,15 @@ const ask=(t,o)=>dlg((o&&o.titulo)||"Confirmar",t,o);
 const say=(t,o)=>dlg((o&&o.titulo)||"Aviso",t,Object.assign({aviso:true},o));
 const input=(t,def,o)=>dlg((o&&o.titulo)||"Escribe un valor",t,Object.assign({input:true,def:def},o));
 /* Modo kiosco (todas las páginas): pantalla simple y grande para el mostrador; salir pide la contraseña */
+/* Al cambiar de página el navegador sale de pantalla completa y solo deja volver con un toque: se vuelve a pedir en el primer toque */
+let _pc=false;
+function armarPantallaCompleta(){
+ if(_pc)return;_pc=true;
+ const quiere=()=>document.body.classList.contains("kiosco")&&!document.fullscreenElement&&!navigator.standalone&&!matchMedia("(display-mode: fullscreen)").matches&&!matchMedia("(display-mode: standalone)").matches&&document.documentElement.requestFullscreen;
+ const go=()=>{if(quiere())document.documentElement.requestFullscreen().catch(()=>{})};
+ ["click","touchend","keydown"].forEach(ev=>document.addEventListener(ev,go,{capture:true,passive:true}));
+ setTimeout(()=>{if(quiere())toast("Toca la pantalla para volver a pantalla completa")},900);
+}
 async function kiosco(on,quiet){
  document.body.classList.toggle("kiosco",on);PREF("dms_kiosco",on?"1":"0");
  let x=document.getElementById("kSal");
@@ -61,7 +70,7 @@ async function kiosco(on,quiet){
    const r=await db.auth.signInWithPassword({email:DAY.email,password:p});if(r.error){toast("Contraseña incorrecta");return}kiosco(false)}}
  if(!on&&x)x.remove();
  try{if(on){if(!quiet&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
- if(on&&document.documentElement.requestFullscreen)document.addEventListener("pointerdown",()=>{if(document.body.classList.contains("kiosco")&&!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{})},{once:true});
+ if(on)armarPantallaCompleta();
  document.dispatchEvent(new CustomEvent("kiosco",{detail:on}));
  if(!quiet)toast(on?"Modo kiosco activado":"Modo kiosco desactivado")}
 const salir=()=>ask("¿Quieres cerrar tu sesión?",{titulo:"Cerrar sesión",ok:"Cerrar sesión"}).then(o=>{if(o)logout()});
