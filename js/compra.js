@@ -418,6 +418,15 @@ $("bZip").onclick=async()=>{if(!inv.length)return toast("No hay productos para e
   let n=0;await pool(inv,6,async p=>{const l=byId[p.id]||[];for(let k=0;k<l.length;k++){try{const r=await fetch(l[k].url);if(r.ok)folder.file(`${p.codigo}_${k+1}.jpg`,await r.blob())}catch(e){}}$("ovText").textContent=`Preparando ZIP… ${++n}/${inv.length}`});
   const blob=await zip.generateAsync({type:"blob"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`inventario_${hoy}.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast("Exportación ZIP completa")
  }catch(e){toast("Error exportando")}busy(false)};
+/* pendientes de cobro del sistema anterior (pendientes.json dentro del ZIP) */
+function pendientesDeZip(txt){
+ let d=JSON.parse(txt);if(d&&!Array.isArray(d))d=d.pendingPaymentInventory||[];if(!Array.isArray(d))return [];
+ const G=new Map();
+ d.forEach(r=>{if(!r||r.paymentStatus==="paid")return;if(r.paymentStatus!=="partial"&&!(+r.pendingAmount>0))return;
+  const cli=String(r.clientName||"").trim()||"Cliente sin nombre",f=r.date?new Date(r.date).toISOString():"",k=cli+"|"+f;
+  if(!G.has(k))G.set(k,{cliente:cli,fecha:f,metodo:r.paymentMethod,abonado:0,items:[]});const g=G.get(k);g.abonado+=+r.paidAmount||0;
+  g.items.push({codigo:r.code,nombre:r.name,barcode:r.barcode,cantidad:+r.quantity||1,precio:+r.finalPrice||+r.price||0,precio_original:+r.originalPrice||+r.price||0,descuento:+r.discount||0})});
+ return [...G.values()]}
 $("bImpZip").onclick=()=>$("importFile").click();
 $("importFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.value="";if(!file||!/\.zip$/i.test(file.name))return toast("Selecciona un archivo ZIP");
  busy(true,"Leyendo ZIP…");
@@ -434,7 +443,13 @@ $("importFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.v
   const ids=[];for(let k=0;k<items.length;k+=100){$("ovText").textContent=`Importando productos… ${Math.min(k+100,items.length)}/${items.length}`;ids.push(...await ok(db.rpc("registrar_compra",{p_items:items.slice(k,k+100)})))}
   let n=0;const conImg=ids.filter(r=>imgsPorCodigo[r.codigo]);
   await pool(conImg,3,async r=>{const bl=[];for(const en of imgsPorCodigo[r.codigo]){bl.push(await par(await en.async("blob")))}await subirImagenes(r.id,bl,true);$("ovText").textContent=`Subiendo imágenes… ${++n}/${conImg.length}`});
-  await refresh();$("dgBulk").close();toast(`Importación completada (${ids.length} productos)`)
+  await refresh();$("dgBulk").close();
+  let extra="";const pj=zip.file("pendientes.json");
+  if(pj){try{const pr=pendientesDeZip(await pj.async("string"));
+    if(pr.length){if(!DAY.principal)extra=" · Los pendientes de cobro solo los puede importar el administrador principal";
+     else{const r=await ok(db.rpc("importar_pendientes_cobro",{p_ventas:pr}));extra=` · ${r.importadas} pendientes de cobro importados`+(r.omitidas?` (${r.omitidas} ya estaban)`:"")}}}
+   catch(e){console.error(e);extra=" · No se pudieron importar los pendientes de cobro: "+(e.message||"")}}
+  toast(`Importación completada (${ids.length} productos)${extra}`)
  }catch(e){console.error(e);toast("Error importando: "+(e.message||""))}busy(false)};
 
 /* ---------- exportar PDF / etiquetas / vaciar ---------- */
