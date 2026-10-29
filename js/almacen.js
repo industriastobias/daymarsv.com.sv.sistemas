@@ -451,6 +451,7 @@ function pintarPend(){
   `<div><b>${$$(sum("subtotal"))}</b><span>Total en productos</span></div><div><b>${$$(sum("abonado"))}</b><span>Abonado</span></div><div><b>${$$(sum("pendiente_monto"))}</b><span>Por cobrar</span></div><div><b>${pe.length}</b><span>Clientes con saldo</span></div>`:
   `<div><b>${$$(sum("subtotal"))}</b><span>Productos</span></div><div><b>${$$(sum("envio"))}</b><span>Envíos</span></div><div><b>${$$(sum("comision_monto"))}</b><span>Comisiones</span></div><div><b>${$$(sum("total"))}</b><span>Total a cobrar</span></div>`;
  $("bClean").classList.toggle("hidden",!(ADM&&t!=="cod"&&all.some(v=>v.estado==="completada")));
+ $("bImp").classList.toggle("hidden",!(DAY.principal&&t==="cobro_pendiente"));
  $("pendList").innerHTML=all.length?all.map(cardPend).join(""):`<div class="empty card">${{cod:"No hay pedidos contra entrega pendientes",entrega_pendiente:"No hay ventas pendientes de entrega",cobro_pendiente:"No hay ventas pendientes de cobro"}[t]}</div>`}
 function cardPend(v){
  const pen=v.estado==="pendiente",t=v.tipo;let am="",bt="";
@@ -989,6 +990,37 @@ $("pendList").addEventListener("click",e=>{
  const img=e.target.closest("[data-img]");if(img){verImagen(img.dataset.img);return}
  const bar=e.target.closest("[data-bar]");if(bar){verBarras(bar.dataset.bar);return}
  const a=e.target.closest("[data-a]");if(a)accionPend(a.dataset.a,a.dataset.v)});
+/* ---------- importar pendientes de cobro del sistema anterior (solo administrador principal) ---------- */
+function leerAntiguos(txt){
+ let d=txt;for(let k=0;k<3&&typeof d==="string";k++){d=JSON.parse(d.trim())}
+ if(d&&!Array.isArray(d))d=d.pendingPaymentInventory||d.pendientes||[];
+ if(!Array.isArray(d))throw new Error("No encontré la lista de pendientes de cobro en ese texto");
+ const G=new Map();let n=0;
+ d.forEach(r=>{if(!r||r.paymentStatus==="paid")return;const pend=+r.pendingAmount;if(r.paymentStatus!=="partial"&&!(pend>0))return;
+  const cli=String(r.clientName||"").trim()||"Cliente sin nombre",f=r.date?new Date(r.date).toISOString():"",k=cli+"|"+f;
+  if(!G.has(k))G.set(k,{cliente:cli,fecha:f,metodo:r.paymentMethod,abonado:0,items:[]});const g=G.get(k);
+  g.abonado+=+r.paidAmount||0;n++;
+  g.items.push({codigo:r.code,nombre:r.name,barcode:r.barcode,cantidad:+r.quantity||1,precio:+r.finalPrice||+r.price||0,precio_original:+r.originalPrice||+r.price||0,descuento:+r.discount||0})});
+ return {ventas:[...G.values()],lineas:n}}
+$("bImp").onclick=()=>{
+ if(!DAY.principal)return;
+ const m=modal("Importar pendientes de cobro",`<p style="margin:0 0 8px">Trae las ventas pendientes de cobro de tu sistema anterior. <b>No cambia el stock</b> (esos productos ya habían salido del inventario).</p>
+  <ol style="margin:0 0 10px;padding-left:20px;font-size:14px;color:var(--mute)"><li>Abre el sistema anterior en el navegador donde lo usabas.</li><li>Abre la consola (tecla F12) y pega: <code style="user-select:all">copy(localStorage.getItem('pendingPaymentInventory'))</code></li><li>Pega aquí abajo lo que se copió, o sube el archivo.</li></ol>
+  <textarea id="imT" rows="5" placeholder="Pega aquí los datos copiados…" style="width:100%"></textarea>
+  <div style="margin:8px 0"><input id="imF" type="file" accept=".json,.txt,application/json,text/plain"></div>
+  <div id="imR" class="hint" style="margin:0"></div><div class="err2" id="imE" role="alert"></div>`,
+  {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="imOk" disabled>Importar</button>`});
+ let datos=null;
+ const prev=()=>{datos=null;m.q("#imOk").disabled=true;m.q("#imE").textContent="";const t=m.q("#imT").value.trim();if(!t){m.q("#imR").textContent="";return}
+  try{const r=leerAntiguos(t);if(!r.ventas.length){m.q("#imR").textContent="";m.q("#imE").textContent="No hay ventas pendientes de cobro en esos datos";return}
+   datos=r.ventas;const tot=r.ventas.reduce((s,v)=>s+v.items.reduce((a,i)=>a+i.precio*i.cantidad,0),0),ab=r.ventas.reduce((s,v)=>s+v.abonado,0);
+   m.q("#imR").innerHTML=`Encontré <b>${r.ventas.length}</b> ventas de <b>${new Set(r.ventas.map(v=>v.cliente)).size}</b> clientes (${r.lineas} productos). Total ${$$(tot)} · Abonado ${$$(ab)} · <b>Por cobrar ${$$(tot-ab)}</b>`;m.q("#imOk").disabled=false}
+  catch(e){m.q("#imE").textContent="No pude leer esos datos: "+e.message}};
+ m.q("#imT").addEventListener("input",prev);
+ m.q("#imF").onchange=async e=>{const f=e.target.files[0];if(f){m.q("#imT").value=await f.text();prev()}};
+ m.q("#imOk").onclick=async()=>{if(!datos)return;
+  const r=await espera(()=>rpc("importar_pendientes_cobro",{p_ventas:datos}),"Importando pendientes…");
+  if(r){m.close();toast(`${r.importadas} ventas importadas`+(r.omitidas?` · ${r.omitidas} ya estaban`:""));await cargarPend();pintarPend()}}};
 $("bClean").onclick=async()=>{if(!soloAdmin())return;const t=S.pt;
  if(!await pedirClave("Vas a limpiar de esta lista los pedidos ya completados."))return;
  if(!await confirmar("Se quitarán de la lista los pedidos completados de <b>"+TIPO[t][0]+"</b>. No se modifican el stock ni las ventas registradas.",{titulo:"Limpiar completados",ok:"Limpiar",peligro:true}))return;
