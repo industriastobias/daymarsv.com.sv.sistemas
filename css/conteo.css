@@ -28,3 +28,4 @@
 .cres .pos{color:var(--ok)}.cres .neg{color:var(--bad)}
 .cfin{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 @media(max-width:420px){#cL{grid-template-columns:repeat(2,1fr);gap:8px}}
+.cp{padding:4px 10px 0;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}.cp s{color:var(--mute)}.cp b{font-size:16px;color:var(--wine)}.cp .bd{font-size:11px;padding:0 6px}

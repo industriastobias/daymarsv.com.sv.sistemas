@@ -23,9 +23,10 @@ async function cargarInventarios(){
  if(error)throw new Error(error.message);return data||[]}
 async function cargarItems(id){
  const L=await fetchAll(()=>db.from("inventario_items").select("*").eq("inventario_id",id).order("nombre").order("color"));
- try{const P=await fetchAll(()=>db.from("productos").select("id,foto_url").not("foto_url","is",null));
-  const M={};P.forEach(p=>M[p.id]=p.foto_url);L.forEach(i=>{i.foto=M[i.producto_id]||""})}catch(e){}
+ try{const P=await fetchAll(()=>db.from("productos").select("id,foto_url,precio_venta,descuento_pct"));
+  const M={};P.forEach(p=>M[p.id]=p);L.forEach(i=>{const p=M[i.producto_id]||{};i.foto=p.foto_url||"";if(p.precio_venta!=null){i.precio=+p.precio_venta;i.dto=+p.descuento_pct||0}})}catch(e){}
  return L}
+const precio=i=>{const o=+i.precio||0,d=+i.dto||0,f=Math.round(o*(1-d/100)*100)/100;return d>0&&f<o?`<s>${$$(o)}</s> <b>${$$(f)}</b> <span class="bd wa">-${d}%</span>`:`<b>${$$(o)}</b>`};
 const inicial=t=>esc(String(t||"?").trim().charAt(0).toUpperCase());
 function verFoto(u){modal("Foto",`<img src="${esc(DAY.grande(u))}" onerror="this.onerror=null;this.src='${esc(u)}'" alt="" style="width:100%;max-height:70vh;object-fit:contain;border-radius:10px">`)}
 
@@ -95,7 +96,7 @@ function pintarProgreso(){
 const badge=i=>{const d=dif(i);return d===null?'<span class="bd mu">Pendiente</span>':d===0?'<span class="bd ok">Coincide</span>':d<0?`<span class="bd bad">Faltan ${-d}</span>`:`<span class="bd wa">Sobran ${d}</span>`};
 function fila(i,ro){
  return `<div class="ci ${estado(i)}" data-id="${i.id}"><div class="cf">${i.foto?`<img src="${esc(i.foto)}" alt="" loading="lazy" data-foto="${esc(i.foto)}">`:`<div class="ph">${inicial(i.nombre)}</div>`}<div class="ti"><b>${esc(i.nombre)}</b>${i.color?` <span class="bd bl2">${esc(i.color)}</span>`:""}<small>${esc(i.codigo||"")}${i.codigo_barras?" · "+esc(i.codigo_barras):""}${i.categoria?" · "+esc(i.categoria):""}</small></div></div>
-  <div class="cs"><small>Sistema</small><b>${base(i)}</b></div>
+  <div class="cp">${precio(i)}</div><div class="cs"><small>Sistema</small><b>${base(i)}</b></div>
   <div class="cq">${ro?`<b>${i.contado==null?"—":i.contado}</b>`:`<button type="button" data-st="-1" aria-label="Menos">−</button><input type="number" min="0" step="1" inputmode="numeric" value="${i.contado==null?"":i.contado}" placeholder="—" data-q="${i.id}" aria-label="Cantidad contada"><button type="button" data-st="1" aria-label="Más">+</button>`}</div>
   <div class="cd">${badge(i)}</div>${ro&&i.ajuste?`<div class="caj">Ajuste aplicado: ${i.ajuste>0?"+":""}${i.ajuste}</div>`:""}</div>`}
 function pintarLista(){
