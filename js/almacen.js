@@ -96,7 +96,11 @@ function modal(title,html,o){o=o||{};
  d.innerHTML=`<div class="dh"><h2>${title}</h2><button class="x" type="button" data-x aria-label="Cerrar">×</button></div><div class="db">${html}</div>${o.foot?`<div class="df">${o.foot}</div>`:""}`;
  document.body.appendChild(d);
  const api={el:d,q:s=>d.querySelector(s),close:()=>{try{d.close()}catch(e){}d.remove();o.onclose&&o.onclose()}};
- d.addEventListener("click",e=>{if(e.target.closest("[data-x]"))api.close()});
+ let sucio=false;
+ d.addEventListener("input",()=>{sucio=true});d.addEventListener("change",()=>{sucio=true});
+ /* tocar fuera de la ventana la cierra, salvo que ya hayas escrito o cambiado algo (para no perderlo por accidente) */
+ d.addEventListener("click",e=>{if(e.target.closest("[data-x]")){api.close();return}
+  if(e.target===d&&!sucio&&!o.fijo){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)api.close()}});
  d.addEventListener("cancel",e=>{e.preventDefault();api.close()});
  d.showModal();return api}
 function confirmar(texto,o){o=o||{};return new Promise(ok=>{let r=false;
@@ -325,6 +329,8 @@ function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
   <div id="sOpts">${optHTML()}</div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><span id="sFt1"><button class="btn" id="sGo">Vender</button></span><span id="sFt2" class="hidden" style="display:flex;gap:8px"><button class="btn g" id="sSave">Guardar cambios sin vender</button><button class="btn" id="sGo2">Vender</button></span>`});
  const qty=()=>parseInt(m.q("#sQty").value,10)||0,price=()=>parseFloat(m.q("#sPrice").value),stockEf=()=>unl?(parseInt(m.q("#sStock").value,10)):p.stock;
+ const _cerrar=m.close;m.close=()=>{S.venta=null;_cerrar()};
+ S.venta={p,inc:()=>{const n=qty()+1;if(n>stockEf()){snd("err");toast("Ya tienes todo el stock de "+p.nombre);return}m.q("#sQty").value=n;syncBtns();snd("beep");toast("Cantidad: "+n+" · "+p.nombre)}};
  const of=optForm(m.q("#sOpts"),()=>cents(isNaN(price())?0:price())*Math.max(0,qty()),null);
  const syncBtns=()=>{const q=qty(),mx=stockEf();m.q('[data-d="-1"]').disabled=q<=1;m.q('[data-d="1"]').disabled=!(q<mx);m.q("#sSt").textContent=isNaN(mx)?"—":mx;of.calc()};
  m.el.addEventListener("click",e=>{const d=e.target.closest("[data-d]");if(d){const n=Math.min(Math.max(1,qty()+(+d.dataset.d)),Math.max(1,stockEf()));m.q("#sQty").value=n;syncBtns()}
@@ -378,7 +384,7 @@ function ventaRapida(){
 function addSel(id,n){const p=S.byId.get(id);if(!p)return;if(p.vars){elegirColor(p,e=>addSel(e.id,n));return}if(p.stock<1){toast("Sin stock: "+p.nombre);snd("err");return}
  const c=S.sel.get(id)||0;if(c>=p.stock){toast("Ya tienes todo el stock de "+p.nombre);snd("err");return}
  S.sel.set(id,c+(n||1));snd("beep");toast((c?"+1 ":"Agregado: ")+p.nombre);
- document.querySelectorAll(`[data-a="sel"][data-id="${id}"]`).forEach(c=>c.checked=true);resumenMulti();
+ document.querySelectorAll(`[data-a="sel"][data-id="${id}"]`).forEach(c=>c.checked=true);resumenMulti();if(S.mlDraw)S.mlDraw();
  pintarInv()}
 function togSel(id,on){const p=S.byId.get(id);if(!p)return;if(p.vars){if(on)elegirColor(p,e=>{addSel(e.id)});else{p.vars.forEach(v=>S.sel.delete(v.id));resumenMulti();pintarInv()}return}if(on&&p.stock>=1){if(!S.sel.has(id))S.sel.set(id,1)}else S.sel.delete(id);
  document.querySelectorAll(`[data-a="sel"][data-id="${id}"]`).forEach(c=>c.checked=S.sel.has(id));resumenMulti()}
@@ -416,7 +422,7 @@ function abrirMulti(){
  br.addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(b)addP(b.dataset.add)});
  bs.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=bs.value.trim(),x=S.all.find(p=>p.codigo_barras&&p.codigo_barras===q)||(br.querySelector("[data-add]")&&S.byId.get(br.querySelector("[data-add]").dataset.add));if(x)addP(x.id)}});
  m.q("#mlClr").onclick=async()=>{if(!S.sel.size)return;if(await confirmar("Se quitarán todos los productos de esta venta.",{titulo:"Vaciar venta",ok:"Vaciar",peligro:true})){S.sel.clear();draw()}};
- draw();if(matchMedia("(pointer:fine)").matches)setTimeout(()=>bs.focus(),50);
+ draw();S.mlDraw=draw;const _mc=m.close;m.close=()=>{S.mlDraw=null;_mc()};if(matchMedia("(pointer:fine)").matches)setTimeout(()=>bs.focus(),50);
  m.q("#mlGo").onclick=async()=>{let r;const L=lineasMulti();
   try{if(!L.length)throw new Error("Selecciona al menos un producto.");
    L.forEach(l=>{if(!Number.isInteger(l.q)||l.q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");if(l.q>l.p.stock)throw new Error("Stock insuficiente: "+l.p.nombre)});r=of.check()}
@@ -584,13 +590,14 @@ function listaVentas(){
  $("vMore").classList.toggle("hidden",L.length<=S.vShown)}
 
 /* ---------- escáner (cámara y lector USB) ---------- */
-let QR=null,lastScan="",lastScanT=0,usbBuf="",usbT=0;
+let QR=null,lastScan="",lastScanT=0,lastSeenT=0,usbBuf="",usbT=0;
 function escaneado(code,fromCam){
  code=String(code||"").trim();if(!code)return;
+ if(S.venta){if((S.venta.p.codigo_barras||"").trim()===code)S.venta.inc();else{snd("err");toast("Termina o cancela la venta que tienes abierta")}return}
  const p=S.all.find(x=>x.codigo_barras&&x.codigo_barras.trim()===code);
  if(!p){snd("err");toast("Producto no existente");return}
  snd("ok");
- if(S.multi){togSel(p.id,true);toast("Producto agregado: "+p.nombre);return}
+ if(S.multi){addSel(p.id);return}
  if(S.tab!=="inv")tab("inv");
  $("fBar").value=code;filtrar();
  if(fromCam&&document.querySelector("dialog[open]"))return;
@@ -608,17 +615,18 @@ function camara(){
  box.querySelector("#scX").onclick=pararCamara;
  QR=new Html5Qrcode("rdr");lastScan="";
  QR.start({facingMode:"environment"},{fps:12,aspectRatio:1.6,qrbox:(w,h)=>({width:Math.max(120,Math.floor(w*.86)),height:Math.max(70,Math.floor(h*.62))})},txt=>{
-  const c=txt.trim(),now=Date.now();
-  if(c===lastScan&&now-lastScanT<(S.multi?1500:4000))return;
-  if(!S.multi&&document.querySelector("dialog[open]"))return;
+  const c=txt.trim(),now=Date.now(),hueco=now-lastSeenT;lastSeenT=now;
+  /* el mismo código seguido, sin haberlo quitado de la cámara, es la misma lectura; si lo apartas y lo vuelves a pasar, cuenta otra vez */
+  if(c===lastScan&&hueco<700)return;
+  if(!S.multi&&!S.venta&&document.querySelector("dialog[open]"))return;
   lastScan=c;lastScanT=now;escaneado(c,true)},()=>{}).catch(e=>{toast("No se pudo abrir la cámara: "+(e&&e.message||e));pararCamara()})}
 function pararCamara(){const q=QR;QR=null;const rm=()=>{const b=document.getElementById("scanBox");if(b)b.remove()};
  if(q){q.stop().then(rm).catch(rm)}else rm()}
 function usb(on){S.usb=on===undefined?!S.usb:on;$("bUsb").classList.toggle("on",S.usb);$("bUsb").setAttribute("aria-pressed",String(S.usb));
  if(S.usb){tab("inv");$("fBar").focus();toast("Lector USB activado")}else toast("Lector USB desactivado")}
 document.addEventListener("keydown",e=>{
- if(S.usb&&!document.querySelector("dialog[open]")){
-  if(e.key==="Enter"){if(usbBuf){const c=usbBuf;usbBuf="";escaneado(c,false);if(e.target===$("fBar"))e.preventDefault()}}
+ if(S.usb&&(!document.querySelector("dialog[open]")||S.venta)){
+  if(e.key==="Enter"){if(usbBuf){const c=usbBuf;usbBuf="";escaneado(c,false);e.preventDefault()}}
   else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){const n=Date.now();if(n-usbT>100)usbBuf="";usbT=n;usbBuf+=e.key}}
  if(e.ctrlKey&&e.key.toLowerCase()==="b"){e.preventDefault();tab("inv");$("fBar").focus()}
  if(e.key==="Escape"&&QR)pararCamara()});

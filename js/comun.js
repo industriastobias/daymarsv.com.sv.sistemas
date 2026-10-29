@@ -20,7 +20,11 @@ function modal(title,html,o){o=o||{};
  d.innerHTML=`<div class="dh"><h2>${title}</h2><button class="x" type="button" data-x aria-label="Cerrar">×</button></div><div class="db">${html}</div>${o.foot?`<div class="df">${o.foot}</div>`:""}`;
  document.body.appendChild(d);
  const api={el:d,q:s=>d.querySelector(s),close:()=>{try{d.close()}catch(e){}d.remove();o.onclose&&o.onclose()}};
- d.addEventListener("click",e=>{if(e.target.closest("[data-x]"))api.close()});
+ let sucio=false;
+ d.addEventListener("input",()=>{sucio=true});d.addEventListener("change",()=>{sucio=true});
+ /* tocar fuera de la ventana la cierra, salvo que ya hayas escrito o cambiado algo (para no perderlo por accidente) */
+ d.addEventListener("click",e=>{if(e.target.closest("[data-x]")){api.close();return}
+  if(e.target===d&&!sucio&&!o.fijo){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)api.close()}});
  d.addEventListener("cancel",e=>{e.preventDefault();api.close()});
  d.showModal();return api}
 function confirmar(texto,o){o=o||{};return new Promise(ok=>{let r=false;
