@@ -1,6 +1,6 @@
 {
-  "name": "DAYMAR-SHOP",
-  "short_name": "DAYMAR",
+  "name": "DAYMARSV",
+  "short_name": "DAYMARSV",
   "description": "Sistema de ventas e inventario de DAYMAR-SHOP",
   "start_url": "menu.html",
   "scope": "./",
