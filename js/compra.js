@@ -113,7 +113,19 @@ async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.ty
 $("upArea").onclick=e=>{if(e.target.id!=="imageFile")$("imageFile").click()};
 $("upArea").onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();$("imageFile").click()}};
 $("imageFile").onchange=e=>addImgs(e.target.files,false);
-$("upArea").addEventListener("paste",async e=>{const fs=[...(e.clipboardData&&e.clipboardData.items||[])].filter(i=>i.kind==="file"&&i.type.startsWith("image/")).map(i=>i.getAsFile()).filter(Boolean);if(!fs.length)return;e.preventDefault();if(await addImgs(fs,true))toast(fs.length+" imagen(es) pegada(s)")});
+/* pegar imágenes: funciona en toda la página (no solo con el recuadro enfocado) y también con imágenes copiadas desde otra página */
+async function imagenesPegadas(cd){
+ const fs=[...(cd&&cd.files||[])].filter(f=>f.type.startsWith("image/"));
+ if(fs.length)return fs;
+ const it=[...(cd&&cd.items||[])].filter(i=>i.kind==="file"&&i.type.startsWith("image/")).map(i=>i.getAsFile()).filter(Boolean);
+ if(it.length)return it;
+ const h=cd&&cd.getData&&cd.getData("text/html"),m=h&&/<img[^>]+src=["']([^"']+)["']/i.exec(h);
+ if(m){try{const r=await fetch(m[1]);const b=await r.blob();if(b.type.startsWith("image/"))return [new File([b],"pegada."+(b.type.split("/")[1]||"jpg"),{type:b.type})]}catch(e){toast("Esa página no deja copiar la imagen. Guárdala y súbela con «Toca para subir imágenes».")}}
+ return []}
+document.addEventListener("paste",async e=>{
+ const t=e.target;if(t&&t!==$("upArea")&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;
+ if(document.querySelector("dialog[open]"))return;
+ const fs=await imagenesPegadas(e.clipboardData);if(!fs.length)return;e.preventDefault();if(await addImgs(fs,true))toast(fs.length+" imagen(es) pegada(s)")});
 
 /* subir imágenes de un producto a Storage */
 async function subirImagenes(id,list,reemplazar){

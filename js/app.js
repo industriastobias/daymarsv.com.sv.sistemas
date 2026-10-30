@@ -230,7 +230,16 @@ function colorHex(nombre){
 /* La foto grande de un producto vive junto a su miniatura (misma ruta, sin "_t") */
 const grande=u=>/_t\.jpg(\?.*)?$/.test(u||"")?u.replace(/_t\.jpg/,".jpg"):u||"";
 function colorDot(nombre){const c=colorHex(nombre);return c?`<i class="cdot" style="background:${c}"></i>`:""}
-window.DAY={grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+let h2cP=null;const cargarH2C=()=>window.html2canvas?Promise.resolve():(h2cP||(h2cP=new Promise((ok,ko)=>{const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";s.onload=ok;s.onerror=()=>{h2cP=null;ko(new Error("No se pudo cargar una librería. Revisa tu conexión."))};document.head.appendChild(s)})));
+/* html2canvas no entiende colores modernos (color-mix / color()): se pasan a rgb en la copia antes de dibujar */
+function fijarColores(doc){
+ const c1=document.createElement("canvas");c1.width=c1.height=1;const cv=c1.getContext("2d",{willReadFrequently:true}),conv=v=>{try{cv.clearRect(0,0,1,1);cv.fillStyle="#000";cv.fillStyle=v;cv.fillRect(0,0,1,1);const d=cv.getImageData(0,0,1,1).data;return `rgba(${d[0]},${d[1]},${d[2]},${(d[3]/255).toFixed(3)})`}catch(e){return "rgba(0,0,0,1)"}};
+ const w=doc.defaultView;
+ doc.querySelectorAll("*").forEach(el=>{let cs;try{cs=w.getComputedStyle(el)}catch(e){return}
+  for(let n=0;n<cs.length;n++){const k=cs[n],v=cs.getPropertyValue(k);
+   if(v&&(v.indexOf("color(")>-1||v.indexOf("color-mix(")>-1)){const r=v.replace(/color-mix\((?:[^()]|\([^()]*\))*\)|color\([^)]*\)/g,m=>conv(m));el.style.setProperty(k,r,"important")}}})}
+async function h2c(el,o){await cargarH2C();return html2canvas(el,Object.assign({logging:false,onclone:d=>{try{fijarColores(d)}catch(e){console.warn(e)}}},o))}
+window.DAY={h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
 try{if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}catch(e){}

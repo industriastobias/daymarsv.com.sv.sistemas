@@ -295,7 +295,7 @@ async function abrirTicket(v,nuevo){
   const t=await DAY.input("Número de WhatsApp del cliente (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");if(t===null)return;
   const dig=t.replace(/\D/g,""),tel=dig.length===8?"503"+dig:dig;if(tel.length<10||tel.length>15){await DAY.say("Ese número no es válido.");return}
   const f=await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-   const c=await html2canvas(m.q(".tkt"),{backgroundColor:"#ffffff",scale:3,logging:false}),W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H]});
+   const c=await DAY.h2c(m.q(".tkt"),{backgroundColor:"#ffffff",scale:3,logging:false}),W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H]});
    p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,W,c.height*W/c.width);
    return new File([p.output("blob")],"ticket-"+v.numero+".pdf",{type:"application/pdf"})},"Preparando PDF…");
   if(!f)return;
@@ -493,7 +493,7 @@ function recordatorio(v){
   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="rmT">Copiar texto</button><button class="btn" id="rmI">Copiar imagen</button>`});
  m.q("#rmT").onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast("Datos del recordatorio copiados")}catch(e){const a=document.createElement("textarea");a.value=txt;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(e2){}a.remove();toast(ok?"Datos del recordatorio copiados":"No se pudo copiar")}};
  m.q("#rmI").onclick=async()=>{await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-  const c=await html2canvas(m.q("#rmC"),{backgroundColor:"#ffffff",scale:Math.max(2,devicePixelRatio||1),useCORS:true,logging:false});
+  const c=await DAY.h2c(m.q("#rmC"),{backgroundColor:"#ffffff",scale:Math.max(2,devicePixelRatio||1),useCORS:true,logging:false});
   const b=await new Promise(r=>c.toBlob(r,"image/png"));if(!b)throw new Error("No se pudo generar la imagen");
   if(navigator.clipboard&&window.ClipboardItem&&isSecureContext){await navigator.clipboard.write([new ClipboardItem({"image/png":b})]);toast("Imagen del recordatorio copiada")}
   else{const a=document.createElement("a");a.download="recordatorio-pago-pendiente.png";a.href=URL.createObjectURL(b);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("La imagen fue descargada; puedes compartirla")}},"Generando imagen…")}}
@@ -737,7 +737,7 @@ async function descargarPdf(html,fmt,nombre){
   await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
   const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
   await new Promise(r=>setTimeout(r,150));
-  const c=await html2canvas(host.firstElementChild,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false});host.remove();
+  const c=await DAY.h2c(host.firstElementChild,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false});host.remove();
   const {jsPDF}=window.jspdf;
   if(fmt==="t80"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)]});p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,w,h);p.save(nombre)}
   else{const p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);

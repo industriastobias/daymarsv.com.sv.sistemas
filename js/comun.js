@@ -65,7 +65,7 @@ async function descargarPdf(html,nombre){
   await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
   const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
   await new Promise(r=>setTimeout(r,150));
-  const c=await html2canvas(host.firstElementChild,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false});host.remove();
+  const c=await h2c(host.firstElementChild,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false});host.remove();
   const {jsPDF}=window.jspdf,p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);
   for(let y=0;y<c.height;y+=pageH){const s=document.createElement("canvas");s.width=c.width;s.height=Math.min(pageH,c.height-y);const x=s.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,s.width,s.height);x.drawImage(c,0,y,c.width,s.height,0,0,c.width,s.height);
    if(y)p.addPage();p.addImage(s.toDataURL("image/jpeg",.95),"JPEG",0,0,W,s.height*W/c.width)}
@@ -92,5 +92,6 @@ function rango(q){const t=new Date(),y=t.getFullYear(),m=t.getMonth(),d=t.getDat
  if(q==="3m")return[ymd(new Date(y,m-2,1)),ymd(t)];
  if(q==="year")return[ymd(new Date(y,0,1)),ymd(t)];
  return["2000-01-01",ymd(t)]}
-window.UI={$,r2,cents,norm,fdate,ftime,money,ic,deb,rpc,fetchAll,lib,espera,modal,confirmar,pedirClave,pestanas,DOC_CSS,imprimir,descargarPdf,vistaDoc,excel,rango};
+const h2c=(el,o)=>DAY.h2c(el,o);
+window.UI={h2c,$,r2,cents,norm,fdate,ftime,money,ic,deb,rpc,fetchAll,lib,espera,modal,confirmar,pedirClave,pestanas,DOC_CSS,imprimir,descargarPdf,vistaDoc,excel,rango};
 })();
