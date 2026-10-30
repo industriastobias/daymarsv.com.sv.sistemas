@@ -8,6 +8,9 @@ const ADM=me.rol==="admin";
 mountSide($("side"),"clientes",me.rol);$("app").classList.remove("hidden");$("bnav").remove();
 document.querySelector("main").style.paddingBottom="30px";
 const S={C:[],V:[],F:[],CU:[],PE:[],DV:[],orden:"nombre"};
+const AVC=[["#6b2737","#f0d9de"],["#8a5a1f","#f6e6c8"],["#2f5d50","#d8ece5"],["#3d4f7c","#dbe2f4"],["#7a3b6e","#f0dcec"],["#5b4636","#eadfd6"],["#a04a2c","#f7ddd2"],["#2f6a7a","#d6eaf0"]];
+function avatar(n){let h=0;for(const ch of String(n||"?"))h=(h*31+ch.charCodeAt(0))>>>0;const [f,b]=AVC[h%AVC.length],g=h%3===0?"M28 64c0-13 9-21 22-21s22 8 22 21z":h%3===1?"M26 66c2-14 10-22 24-22s22 8 24 22z":"M30 64c0-12 8-20 20-20s20 8 20 20z";
+ return `<svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><rect width="100" height="100" fill="${b}"/><circle cx="50" cy="32" r="${15+h%3}" fill="${f}"/><path d="${g}" transform="translate(0 6)" fill="${f}"/></svg>`}
 const ini=n=>(n||"?").trim().charAt(0).toUpperCase()||"?";
 /* ---------- datos ---------- */
 async function cargar(){
@@ -41,7 +44,7 @@ function pintar(){
  $("cSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.o===S.orden));
  const L=filtrados();
  $("cL").innerHTML=L.length?L.slice(0,400).map(c=>{const s=S.stats[c.id];
-  return `<div class="rw" data-c="${c.id}" style="cursor:pointer"><div class="th ph">${esc(ini(c.nombre))}</div><div class="ti"><b>${esc(c.nombre)}</b><small>${esc([c.codigo,c.telefono,c.correo].filter(Boolean).join(" · ")||"Sin contacto")}</small></div>
+  return `<div class="rw" data-c="${c.id}" style="cursor:pointer"><div class="th ph" style="padding:0;overflow:hidden;border-radius:50%">${avatar(c.nombre)}</div><div class="ti"><b>${esc(c.nombre)}</b><small>${esc([c.codigo,c.telefono,c.correo].filter(Boolean).join(" · ")||"Sin contacto")}</small></div>
   ${waUrl(c,s)?`<a class="cwa" href="${waUrl(c,s)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${esc(c.nombre)}" title="Escribir por WhatsApp" style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#25d366;color:#fff;margin-right:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.6.1a6.7 6.7 0 01-3.3-2.9c-.2-.4.2-.4.6-1.2a.5.5 0 000-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.8 11.9 11.9 0 004.6 4c1.7.7 2.4.8 3.2.7a2.7 2.7 0 001.8-1.3 2.2 2.2 0 00.2-1.3c-.1-.1-.3-.2-.6-.3z"/></svg></a>`:""}<div class="am2"><b>${$$(s.t)}</b><br><small>${s.n} compra${s.n===1?"":"s"}${s.u?" · "+fdate(s.u):""}</small>${s.deuda>0?`<br><span class="bd or">Debe ${$$(s.deuda)}</span>`:""}</div></div>`}).join("")
   :`<div class="empty card">${S.C.length?"Ningún cliente coincide con la búsqueda.":"Aún no hay clientes. Toca “Nuevo cliente” para crear el primero."}</div>`}
 /* ---------- formulario ---------- */

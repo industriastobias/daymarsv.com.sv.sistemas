@@ -216,7 +216,8 @@ function optHTML(){return `
   <div><label>Tipo de comisión</label><select name="ctipo"><option value="percentage">Porcentaje (%)</option><option value="fixed">Monto fijo ($)</option></select></div>
   <div><label data-clab>Comisión (%)</label><input name="cval" type="number" min="0" step="0.01" placeholder="0"></div></div></div>
  <div class="cfg hidden" data-cfg="entrega_pendiente"><div class="fg"><div><label>Envío</label>${INP("envio2")}</div><div><label>Comisión (%)</label><input name="cval2" type="number" min="0" max="100" step="0.01" placeholder="0"></div></div></div>
- <div class="cfg hidden" data-cfg="cobro_pendiente"><div class="fg"><div class="full"><label>Nombre del cliente *</label><input name="cli" maxlength="80" list="dlCli" autocomplete="off" placeholder="¿Quién debe el saldo?"></div><div class="full"><label>Monto abonado</label>${INP("abono")}</div></div></div>
+ <div class="cfg hidden" data-cfg="cobro_pendiente"><div class="fg"><div class="full"><label>Monto abonado</label>${INP("abono")}</div></div></div>
+ <div class="cli0"><label data-clil>Cliente (opcional)</label><input name="cli" maxlength="80" list="dlCli" autocomplete="off" placeholder="Para guardar la compra en su ficha"></div>
  <div class="calc" data-calc></div><div class="err2" data-err role="alert"></div>`}
 function optForm(root,getSub,onChange){
  const st={ty:"inmediata",pm:"Efectivo",who:"client"},q=s=>root.querySelector(s);
@@ -225,7 +226,8 @@ function optForm(root,getSub,onChange){
   const o={tipo:st.ty,metodo:st.pm,envio:0,comision_tipo:"percentage",comision_valor:0,quien_paga:"client",seguro:0,cliente:"",abonado:0};
   if(st.ty==="cod"){o.envio=val("envio");o.seguro=val("seguro");o.comision_tipo=q("[name=ctipo]").value;o.comision_valor=val("cval");o.quien_paga=st.who}
   else if(st.ty==="entrega_pendiente"){o.envio=val("envio2");o.comision_valor=val("cval2")}
-  else if(st.ty==="cobro_pendiente"){o.cliente=q("[name=cli]").value.trim();o.abonado=val("abono")}
+  else if(st.ty==="cobro_pendiente"){o.abonado=val("abono")}
+  o.cliente=q("[name=cli]").value.trim();
   if(o.comision_tipo==="percentage"&&o.comision_valor>100)throw new Error("La comisión porcentual no puede superar el 100%.");
   return o}
  const tot=(subC,o)=>{const env=cents(o.envio),seg=cents(o.seguro);let com=0;
@@ -247,7 +249,7 @@ function optForm(root,getSub,onChange){
    q("[data-clab]").textContent=o.comision_tipo==="fixed"?"Comisión ($)":"Comisión (%)";
    onChange&&onChange(t,o,true);return {o,t}}
   catch(e){er.textContent=e.message;box.innerHTML="";onChange&&onChange(null,null,false);return null}}
- const cfgVis=()=>root.querySelectorAll("[data-cfg]").forEach(c=>c.classList.toggle("hidden",c.dataset.cfg==="cash"?!(st.ty==="inmediata"&&st.pm==="Efectivo"):c.dataset.cfg!==st.ty));
+ const cfgVis=()=>{const L=q("[data-clil]");if(L)L.textContent=st.ty==="cobro_pendiente"?"Nombre del cliente *":"Cliente (opcional)";root.querySelectorAll("[data-cfg]").forEach(c=>c.classList.toggle("hidden",c.dataset.cfg==="cash"?!(st.ty==="inmediata"&&st.pm==="Efectivo"):c.dataset.cfg!==st.ty))};
  root.addEventListener("click",e=>{
   const qc=e.target.closest("[data-qc]");
   if(qc){const inp=q("[name=recibe]");if(qc.dataset.qc==="x"){const r=calc();if(r)inp.value=(r.t.total/100).toFixed(2)}else inp.value=qc.dataset.qc;calc();return}
