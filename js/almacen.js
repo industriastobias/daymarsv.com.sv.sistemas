@@ -54,7 +54,7 @@ const espera=async(fn,txt)=>{$("ovT").textContent=txt||"Procesando…";$("ov").c
  try{return await fn()}catch(e){console.error(e);toast(e.message||"Ocurrió un error");snd("err");return undefined}finally{$("ov").classList.remove("on")}};
 const lib=url=>lib.c[url]||(lib.c[url]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=url;s.onload=ok;s.onerror=()=>ko(new Error("No se pudo cargar una librería. Revisa tu conexión."));document.head.appendChild(s)}));lib.c={};
 
-const S={prods:[],byId:new Map(),filt:[],page:1,size:+LS("dms_ps")||500,view:LS("dms_vw")||(matchMedia("(min-width:800px)").matches?"table":"cards"),
+const S={prods:[],byId:new Map(),filt:[],page:1,size:1000,view:LS("dms_vw")||(matchMedia("(min-width:800px)").matches?"table":"cards"),
  multi:false,sel:new Map(),usb:false,tab:"inv",pt:"cod",pend:[],ventas:[],vShown:100,stamp:0,hist:[]};
 try{S.hist=JSON.parse(LS("dms_hist2")||"[]")}catch(e){}
 
@@ -999,8 +999,6 @@ $("fSearch").addEventListener("keydown",e=>{if(e.key==="Enter")addHist($("fSearc
 $("fTog").onclick=()=>$("fl").classList.toggle("open");
 $("fClear").onclick=()=>{["fSearch","fMin","fMax","fBar","fDate","fGo"].forEach(i=>$(i).value="");$("fCat").value="";$("fLow").checked=false;filtrar()};
 $("hist").addEventListener("click",e=>{const h=e.target.closest("[data-h]");if(h){$("fSearch").value=h.dataset.h;filtrar()}if(e.target.closest("[data-clr]")){S.hist=[];LS("dms_hist2","[]");drawHist()}});
-$("fSize").value=String(S.size);if($("fSize").value!==String(S.size)){S.size=500;$("fSize").value="500"}
-$("fSize").onchange=()=>{S.size=+$("fSize").value;LS("dms_ps",S.size);S.page=1;pintarInv()};
 $("vt").addEventListener("click",e=>{const b=e.target.closest("[data-v]");if(!b)return;S.view=b.dataset.v;LS("dms_vw",S.view);pintarInv()});
 $("fGo").addEventListener("keydown",e=>{if(e.key!=="Enter")return;const n=parseInt($("fGo").value,10);if(!n||n<1||n>S.filt.length){toast("Fila fuera de rango");return}
  S.page=Math.ceil(n/S.size);pintarInv();setTimeout(()=>{const el=document.getElementById("row-"+n)||document.getElementById("card-"+n);if(el){el.classList.add("hl");el.scrollIntoView({behavior:"smooth",block:"center"})}},80)});

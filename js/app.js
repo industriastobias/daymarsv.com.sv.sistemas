@@ -248,7 +248,7 @@ function selectBonito(sel){
  const pd=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");
  Object.defineProperty(sel,"value",{get(){return pd.get.call(sel)},set(v){pd.set.call(sel,v);lab()}});
  sel.addEventListener("change",lab);new MutationObserver(lab).observe(sel,{childList:true,subtree:true,characterData:true});
- const lbl=(sel.id&&document.querySelector(`label[for="${sel.id}"]`))||(sel.previousElementSibling&&sel.previousElementSibling.tagName==="LABEL"?sel.previousElementSibling:null)||(sel.parentElement&&sel.parentElement.firstElementChild&&sel.parentElement.firstElementChild.tagName==="LABEL"?sel.parentElement.firstElementChild:null);
+ const lbl=(sel.id&&document.querySelector(`label[for="${sel.id}"]`))||(sel.previousElementSibling&&sel.previousElementSibling.tagName==="LABEL"?sel.previousElementSibling:null)||(sel.parentElement&&sel.parentElement.children.length<=3&&sel.parentElement.firstElementChild&&sel.parentElement.firstElementChild.tagName==="LABEL"?sel.parentElement.firstElementChild:null);
  if(lbl&&sel.id)lbl.addEventListener("click",e=>{e.preventDefault();b.click()});
  const st=sel.style;if(st.width&&st.width!=="100%")b.style.width=st.width;if(st.flex)b.style.flex=st.flex;if(st.minWidth)b.style.minWidth=st.minWidth;if(st.marginTop)b.style.marginTop=st.marginTop;if(st.maxWidth)b.style.maxWidth=st.maxWidth;
  b.onclick=()=>{
