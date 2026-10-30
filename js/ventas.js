@@ -47,7 +47,7 @@ function detalle(v){
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="bd ${E[1]}">${E[0]}</span><span class="bd bl2">${esc(v.metodo_pago||"")}</span><span class="bd wa">${esc(TIPO[v.tipo]||"Venta normal")}</span></div>
   ${lin||'<div class="empty">Sin productos.</div>'}
   <div style="margin-top:8px"><div class="vtt"><span>Subtotal</span><span>${$$(v.subtotal)}</span></div>${+v.descuento_pct?`<div class="vtt"><span>Descuento</span><span>${+v.descuento_pct}%</span></div>`:""}${Math.abs(extra)>0.004&&!+v.descuento_pct?`<div class="vtt"><span>Envío, comisión u otros</span><span>${extra>0?"+":"−"}${$$(Math.abs(extra))}</span></div>`:""}<div class="vtt g"><span>Total</span><span>${$$(v.total)}</span></div></div></div>`,
-  {foot:`<button class="btn g" data-x>Cerrar</button>${ADM&&v.estado==="completada"?`<a class="btn g" href="devoluciones.html#v=${v.id}">Devolver o cambiar</a>`:""}`,big:true})}
+  {foot:`<button class="btn g" data-x>Cerrar</button>${ADM&&v.estado==="completada"?`<a class="btn g" href="devoluciones.html#v=${v.id}">Devolver o cambiar</a>`:""}`})}
 function excel(){
  const L=filtradas();if(!L.length)return toast("No hay ventas para exportar");
  UI.excel("historial-ventas",[{n:"Ventas",c:[["N.º",8],["Fecha",12],["Hora",9],["Cliente",24],["Productos",48],["Unidades",9],["Pago",14],["Tipo",18],["Estado",13],["Vendedor",18],["Subtotal",12,"money"],["Total",12,"money"]],
