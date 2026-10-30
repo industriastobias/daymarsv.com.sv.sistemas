@@ -1,3 +1,6 @@
+.lbx{position:fixed;z-index:9999;overflow-y:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.28);padding:6px;display:flex;flex-direction:column;gap:2px}
+.lbx button{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:42px;padding:8px 12px;border:0;border-radius:8px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.lbx button:hover,.lbx button:active{background:var(--chip)}.lbx small{color:var(--mute);font-size:12px}
 /* lista desplegable propia */
 .sb-orig{position:absolute!important;opacity:0!important;pointer-events:none!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;border:0!important}
 .sb{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
