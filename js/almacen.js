@@ -895,7 +895,7 @@ async function nuevaFactura(pre){
  <div id="fLines"></div>
  <div class="ctl"><button class="btn g sm" type="button" id="fAddP">+ Del inventario</button><button class="btn g sm" type="button" id="fAddM">+ Línea manual</button><button class="btn g sm" type="button" id="fAddV">Traer de ventas</button></div>
  <div class="fg" style="margin-top:6px">
-  <div><label>IVA</label><select name="modo">${Object.keys(IVAN).map(k=>`<option value="${k}">${IVAN[k]}${k==="ninguno"?"":" ("+(+CFG.iva_pct)+"%)"}</option>`).join("")}</select></div>
+  <div><label>IVA</label><label class="chk" style="margin:0"><input type="checkbox" name="ivaOn"> Aplicar IVA (${+CFG.iva_pct}%)</label><div id="ivaH" class="hidden" style="margin-top:6px"><select name="modo2"><option value="incluido">Ya incluido en los precios</option><option value="agregado">Sumarlo al total</option></select></div><input type="hidden" name="modo" value="ninguno"></div>
   <div><label>Método de pago</label><select name="met"><option>Efectivo</option><option>Transferencia</option><option>Tarjeta</option></select></div>
   <div><label>Descuento</label><div style="display:flex;gap:6px"><select name="dt" style="width:76px"><option value="pct">%</option><option value="monto">$</option></select><input name="dv" type="number" min="0" step="0.01" placeholder="0" inputmode="decimal"></div></div>
   <div><label>Código promocional</label><div style="display:flex;gap:6px"><input name="promo" placeholder="Opcional" style="text-transform:uppercase"><button class="btn g" type="button" id="fPromo">Aplicar</button></div></div>
@@ -906,7 +906,10 @@ async function nuevaFactura(pre){
  <div class="calc" id="fCalc"></div><div class="err2" id="fErr" role="alert"></div>`,
  {big:true,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="fcOk">Emitir factura</button>`});
  const q=s=>m.q(`[name=${s}]`),num=s=>{const v=q(s).value.trim();return v===""?0:Number(v)};
- q("modo").value=LS("dms_iva")||"incluido";if(pre.metodo&&["Efectivo","Transferencia","Tarjeta"].includes(pre.metodo))q("met").value=pre.metodo;
+ {const ivaSync=()=>{const on=q("ivaOn").checked;m.q("#ivaH").classList.toggle("hidden",!on);q("modo").value=on?q("modo2").value:"ninguno"};
+  const sv=LS("dms_iva")||"ninguno";q("ivaOn").checked=sv!=="ninguno";q("modo2").value=sv==="agregado"?"agregado":"incluido";ivaSync();
+  q("ivaOn").addEventListener("change",ivaSync);q("modo2").addEventListener("change",ivaSync)}
+ if(pre.metodo&&["Efectivo","Transferencia","Tarjeta"].includes(pre.metodo))q("met").value=pre.metodo;
  const lineHTML=(i,x)=>`<div class="el" data-i="${x}"><input data-f="nombre" value="${esc(i.nombre)}" placeholder="Descripción" maxlength="160" aria-label="Descripción"><input data-f="cantidad" type="number" min="1" step="1" value="${i.cantidad}" inputmode="numeric" aria-label="Cantidad"><input data-f="precio" type="number" min="0" step="0.01" value="${i.precio}" inputmode="decimal" aria-label="Precio"><b data-t>${$$(i.cantidad*i.precio)}</b><button type="button" class="btn g sm" data-rm="${x}" aria-label="Quitar línea">×</button></div>`;
  const lines=()=>{m.q("#fLines").innerHTML=F.items.length?F.items.map(lineHTML).join(""):`<div class="empty" style="padding:16px">Agrega productos del inventario, una línea manual o trae ventas ya hechas.</div>`;calc()};
  function calc(){
