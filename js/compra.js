@@ -454,6 +454,25 @@ $("importFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.v
   toast(`Importación completada (${ids.length} productos)${extra}`)
  }catch(e){console.error(e);toast("Error importando: "+(e.message||""))}busy(false)};
 
+/* completar fotos: sube las fotos del ZIP a los productos que ya existen y no tienen foto */
+$("bFotosZip").onclick=()=>$("fotosFile").click();
+$("fotosFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.value="";if(!file||!/\.zip$/i.test(file.name))return toast("Selecciona un archivo ZIP");
+ busy(true,"Leyendo ZIP…");
+ try{const zip=await JSZip.loadAsync(await file.arrayBuffer());
+  const arch=[];zip.forEach((rel,entry)=>{if(!entry.dir&&/\.(jpg|jpeg|png|webp)$/i.test(rel))arch.push({rel:rel.split("/").pop(),entry})});
+  if(!arch.length){busy(false);return toast("El ZIP no trae fotos")}
+  const sin=inv.filter(p=>!p.foto_url);let falta=0,hechos=0,sinFoto=0;
+  const trabajos=[];
+  for(const p of sin){const cod=String(p.codigo||"").toLowerCase();
+   const en=arch.filter(a=>{const r=a.rel.toLowerCase();return r.startsWith(cod+"_")||r.replace(/\.[a-z]+$/,"")===cod});
+   if(!en.length){sinFoto++;continue}
+   en.sort((a,b)=>a.rel.localeCompare(b.rel,undefined,{numeric:true}));trabajos.push({p,en})}
+  if(!trabajos.length){busy(false);return await DAY.say(`No encontré fotos para los productos sin foto. El ZIP trae ${arch.length} fotos y hay ${sin.length} productos sin foto. Los nombres de las fotos deben empezar con el código del producto, por ejemplo CODIGO_1.jpg.`)}
+  await pool(trabajos,4,async t=>{try{const bl=[];for(const a of t.en)bl.push(await par(await a.entry.async("blob")));await subirImagenes(t.p.id,bl,true);hechos++}catch(e){falta++}
+   $("ovText").textContent=`Subiendo fotos… ${hechos+falta}/${trabajos.length}`});
+  await refresh();toast(`Fotos completadas en ${hechos} productos`+(falta?` · ${falta} con error`:"")+(sinFoto?` · ${sinFoto} productos sin foto en el ZIP`:""))
+ }catch(e){console.error(e);toast("Error: "+(e.message||""))}busy(false)};
+
 /* ---------- exportar PDF / etiquetas / vaciar ---------- */
 const aDataUrl=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
 $("bPdf").onclick=async()=>{if(!inv.length)return toast("No hay productos para exportar");busy(true,"Generando PDF…");
