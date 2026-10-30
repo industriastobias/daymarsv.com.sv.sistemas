@@ -310,7 +310,7 @@ async function abrirTicket(v,nuevo){
   <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px"><input type="checkbox" id="tkPref" ${LS("dms_ticket")!=="0"?"checked":""} style="width:18px;height:18px"> Mostrar el ticket al terminar cada venta</label>`,
   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button><button class="btn" id="tkW">Enviar PDF por WhatsApp</button>`});
  m.q("#tkPref").onchange=e=>LS("dms_ticket",e.target.checked?"1":"0");
- m.q("#tkP").onclick=()=>imprimir(html,"tk");
+ m.q("#tkP").onclick=()=>descargarPdf(html,"tk","ticket-"+v.numero+".pdf","imprimir");
  m.q("#tkW").onclick=async()=>{
   let cli=null;try{const {data}=await db.from("clientes").select("nombre,telefono");const n=norm(v.cliente_nombre||"").trim();cli=n?(data||[]).find(x=>norm(x.nombre).trim()===n):null}catch(e){}
   const t=await DAY.input("Número de WhatsApp del cliente (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");if(t===null)return;
@@ -806,19 +806,25 @@ function imprimir(html,fmt){
    if(tk){const h=Math.ceil(d.body.getBoundingClientRect().height),mm=Math.ceil(h*25.4/96)+6;st.textContent=`@page{size:80mm ${mm}mm;margin:0}`}
    else st.textContent="@page{size:A4;margin:0}";
    d.head.appendChild(st);f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("No se pudo abrir la impresión")}setTimeout(()=>f.remove(),120000)},450)}
-async function descargarPdf(html,fmt,nombre){
- await espera(async()=>{
-  await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-  const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
-  await new Promise(r=>setTimeout(r,150));
-  const el=host.firstElementChild,c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight});host.remove();
-  const {jsPDF}=window.jspdf;
-  if(fmt==="t80"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)]});p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,w,h);p.save(nombre)}
-  else{const p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);
-   for(let y=0;y<c.height;y+=pageH){const s=document.createElement("canvas");s.width=c.width;s.height=Math.min(pageH,c.height-y);const x=s.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,s.width,s.height);x.drawImage(c,0,y,c.width,s.height,0,0,c.width,s.height);
-    if(y)p.addPage();p.addImage(s.toDataURL("image/jpeg",.95),"JPEG",0,0,W,s.height*W/c.width)}
-   p.save(nombre)}
-  toast("PDF generado")},"Generando PDF…")}
+async function pdfBlob(html,fmt){
+ await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+ const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
+ let c,el;try{await new Promise(r=>setTimeout(r,150));el=host.firstElementChild;c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
+ const {jsPDF}=window.jspdf;
+ if(fmt==="t80"||fmt==="tk"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)]});p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,w,h);return p.output("blob")}
+ const p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);
+ for(let y=0;y<c.height;y+=pageH){const s=document.createElement("canvas");s.width=c.width;s.height=Math.min(pageH,c.height-y);const x=s.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,s.width,s.height);x.drawImage(c,0,y,c.width,s.height,0,0,c.width,s.height);
+  if(y)p.addPage();p.addImage(s.toDataURL("image/jpeg",.95),"JPEG",0,0,W,s.height*W/c.width)}
+ return p.output("blob")}
+/* Entrega el PDF: en el celular abre el menú de compartir/imprimir; si no se puede, lo abre o lo descarga */
+async function entregarPdf(blob,nombre,modo){
+ const file=new File([blob],nombre,{type:"application/pdf"});
+ if(modo==="imprimir"&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:nombre});return}catch(e){if(e&&e.name==="AbortError")return}}
+ const url=URL.createObjectURL(blob);
+ if(modo==="imprimir"){const w=window.open(url,"_blank");if(w){setTimeout(()=>URL.revokeObjectURL(url),120000);return}}
+ const a=document.createElement("a");a.href=url;a.download=nombre;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
+async function descargarPdf(html,fmt,nombre,modo){
+ await espera(async()=>{const b=await pdfBlob(html,fmt);await entregarPdf(b,nombre,modo||"descargar");toast("PDF generado")},"Generando PDF…")}
 /* Vista previa con botones de impresión y PDF */
 async function vistaDoc(titulo,build,nombre,extra){
  const fmtSaved=LS("dms_fmt")||"a4";let fmt=fmtSaved;
@@ -829,7 +835,7 @@ async function vistaDoc(titulo,build,nombre,extra){
   html=await build(fmt);const box=m.q("#dvB");box.innerHTML=`<div class="dvz">${html}</div>`;
   const w=fmt==="t80"?302:794,z=Math.min(1,(box.clientWidth-8)/w);box.firstElementChild.style.zoom=z>0?z:1};
  m.q("#dfF").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;fmt=b.dataset.f;LS("dms_fmt",fmt);draw()});
- m.q("#dvP").onclick=()=>imprimir(html,fmt);m.q("#dvD").onclick=()=>descargarPdf(html,fmt,nombre+(fmt==="t80"?"-ticket":"")+".pdf");
+ m.q("#dvP").onclick=()=>fmt==="t80"?descargarPdf(html,fmt,nombre+"-ticket.pdf","imprimir"):imprimir(html,fmt);m.q("#dvD").onclick=()=>descargarPdf(html,fmt,nombre+(fmt==="t80"?"-ticket":"")+".pdf");
  await draw();return m}
 
 /* ---------- FACTURAS ---------- */
@@ -859,7 +865,7 @@ $("fcList").addEventListener("click",async e=>{
  const b=e.target.closest("[data-fa]"),r=e.target.closest("[data-fid]");if(!r)return;const id=r.dataset.fid;
  try{
   if(!b||b.dataset.fa==="ver"){const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f)}
-  else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f)imprimir(await facHTML(f,LS("dms_fmt")||"a4"),LS("dms_fmt")||"a4")}
+  else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"a4",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
   else if(b.dataset.fa==="pdf"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"a4";descargarPdf(await facHTML(f,fm),fm,fnum(f.numero)+(fm==="t80"?"-ticket":"")+".pdf")}}
  }catch(err){toast(err.message)}});
 async function abrirFactura(f){
