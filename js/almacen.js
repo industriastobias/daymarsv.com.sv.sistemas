@@ -96,6 +96,7 @@ function modal(title,html,o){o=o||{};
  const d=document.createElement("dialog");if(o.big)d.className="big";
  d.innerHTML=`<div class="dh"><h2>${title}</h2><button class="x" type="button" data-x aria-label="Cerrar">×</button></div><div class="db">${html}</div>${o.foot?`<div class="df">${o.foot}</div>`:""}`;
  document.body.appendChild(d);
+ if(o.foot&&/data-x[^>]*>\s*Cerrar\s*</.test(o.foot)){const x=d.querySelector(".dh .x");if(x)x.remove()}
  const api={el:d,q:s=>d.querySelector(s),close:()=>{try{d.close()}catch(e){}d.remove();o.onclose&&o.onclose()}};
  let sucio=false;
  d.addEventListener("input",()=>{sucio=true});d.addEventListener("change",()=>{sucio=true});
