@@ -287,9 +287,6 @@ const MSG=(o,t,extra)=>o.tipo==="cod"?"Pedido contra entrega guardado. Total a c
  o.tipo==="cobro_pendiente"?`Venta pendiente de cobro registrada. Cliente: ${o.cliente}. Abonado: ${$$(t.paid/100)}. Debe: ${$$(t.pend/100)}`:
  `Venta registrada (${o.metodo})`+(extra||"");
 /* ---------- ticket de venta ---------- */
-function imprimir(html){const f=document.createElement("iframe");f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(f);
- const d=f.contentWindow.document;d.open();d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Ticket</title><style>@page{margin:6mm}html,body{margin:0;background:#fff}</style></head><body>${html}</body></html>`);d.close();
- setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("No se pudo abrir la impresión")}setTimeout(()=>f.remove(),120000)},350)}
 const TK_SEL="*,profiles(nombre),venta_items(cantidad,precio_unit,nombre,productos(nombre))";
 function ticketData(v,cf){const L=(v.venta_items||[]).map(i=>({q:i.cantidad,n:itName(i),p:+i.precio_unit}));
  const f=new Date(v.created_at),fh=f.toLocaleDateString("es-SV")+" "+f.toLocaleTimeString("es-SV",{hour:"2-digit",minute:"2-digit"});
@@ -313,7 +310,7 @@ async function abrirTicket(v,nuevo){
   <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px"><input type="checkbox" id="tkPref" ${LS("dms_ticket")!=="0"?"checked":""} style="width:18px;height:18px"> Mostrar el ticket al terminar cada venta</label>`,
   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button><button class="btn" id="tkW">Enviar PDF por WhatsApp</button>`});
  m.q("#tkPref").onchange=e=>LS("dms_ticket",e.target.checked?"1":"0");
- m.q("#tkP").onclick=()=>imprimir(html);
+ m.q("#tkP").onclick=()=>imprimir(html,"tk");
  m.q("#tkW").onclick=async()=>{
   let cli=null;try{const {data}=await db.from("clientes").select("nombre,telefono");const n=norm(v.cliente_nombre||"").trim();cli=n?(data||[]).find(x=>norm(x.nombre).trim()===n):null}catch(e){}
   const t=await DAY.input("Número de WhatsApp del cliente (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");if(t===null)return;
@@ -798,10 +795,15 @@ async function cierreHTML(c,fmt){
 
 /* Imprimir (diálogo del navegador) o guardar como PDF */
 function imprimir(html,fmt){
- const f=document.createElement("iframe");f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(f);
+ const tk=fmt==="t80"||fmt==="tk",f=document.createElement("iframe");
+ f.style.cssText=`position:fixed;left:-10000px;top:0;width:${tk?"320px":"820px"};height:1200px;border:0`;document.body.appendChild(f);
  const d=f.contentWindow.document;d.open();
- d.write(`<!doctype html><html><head><meta charset="utf-8"><title>DAYMAR-SHOP</title><style>@page{size:${fmt==="t80"?"80mm auto":"A4"};margin:0}html,body{margin:0;background:#fff}.fx{box-shadow:none!important}</style></head><body>${html}</body></html>`);d.close();
- setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("No se pudo abrir la impresión")}setTimeout(()=>f.remove(),120000)},350)}
+ d.write(`<!doctype html><html><head><meta charset="utf-8"><title>DAYMAR-SHOP</title><style>*{-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;padding:0;background:#fff}.fx{box-shadow:none!important}${tk?".tkt,.fx-t80{width:80mm!important;max-width:none!important;margin:0!important;box-sizing:border-box}":""}</style></head><body>${html}</body></html>`);d.close();
+ setTimeout(()=>{try{
+   const st=d.createElement("style");
+   if(tk){const h=Math.ceil(d.body.getBoundingClientRect().height),mm=Math.ceil(h*25.4/96)+6;st.textContent=`@page{size:80mm ${mm}mm;margin:0}`}
+   else st.textContent="@page{size:A4;margin:0}";
+   d.head.appendChild(st);f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("No se pudo abrir la impresión")}setTimeout(()=>f.remove(),120000)},450)}
 async function descargarPdf(html,fmt,nombre){
  await espera(async()=>{
   await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");

@@ -58,8 +58,8 @@ const DOC_CSS=`.fx{font-family:Arial,Helvetica,sans-serif;color:#222;background:
 .fx .k{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}.fx .k div{flex:1;min-width:130px;background:#f7f2f3;border-radius:8px;padding:8px 10px}.fx .k b{display:block;font-size:17px;color:#6B2D3E}.fx .k span{font-size:11px;color:#666}
 .fx .ok{color:#2f7d4f}.fx .bad{color:#b3261e}`;
 function imprimir(html){
- const f=document.createElement("iframe");f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";document.body.appendChild(f);
- const d=f.contentWindow.document;d.open();d.write(`<!doctype html><html><head><meta charset="utf-8"><title>DAYMAR-SHOP</title><style>@page{size:A4;margin:0}html,body{margin:0;background:#fff}</style></head><body>${html}</body></html>`);d.close();
+ const f=document.createElement("iframe");f.style.cssText="position:fixed;left:-10000px;top:0;width:820px;height:1200px;border:0";document.body.appendChild(f);
+ const d=f.contentWindow.document;d.open();d.write(`<!doctype html><html><head><meta charset="utf-8"><title>DAYMAR-SHOP</title><style>@page{size:A4;margin:0}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;background:#fff}</style></head><body>${html}</body></html>`);d.close();
  setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast("No se pudo abrir la impresión")}setTimeout(()=>f.remove(),120000)},350)}
 async function descargarPdf(html,nombre){
  await espera(async()=>{
