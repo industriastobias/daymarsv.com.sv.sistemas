@@ -319,7 +319,7 @@ async function abrirTicket(v,nuevo){
    const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;width:320px;background:#fff";host.innerHTML=html;document.body.appendChild(host);
    const el=host.querySelector(".tkt")||host.firstElementChild;el.style.maxWidth="none";el.style.width="300px";el.style.margin="0";
    let c;try{await new Promise(r=>setTimeout(r,100));c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:3,logging:false,windowWidth:800,width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
-   const W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H]});
+   const W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H],orientation:H>=W?"p":"l"});
    p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,W,c.height*W/c.width);
    return new File([p.output("blob")],"ticket-"+v.numero+".pdf",{type:"application/pdf"})},"Preparando PDF…");
   if(!f)return;
@@ -809,9 +809,12 @@ function imprimir(html,fmt){
 async function pdfBlob(html,fmt){
  await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
  const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
- let c,el;try{await new Promise(r=>setTimeout(r,150));el=host.firstElementChild;c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
+ const peq=fmt==="t80"||fmt==="tk";if(peq)host.style.width="340px";
+ let c,el;try{el=host.firstElementChild;if(peq){el.style.maxWidth="none";el.style.margin="0";if(el.classList.contains("tkt"))el.style.width="300px"}
+  try{await document.fonts.ready}catch(e){}await new Promise(r=>setTimeout(r,200));
+  c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:3,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
  const {jsPDF}=window.jspdf;
- if(fmt==="t80"||fmt==="tk"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)]});p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,w,h);return p.output("blob")}
+ if(fmt==="t80"||fmt==="tk"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)],orientation:Math.max(h,40)>=w?"p":"l"});p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,w,h);return p.output("blob")}
  const p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);
  for(let y=0;y<c.height;y+=pageH){const s=document.createElement("canvas");s.width=c.width;s.height=Math.min(pageH,c.height-y);const x=s.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,s.width,s.height);x.drawImage(c,0,y,c.width,s.height,0,0,c.width,s.height);
   if(y)p.addPage();p.addImage(s.toDataURL("image/jpeg",.95),"JPEG",0,0,W,s.height*W/c.width)}
