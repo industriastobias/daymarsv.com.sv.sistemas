@@ -96,13 +96,16 @@ function setTab(t){esLote=t==="lote";document.querySelectorAll("#tabs button").f
 $("tabs").onclick=e=>{const b=e.target.closest("button");if(b)setTab(b.dataset.t)};
 
 /* imágenes del formulario */
-async function comprimir(file,max,q){
- let src,w,h;const bmp=await createImageBitmap(file).catch(()=>null);
- if(bmp){src=bmp;w=bmp.width;h=bmp.height}else{src=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(file)});w=src.width;h=src.height}
- const s=Math.min(1,max/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(w*s));c.height=Math.max(1,Math.round(h*s));
- const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);
+async function abrirImg(file){
+ const bmp=await createImageBitmap(file).catch(()=>null);
+ if(bmp)return {src:bmp,w:bmp.width,h:bmp.height};
+ const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(file)});return {src:im,w:im.width,h:im.height}}
+function recomprimir(o,max,q){
+ const s=Math.min(1,max/Math.max(o.w,o.h)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(o.w*s));c.height=Math.max(1,Math.round(o.h*s));
+ const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(o.src,0,0,c.width,c.height);
  return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
-const par=async f=>({main:await comprimir(f,1600,.85),thumb:await comprimir(f,640,.8)});
+async function comprimir(file,max,q){return recomprimir(await abrirImg(file),max,q)}
+const par=async f=>{const o=await abrirImg(f);const r={main:await recomprimir(o,1600,.85),thumb:await recomprimir(o,640,.8)};if(o.src.close)o.src.close();return r};
 function renderPrevs(urls){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=urls;$("prevs").innerHTML=urls.map((u,i)=>`<img src="${u}" alt="Vista previa ${i+1}">`).join("")}
 async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.type&&f.type.startsWith("image/"));if(!fs.length)return false;
  busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));imgsTemp=acumular?imgsTemp.concat(n):n;renderPrevs(imgsTemp.map(i=>URL.createObjectURL(i.thumb)))}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
@@ -116,10 +119,9 @@ async function subirImagenes(id,list,reemplazar){
  if(reemplazar){const old=await ok(db.from("producto_imagenes").select("id,path,thumb_path").eq("producto_id",id));
   const paths=old.flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await db.storage.from(BUCKET).remove(paths);
   if(old.length)await ok(db.from("producto_imagenes").delete().eq("producto_id",id))}
- const rows=[];
- for(let i=0;i<list.length;i++){const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",p2=base+"_t.jpg";
-  await ok(db.storage.from(BUCKET).upload(p1,list[i].main,{contentType:"image/jpeg"}));await ok(db.storage.from(BUCKET).upload(p2,list[i].thumb,{contentType:"image/jpeg"}));
-  rows.push({producto_id:id,url:pub(p1),thumb_url:pub(p2),path:p1,thumb_path:p2,orden:i})}
+ const rows=await Promise.all(list.map(async(im,i)=>{const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",p2=base+"_t.jpg";
+  await Promise.all([ok(db.storage.from(BUCKET).upload(p1,im.main,{contentType:"image/jpeg"})),ok(db.storage.from(BUCKET).upload(p2,im.thumb,{contentType:"image/jpeg"}))]);
+  return {producto_id:id,url:pub(p1),thumb_url:pub(p2),path:p1,thumb_path:p2,orden:i}}));
  if(rows.length){await ok(db.from("producto_imagenes").insert(rows));await ok(db.from("productos").update({foto_url:rows[0].thumb_url}).eq("id",id))}}
 
 /* guardar producto */
@@ -442,7 +444,7 @@ $("importFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.v
   if(!items.length){busy(false);return toast("El ZIP no trae productos")}
   const ids=[];for(let k=0;k<items.length;k+=100){$("ovText").textContent=`Importando productos… ${Math.min(k+100,items.length)}/${items.length}`;ids.push(...await ok(db.rpc("registrar_compra",{p_items:items.slice(k,k+100)})))}
   let n=0;const conImg=ids.filter(r=>imgsPorCodigo[r.codigo]);
-  await pool(conImg,3,async r=>{const bl=[];for(const en of imgsPorCodigo[r.codigo]){bl.push(await par(await en.async("blob")))}await subirImagenes(r.id,bl,true);$("ovText").textContent=`Subiendo imágenes… ${++n}/${conImg.length}`});
+  await pool(conImg,4,async r=>{const bl=[];for(const en of imgsPorCodigo[r.codigo]){bl.push(await par(await en.async("blob")))}await subirImagenes(r.id,bl,true);$("ovText").textContent=`Subiendo imágenes… ${++n}/${conImg.length}`});
   await refresh();$("dgBulk").close();
   let extra="";const pj=zip.file("pendientes.json");
   if(pj){try{const pr=pendientesDeZip(await pj.async("string"));
