@@ -492,11 +492,21 @@ function recordatorio(v){
   <small style="color:#666">Pendiente desde: ${esc(fecha)}</small></div>`,
   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="rmT">Copiar texto</button><button class="btn" id="rmI">Copiar imagen</button>`});
  m.q("#rmT").onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast("Datos del recordatorio copiados")}catch(e){const a=document.createElement("textarea");a.value=txt;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(e2){}a.remove();toast(ok?"Datos del recordatorio copiados":"No se pudo copiar")}};
- m.q("#rmI").onclick=async()=>{await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-  const c=await DAY.h2c(m.q("#rmC"),{backgroundColor:"#ffffff",scale:Math.max(2,devicePixelRatio||1),useCORS:true,logging:false});
-  const b=await new Promise(r=>c.toBlob(r,"image/png"));if(!b)throw new Error("No se pudo generar la imagen");
-  if(navigator.clipboard&&window.ClipboardItem&&isSecureContext){await navigator.clipboard.write([new ClipboardItem({"image/png":b})]);toast("Imagen del recordatorio copiada")}
-  else{const a=document.createElement("a");a.download="recordatorio-pago-pendiente.png";a.href=URL.createObjectURL(b);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast("La imagen fue descargada; puedes compartirla")}},"Generando imagen…")}}
+ m.q("#rmI").onclick=async()=>{
+  /* la imagen se prepara mientras se pide copiar: Safari (iPhone) solo deja copiar si la copia se pide al tocar el botón */
+  const gen=(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
+   const c=await DAY.h2c(m.q("#rmC"),{backgroundColor:"#ffffff",scale:Math.min(3,Math.max(2,devicePixelRatio||1)),useCORS:true,imageTimeout:6000,logging:false});
+   const b=await new Promise(r=>c.toBlob(r,"image/png"));if(!b)throw new Error("No se pudo generar la imagen");return b})();
+  gen.catch(()=>{});
+  await espera(async()=>{
+   let copiado=false;
+   if(navigator.clipboard&&window.ClipboardItem&&isSecureContext){
+    try{await Promise.race([navigator.clipboard.write([new ClipboardItem({"image/png":gen})]),new Promise((_,ko)=>setTimeout(()=>ko(new Error("tiempo")),10000))]);copiado=true}catch(e){console.warn("copiar imagen:",e)}}
+   if(copiado){toast("Imagen del recordatorio copiada");return}
+   const b=await Promise.race([gen,new Promise((_,ko)=>setTimeout(()=>ko(new Error("No se pudo generar la imagen. Intenta de nuevo.")),20000))]);
+   const f=new File([b],"recordatorio-pago-pendiente.png",{type:"image/png"});
+   try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});toast("Imagen lista para compartir");return}}catch(e){if(e&&e.name==="AbortError")return}
+   const a=document.createElement("a");a.download="recordatorio-pago-pendiente.png";a.href=URL.createObjectURL(b);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast("La imagen fue descargada; puedes compartirla")},"Generando imagen…")}}
 
 /* Editar un pedido contra entrega o de entrega pendiente */
 function editarPedido(v){
