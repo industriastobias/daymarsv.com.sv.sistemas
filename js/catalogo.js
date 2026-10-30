@@ -53,7 +53,7 @@ function tarjeta(p){
  return `<div class="kc" data-id="${p.id}"><div class="ph ${f?"":"ph0"}" ${f?"data-g":""}>${f?`<img src="${esc(DAY.grande(f.url))}" onerror="this.onerror=null;this.src='${esc(f.th)}'" alt="" loading="lazy">`:esc(ini(p.nombre))}${p.fotos.length>1?`<span class="nf">${p.fotos.length} fotos</span>`:""}${p.desc>0?`<span class="of">-${p.desc}%</span>`:""}</div>
  <div class="kb"><span class="ct">${esc(p.cat)}</span><h3>${esc(p.nombre)}</h3>
  <div class="pr">${$$(p.fin)}${p.desc>0?`<s>${$$(p.base)}</s>`:""}</div><div class="pl">${esc(enLetras(p.fin))}</div>
- <div class="st"><span class="bd ${p.stk>0?(p.stk<=3?"wa":"ok"):"or"}">${p.stk>0?"Stock "+p.stk:"Agotado"}</span>${p.codigo_barras?`<small style="color:var(--mute)">${esc(p.codigo_barras)}</small>`:""}</div>
+ <div class="st"><span class="bd ${p.stk>0?"ok":"or"}">${p.stk>0?"Stock "+p.stk:"Agotado"}</span>${p.codigo_barras?`<small style="color:var(--mute)">${esc(p.codigo_barras)}</small>`:""}</div>
  ${p.vars.length?`<div class="cl">${p.vars.map(v=>`<span>${DAY.colorDot(v.nombre)}${esc(v.nombre)}${+v.stock>0?"":" (0)"}</span>`).join("")}</div>`:""}
  ${barras&&p.codigo_barras?`<svg class="bc" data-c="${esc(p.codigo_barras)}"></svg>`:""}</div></div>`}
 function galeria(p){

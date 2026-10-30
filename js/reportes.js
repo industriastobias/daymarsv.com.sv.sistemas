@@ -7,7 +7,8 @@ const me=await requireSession();if(!me)return;
 const ADM=me.rol==="admin";
 mountSide($("side"),"inventario",me.rol);$("app").classList.remove("hidden");
 const IC={sum:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',cat:'<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',top:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
-const mini=p=>Math.max(0,+p.stock_minimo||0),crit=p=>Math.max(1,Math.floor(mini(p)/2));
+/* stock bajo = sin existencias (0) */
+const mini=p=>0,crit=p=>0;
 let P=[],NP=0;
 const fin=p=>r2(p.precio_venta*(1-(+p.descuento_pct||0)/100));
 async function cargar(){
@@ -21,7 +22,7 @@ async function cargar(){
   if(p.stock>suma){const c={...b,base:p.nombre,color:"Sin color",nombre:p.nombre+" – sin color",stock:p.stock-suma,codigo_barras:p.codigo_barras};c.val=c.fin*c.stock;P.push(c)}})}
 const sum=(L,f)=>L.reduce((s,p)=>s+f(p),0);
 function datos(){
- const unidades=sum(P,p=>p.stock),valor=sum(P,p=>p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock>0&&p.stock<=mini(p)),sano=P.filter(p=>p.stock>mini(p));
+ const unidades=sum(P,p=>p.stock),valor=sum(P,p=>p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock<=0),sano=P.filter(p=>p.stock>mini(p));
  const cats={};P.forEach(p=>{const c=cats[p.cat]=cats[p.cat]||{n:0,u:0,v:0,costo:0};c.n++;c.u+=p.stock;c.v+=p.val;c.costo+=p.precio_costo*p.stock});
  const top=[...P].sort((a,b)=>b.val-a.val).slice(0,10),aten=P.filter(p=>p.stock<=crit(p)).sort((a,b)=>a.stock-b.stock||a.nombre.localeCompare(b.nombre));
  const costo=sum(P,p=>p.precio_costo*p.stock);
@@ -29,8 +30,8 @@ function datos(){
 function pintar(){
  const d=datos();
  $("rKpi").innerHTML=`<div><span>Productos</span><b>${NP}</b></div><div><span>Unidades en stock</span><b>${d.unidades}</b></div><div><span>Valor del inventario</span><b>${$$(d.valor)}</b></div><div><span>Valor promedio por unidad</span><b>${$$(d.prom)}</b></div>${ADM?`<div><span>Utilidad potencial</span><b>${$$(d.valor-d.costo)}</b><small>a precio de venta vs costo</small></div>`:`<div><span>Categorías</span><b>${d.ncat}</b></div>`}`;
- $("rSalud").innerHTML=`<div><span>Stock saludable (sobre su mínimo)</span><b class="pos">${d.sano.length}</b></div><div><span>Stock bajo (hasta su mínimo)</span><b style="color:var(--warn)">${d.bajo.length}</b></div><div><span>Agotados</span><b class="neg">${d.agot.length}</b></div>`;
- $("rAlert").innerHTML=(d.agot.length?`<div class="alert bad" data-al="agot" style="cursor:pointer"><div><b>${d.agot.length} producto(s) agotado(s)</b>Repón pronto para no perder ventas. <u>Toca para ver cuáles son.</u></div></div>`:"")+(d.bajo.length?`<div class="alert warn" data-al="bajo" style="cursor:pointer"><div><b>${d.bajo.length} producto(s) con stock bajo</b>Considera reabastecer. <u>Toca para ver cuáles son.</u></div></div>`:"")+(!P.length?`<div class="alert"><div><b>Inventario vacío</b>Aún no hay productos registrados.</div></div>`:"");
+ $("rSalud").innerHTML=`<div><span>Con existencias</span><b class="pos">${d.sano.length}</b></div><div><span>Agotados</span><b class="neg">${d.agot.length}</b></div>`;
+ $("rAlert").innerHTML=(d.agot.length?`<div class="alert bad" data-al="agot" style="cursor:pointer"><div><b>${d.agot.length} producto(s) agotado(s)</b>Repón pronto para no perder ventas. <u>Toca para ver cuáles son.</u></div></div>`:"")+(false?`<div class="alert warn" data-al="bajo" style="cursor:pointer"><div><b>${d.bajo.length} producto(s) con stock bajo</b>Considera reabastecer. <u>Toca para ver cuáles son.</u></div></div>`:"")+(!P.length?`<div class="alert"><div><b>Inventario vacío</b>Aún no hay productos registrados.</div></div>`:"");
  const cs=Object.entries(d.cats).sort((a,b)=>b[1].v-a[1].v);
  $("cTab").innerHTML=cs.map(([n,c])=>{const pc=d.valor?c.v/d.valor*100:0,avg=c.n?c.u/c.n:0;
   return `<tr><td><b>${esc(n)}</b></td><td class="r">${c.n}</td><td class="r">${c.u}</td><td class="r">${$$(c.v)}</td><td class="r">${avg.toFixed(1)}</td><td style="min-width:110px"><div class="bar"><i style="width:${pc.toFixed(1)}%"></i></div><small>${pc.toFixed(1)}%</small></td><td>${c.u===0?'<span class="bd or">Agotado</span>':avg<=2?'<span class="bd wa">Bajo</span>':'<span class="bd ok">OK</span>'}</td></tr>`}).join("")||`<tr><td colspan="7" class="empty">Sin datos</td></tr>`;
@@ -49,7 +50,7 @@ async function reportePdf(){
  await espera(async()=>{await pdfLibs();const {jsPDF}=window.jspdf,pdf=new jsPDF("p","mm","a4"),W=210,m=14,d=datos();
   pdf.setFillColor(...WINE);pdf.rect(0,0,W,26,"F");pdf.setTextColor(255);pdf.setFont(undefined,"bold");pdf.setFontSize(18);pdf.text("DAYMAR-SHOP",m,13);pdf.setFontSize(10);pdf.setFont(undefined,"normal");pdf.text("Reporte de inventario",m,20);
   pdf.text(new Date().toLocaleDateString("es-SV",{day:"numeric",month:"long",year:"numeric"}),W-m,13,{align:"right"});
-  const k=[["Productos",NP],["Unidades",d.unidades],["Valor del inventario",$$(d.valor)],["Agotados",d.agot.length],["Stock bajo",d.bajo.length]];
+  const k=[["Productos",NP],["Unidades",d.unidades],["Valor del inventario",$$(d.valor)],["Stock bajo (en 0)",d.agot.length]];
   const bw=(W-2*m-4*3)/5;k.forEach((x,i)=>{const bx=m+i*(bw+3);pdf.setFillColor(247,242,243);pdf.roundedRect(bx,32,bw,17,2,2,"F");pdf.setTextColor(...MUTE);pdf.setFontSize(7.5);pdf.text(String(x[0]),bx+3,38);pdf.setTextColor(...WINE);pdf.setFont(undefined,"bold");pdf.setFontSize(11);pdf.text(String(x[1]),bx+3,45);pdf.setFont(undefined,"normal")});
   let y=56;const T=(t,head,body,opt)=>{pdf.setTextColor(...WINE);pdf.setFont(undefined,"bold");pdf.setFontSize(12);pdf.text(t,m,y);pdf.setFont(undefined,"normal");
    pdf.autoTable(Object.assign({startY:y+3,head:[head],body,margin:{left:m,right:m},theme:"striped",styles:{fontSize:8.5,cellPadding:1.8,textColor:INK},headStyles:{fillColor:WINE,textColor:255},alternateRowStyles:{fillColor:[247,242,243]}},opt||{}));y=pdf.lastAutoTable.finalY+9};
@@ -126,7 +127,7 @@ function listaProd(){
  $("pC").innerHTML='<option value="">Todas</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("pC").value=cats.includes(cur)?cur:"";
  const q=norm($("pQ").value),c=$("pC").value,o=$("pO").value,topIds=new Set(d.top.map(x=>x.id)),atenIds=new Set(d.aten.map(x=>x.id));
  let L=G.filter(g=>(!c||g.p.cat===c)&&(!q||norm([g.nombre,g.p.codigo,g.p.codigo_barras,...g.cols.map(x=>x.c+" "+(x.cb||""))].join(" ")).includes(q))&&
-  (!pF||(pF==="top"?topIds.has(g.id):pF==="aten"?atenIds.has(g.id):pF==="agot"?g.stock===0:pF==="bajo"?(g.stock>0&&g.stock<=g.minimo):!g.p.foto_url)));
+  (!pF||(pF==="top"?topIds.has(g.id):pF==="aten"?atenIds.has(g.id):pF==="agot"?g.stock===0:pF==="bajo"?(g.stock<=0):!g.p.foto_url)));
  const ord={nombre:(a,b)=>a.nombre.localeCompare(b.nombre),stock:(a,b)=>a.stock-b.stock||a.nombre.localeCompare(b.nombre),stockmax:(a,b)=>b.stock-a.stock,valor:(a,b)=>b.val-a.val,precio:(a,b)=>b.p.fin-a.p.fin};
  L.sort(pF==="top"&&o==="nombre"?ord.valor:ord[o]);
  $("pSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.f===pF));
@@ -146,7 +147,7 @@ async function ficha(id){
  const m=modal(esc(g.nombre),`<div class="kgal">${im.length?`<img class="main" id="fM" src="${esc(im[0].url)}" alt="" style="width:100%;height:30vh;height:30dvh;max-height:300px;object-fit:contain;border-radius:10px;background:var(--bg)">${im.length>1?`<div class="th" style="display:flex;gap:6px;flex-wrap:wrap">${im.map(i=>`<img src="${esc(i.thumb_url||i.url)}" data-u="${esc(i.url)}" style="width:46px;height:46px;object-fit:cover;border-radius:8px;cursor:pointer" alt="">`).join("")}</div>`:""}`:""}</div>
   <div class="fkg">${f("Categoría",esc(p.cat))}${ADM?f("Código",esc(p.codigo||"—"))+(g.cols.length?"":f("Código de barras",esc(p.codigo_barras||"—"))):""}
   ${f("Precio de venta",$$(p.fin)+(+p.descuento_pct?` <small>(−${+p.descuento_pct}%)</small>`:""))}${ADM?f("Costo",$$(p.precio_costo)):""}
-  ${f("Stock total",g.stock+" <small>(mínimo "+g.minimo+")</small>")}${ADM?f("Valor en stock",$$(g.val)):""}${ADM&&vend!==null?f("Unidades vendidas (histórico)",vend):""}</div>
+  ${f("Stock total",g.stock)}${ADM?f("Valor en stock",$$(g.val)):""}${ADM&&vend!==null?f("Unidades vendidas (histórico)",vend):""}</div>
   ${g.cols.length?`<h3 class="sect">Colores</h3>${g.cols.map(x=>`<div class="rw"><div class="ti"><b>${DAY.colorDot(x.c)}${esc(x.c)}</b>${ADM&&x.cb?`<small>Barras: ${esc(x.cb)}</small>`:""}</div><div class="am2"><b>${x.s}</b></div></div>`).join("")}`:""}
   ${p.descripcion?`<p class="hint">${esc(p.descripcion)}</p>`:""}`,{big:true,foot:'<button class="btn g" data-x>Cerrar</button>'});
  m.el.addEventListener("click",e=>{const t=e.target.closest("[data-u]");if(t&&m.q("#fM"))m.q("#fM").src=t.dataset.u})}

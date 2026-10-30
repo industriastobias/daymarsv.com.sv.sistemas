@@ -6,7 +6,7 @@ const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 $("app").classList.remove("hidden");mountSide($("side"),"compra",me.rol);
 
-const LIMITE=5,DIAS=30,BUCKET="productos",hoy=ymd(new Date());
+const LIMITE=0,DIAS=30,BUCKET="productos",hoy=ymd(new Date());
 const CATS_BASE=["Accesorios para el cabello","Anillos","Aritos","Billeteras","Carteras","Case audifonos","Case telefonos","Chokers","Collares","General","Lentes de sol","Otros","Pulseras","Relojes"];
 let inv=[],trash=[],cats=[],edit=null,esLote=false,loteTemp=[],imgsTemp=[],regenMode="mixed",zero=[],prevUrls=[],loteUrls=[];
 
