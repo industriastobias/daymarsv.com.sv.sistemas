@@ -217,17 +217,33 @@ function optHTML(){return `
   <div><label data-clab>Comisión (%)</label><input name="cval" type="number" min="0" step="0.01" placeholder="0"></div></div></div>
  <div class="cfg hidden" data-cfg="entrega_pendiente"><div class="fg"><div><label>Envío</label>${INP("envio2")}</div><div><label>Comisión (%)</label><input name="cval2" type="number" min="0" max="100" step="0.01" placeholder="0"></div></div></div>
  <div class="cfg hidden" data-cfg="cobro_pendiente"><div class="fg"><div class="full"><label>Monto abonado</label>${INP("abono")}</div></div></div>
- <div class="cli0"><label data-clil>Cliente (opcional)</label><input name="cli" maxlength="80" list="dlCli" autocomplete="off" placeholder="Para guardar la compra en su ficha"></div>
+ <div class="cli0" data-cli><button type="button" class="btn g sm" data-addcli>+ Agregar cliente</button><span data-clichip></span></div>
  <div class="calc" data-calc></div><div class="err2" data-err role="alert"></div>`}
+
+/* elegir o crear cliente desde la venta */
+function elegirCliente(){return new Promise(async res=>{
+ let L=[];try{const {data}=await DAY.db.from("clientes").select("id,nombre,telefono,codigo").order("nombre").limit(1000);L=data||[]}catch(e){}
+ let hecho=false;const fin=v=>{if(hecho)return;hecho=true;res(v)};
+ const m=modal("Cliente",`<input id="ecQ" type="search" placeholder="Buscar cliente…" autocomplete="off"><div class="ecl" id="ecL"></div>
+  <details class="ecn"><summary>+ Nuevo cliente</summary><div class="fg"><div class="full"><label>Nombre *</label><input id="enN" maxlength="100" autocomplete="off"></div><div><label>Teléfono</label><input id="enT" type="tel" maxlength="30" inputmode="tel"></div><div><label>Correo</label><input id="enC" type="email" maxlength="100"></div></div><div class="err2" id="enE" role="alert"></div><button class="btn" id="enOk" type="button" style="margin-top:8px">Guardar cliente</button></details>`,{onclose:()=>fin(null)});
+ const pint=()=>{const t=norm(m.q("#ecQ").value);const R=L.filter(c=>!t||norm(c.nombre+" "+(c.telefono||"")+" "+(c.codigo||"")).includes(t)).slice(0,30);
+  m.q("#ecL").innerHTML=R.length?R.map(c=>`<button type="button" class="eco" data-i="${c.id}"><b>${esc(c.nombre)}</b><small>${esc([c.codigo,c.telefono].filter(Boolean).join(" · "))}</small></button>`).join(""):'<p class="hint">Sin resultados. Crea uno nuevo abajo.</p>'};
+ pint();m.q("#ecQ").addEventListener("input",pint);
+ m.el.addEventListener("click",e=>{const b=e.target.closest("[data-i]");if(b){const c=L.find(x=>x.id===b.dataset.i);if(c){fin({id:c.id,nombre:c.nombre});m.close()}}});
+ m.q("#enOk").onclick=async()=>{const n=m.q("#enN").value.trim();if(!n){m.q("#enE").textContent="Escribe el nombre del cliente.";return}
+  const dup=L.find(x=>norm(x.nombre)===norm(n));if(dup){m.q("#enE").textContent="Ya existe «"+dup.nombre+"». Elígelo de la lista.";return}
+  const {data,error}=await DAY.db.from("clientes").insert({nombre:n,telefono:m.q("#enT").value.trim()||null,correo:m.q("#enC").value.trim()||null}).select("id,nombre").single();
+  if(error){m.q("#enE").textContent=error.message;return}
+  toast("Cliente guardado");fin({id:data.id,nombre:data.nombre});m.close()}})}
 function optForm(root,getSub,onChange){
- const st={ty:"inmediata",pm:"Efectivo",who:"client"},q=s=>root.querySelector(s);
+ const st={ty:"inmediata",pm:"Efectivo",who:"client",cli:null},q=s=>root.querySelector(s);
  const val=n=>{const v=q(`[name=${n}]`).value.trim(),x=v===""?0:Number(v);if(!isFinite(x)||x<0)throw new Error("Revisa los importes: deben ser números válidos y no negativos.");return x};
  function read(){
-  const o={tipo:st.ty,metodo:st.pm,envio:0,comision_tipo:"percentage",comision_valor:0,quien_paga:"client",seguro:0,cliente:"",abonado:0};
+  const o={tipo:st.ty,metodo:st.pm,envio:0,comision_tipo:"percentage",comision_valor:0,quien_paga:"client",seguro:0,cliente:"",cliente_id:null,abonado:0};
   if(st.ty==="cod"){o.envio=val("envio");o.seguro=val("seguro");o.comision_tipo=q("[name=ctipo]").value;o.comision_valor=val("cval");o.quien_paga=st.who}
   else if(st.ty==="entrega_pendiente"){o.envio=val("envio2");o.comision_valor=val("cval2")}
   else if(st.ty==="cobro_pendiente"){o.abonado=val("abono")}
-  o.cliente=q("[name=cli]").value.trim();
+  if(st.cli){o.cliente=st.cli.nombre;o.cliente_id=st.cli.id}
   if(o.comision_tipo==="percentage"&&o.comision_valor>100)throw new Error("La comisión porcentual no puede superar el 100%.");
   return o}
  const tot=(subC,o)=>{const env=cents(o.envio),seg=cents(o.seguro);let com=0;
@@ -236,7 +252,7 @@ function optForm(root,getSub,onChange){
   return {env,seg,com,total,paid:cents(o.abonado),pend:Math.max(0,subC-cents(o.abonado))}};
  function check(){const o=read(),s=getSub(),t=tot(s,o);
   if(t.total<0)throw new Error("La comisión no puede producir un total negativo.");
-  if(o.tipo==="cobro_pendiente"){if(!o.cliente)throw new Error("Debes ingresar el nombre del cliente.");if(t.paid>=s)throw new Error("El abono debe ser mayor o igual a cero y menor que el total.")}
+  if(o.tipo==="cobro_pendiente"){if(!o.cliente)throw new Error("Agrega el cliente que debe el saldo.");if(t.paid>=s)throw new Error("El abono debe ser mayor o igual a cero y menor que el total.")}
   return {o,t}}
  function calc(){const box=q("[data-calc]"),er=q("[data-err]");
   try{const o=read(),s=getSub(),t=tot(s,o),m=c=>$$(c/100),rows=[["Subtotal",m(s)]];
@@ -249,7 +265,7 @@ function optForm(root,getSub,onChange){
    q("[data-clab]").textContent=o.comision_tipo==="fixed"?"Comisión ($)":"Comisión (%)";
    onChange&&onChange(t,o,true);return {o,t}}
   catch(e){er.textContent=e.message;box.innerHTML="";onChange&&onChange(null,null,false);return null}}
- const cfgVis=()=>{const L=q("[data-clil]");if(L)L.textContent=st.ty==="cobro_pendiente"?"Nombre del cliente *":"Cliente (opcional)";root.querySelectorAll("[data-cfg]").forEach(c=>c.classList.toggle("hidden",c.dataset.cfg==="cash"?!(st.ty==="inmediata"&&st.pm==="Efectivo"):c.dataset.cfg!==st.ty))};
+ const cfgVis=()=>{const B=q("[data-addcli]");if(B&&!st.cli)B.textContent=st.ty==="cobro_pendiente"?"+ Agregar cliente (obligatorio)":"+ Agregar cliente";root.querySelectorAll("[data-cfg]").forEach(c=>c.classList.toggle("hidden",c.dataset.cfg==="cash"?!(st.ty==="inmediata"&&st.pm==="Efectivo"):c.dataset.cfg!==st.ty))};
  root.addEventListener("click",e=>{
   const qc=e.target.closest("[data-qc]");
   if(qc){const inp=q("[name=recibe]");if(qc.dataset.qc==="x"){const r=calc();if(r)inp.value=(r.t.total/100).toFixed(2)}else inp.value=qc.dataset.qc;calc();return}
@@ -258,6 +274,9 @@ function optForm(root,getSub,onChange){
    cfgVis();calc()}
   if(pm){st.pm=pm.dataset.pm;root.querySelectorAll("[data-pm]").forEach(b=>b.classList.toggle("on",b===pm));cfgVis();calc()}
   if(wh){st.who=wh.dataset.who;wh.parentNode.querySelectorAll("[data-who]").forEach(b=>b.classList.toggle("on",b===wh));calc()}});
+ const chip=()=>{const c=q("[data-clichip]"),B=q("[data-addcli]");if(!c)return;B.classList.toggle("hidden",!!st.cli);c.innerHTML=st.cli?`<span class="cchip">👤 ${esc(st.cli.nombre)}<button type="button" data-delcli aria-label="Quitar cliente">×</button></span>`:"";cfgVis()};
+ root.addEventListener("click",async e=>{if(e.target.closest("[data-delcli]")){st.cli=null;chip();calc();return}
+  if(e.target.closest("[data-addcli]")){const c=await elegirCliente();if(c){st.cli=c;chip();calc()}}});
  root.addEventListener("input",calc);root.addEventListener("change",calc);
  cfgVis();calc();return {read,check,calc,st}}
 const MSG=(o,t,extra)=>o.tipo==="cod"?"Pedido contra entrega guardado. Total a cobrar: "+$$(t.total/100):

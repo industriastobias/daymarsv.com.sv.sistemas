@@ -1,4 +1,7 @@
 -- Guarda el cliente (opcional) en cualquier tipo de venta, para verlo en su ficha.
+alter table ventas add column if not exists cliente_id uuid references clientes(id) on delete set null;
+create index if not exists ventas_cliente_idx on ventas (cliente_id);
+
 create or replace function registrar_pedido(p_items jsonb, p_opts jsonb default '{}'::jsonb)
 returns uuid language plpgsql security definer set search_path = public as $$
 declare
@@ -10,6 +13,7 @@ declare
   v_quien text := coalesce(p_opts->>'quien_paga','client');
   v_seguro numeric := coalesce(nullif(p_opts->>'seguro','')::numeric,0);
   v_cliente text := nullif(trim(coalesce(p_opts->>'cliente','')),'');
+  v_cid uuid := nullif(p_opts->>'cliente_id','')::uuid;
   v_abono numeric := coalesce(nullif(p_opts->>'abonado','')::numeric,0);
   v_id uuid; it jsonb; pr record; q integer; v_precio numeric; v_base numeric;
   v_sub numeric := 0; v_cost numeric := 0; t record; v_pend boolean; v_var uuid; vr producto_variantes%rowtype; v_nom text; v_cb text;
@@ -26,6 +30,7 @@ begin
   if v_tipo <> 'cod' then v_seguro := 0; v_quien := 'client'; end if;
   if v_tipo = 'entrega_pendiente' then v_ctipo := 'percentage'; end if;
   if v_tipo <> 'cobro_pendiente' then v_abono := 0; end if;
+  if v_cid is not null then select nombre into v_cliente from clientes where id = v_cid; if not found then v_cid := null; end if; end if;
   v_pend := v_tipo <> 'inmediata';
 
   insert into ventas (usuario_id, metodo_pago, tipo, estado, completada_en)
@@ -83,7 +88,7 @@ begin
 
   update ventas set subtotal = v_sub, costo_total = v_cost, total = t.total,
          envio = v_envio, comision_tipo = v_ctipo, comision_valor = v_cval, comision_monto = t.comision,
-         quien_paga = v_quien, seguro = v_seguro, cliente_nombre = v_cliente,
+         quien_paga = v_quien, seguro = v_seguro, cliente_nombre = v_cliente, cliente_id = v_cid,
          abonado = v_abono, pendiente_monto = case when v_tipo='cobro_pendiente' then v_sub - v_abono else 0 end,
          ganancia_neta = t.neta
    where id = v_id;
