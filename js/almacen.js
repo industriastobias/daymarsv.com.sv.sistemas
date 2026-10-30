@@ -287,6 +287,31 @@ const MSG=(o,t,extra)=>o.tipo==="cod"?"Pedido contra entrega guardado. Total a c
  o.tipo==="cobro_pendiente"?`Venta pendiente de cobro registrada. Cliente: ${o.cliente}. Abonado: ${$$(t.paid/100)}. Debe: ${$$(t.pend/100)}`:
  `Venta registrada (${o.metodo})`+(extra||"");
 /* ---------- ticket de venta ---------- */
+/* Ticket en PDF dibujado con texto (rápido y nítido; no usa capturas de pantalla, por eso funciona bien en iPhone) */
+async function ticketPdfBlob(v,cf){
+ await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
+ const {jsPDF}=window.jspdf,d=ticketData(v,cf),W=80,M=4,AN=W-2*M,FS=9,LH=4.1;
+ const lim=s=>String(s==null?"":s).replace(/[^\u0020-\u00FF\u20AC]/g,"");
+ const mk=h=>new jsPDF({unit:"mm",format:[W,h],orientation:h>=W?"p":"l"}),tmp=mk(300);tmp.setFont("courier","normal");tmp.setFontSize(FS);
+ const cw=s=>tmp.getTextWidth(s),partir=(s,w)=>tmp.splitTextToSize(lim(s),w);
+ const ops=[];let y=M+3;
+ const centro=(s,sz,bold)=>{tmp.setFont("courier",bold?"bold":"normal");tmp.setFontSize(sz||FS);partir(s,AN).forEach(l=>{ops.push({t:"c",s:l,y,sz:sz||FS,b:bold});y+=(sz||FS)*0.46});tmp.setFont("courier","normal");tmp.setFontSize(FS)};
+ const raya=()=>{y+=0.5;ops.push({t:"r",y});y+=4.6};
+ centro(d.neg,12,true);if(d.tel)centro(d.tel);centro("Ticket de venta #"+v.numero);centro(d.fh);raya();
+ d.L.forEach(i=>{const pr=$$(i.q*i.p),izq=lim(i.q+"\u00D7 "+i.n),ls=partir(izq,AN-cw(pr)-2);
+  ls.forEach((l,k)=>{ops.push({t:"l",s:l,y});if(k===0)ops.push({t:"d",s:pr,y});y+=LH});
+  if(i.q>1){ops.push({t:"l",s:"  "+$$(i.p)+" c/u",y,sz:7.5,g:true});y+=3.4}});
+ raya();ops.push({t:"l",s:"TOTAL",y,sz:11,b:true});ops.push({t:"d",s:$$(v.total),y,sz:11,b:true});y+=5.4;
+ const L2=[("Pago: "+(v.metodo_pago||"")+(d.tipo?" \u00B7 "+d.tipo:"")),v.cliente_nombre?"Cliente: "+v.cliente_nombre:"",v.profiles?"Atendi\u00F3: "+v.profiles.nombre:""].filter(Boolean);
+ L2.forEach(s=>partir(s,AN).forEach(l=>{ops.push({t:"l",s:l,y});y+=LH}));
+ y+=2;centro(d.pie);y+=M;
+ const p=mk(Math.max(40,Math.ceil(y)));p.setFont("courier","normal");
+ ops.forEach(o=>{p.setFont("courier",o.b?"bold":"normal");p.setFontSize(o.sz||FS);p.setTextColor(o.g?100:20);
+  if(o.t==="c")p.text(o.s,W/2,o.y,{align:"center"});
+  else if(o.t==="l")p.text(o.s,M,o.y);
+  else if(o.t==="d")p.text(o.s,W-M,o.y,{align:"right"});
+  else if(o.t==="r"){p.setDrawColor(150);p.setLineDashPattern([1,1],0);p.line(M,o.y,W-M,o.y);p.setLineDashPattern([],0)}});
+ return p.output("blob")}
 const TK_SEL="*,profiles(nombre),venta_items(cantidad,precio_unit,nombre,productos(nombre))";
 function ticketData(v,cf){const L=(v.venta_items||[]).map(i=>({q:i.cantidad,n:itName(i),p:+i.precio_unit}));
  const f=new Date(v.created_at),fh=f.toLocaleDateString("es-SV")+" "+f.toLocaleTimeString("es-SV",{hour:"2-digit",minute:"2-digit"});
@@ -310,18 +335,12 @@ async function abrirTicket(v,nuevo){
   <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px"><input type="checkbox" id="tkPref" ${LS("dms_ticket")!=="0"?"checked":""} style="width:18px;height:18px"> Mostrar el ticket al terminar cada venta</label>`,
   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button><button class="btn" id="tkW">Enviar PDF por WhatsApp</button>`});
  m.q("#tkPref").onchange=e=>LS("dms_ticket",e.target.checked?"1":"0");
- m.q("#tkP").onclick=()=>descargarPdf(html,"tk","ticket-"+v.numero+".pdf","imprimir");
+ m.q("#tkP").onclick=()=>espera(async()=>{await entregarPdf(await ticketPdfBlob(v,cf),"ticket-"+v.numero+".pdf","imprimir")},"Generando PDF…");
  m.q("#tkW").onclick=async()=>{
   let cli=null;try{const {data}=await db.from("clientes").select("nombre,telefono");const n=norm(v.cliente_nombre||"").trim();cli=n?(data||[]).find(x=>norm(x.nombre).trim()===n):null}catch(e){}
   const t=await DAY.input("Número de WhatsApp del cliente (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");if(t===null)return;
   const dig=t.replace(/\D/g,""),tel=dig.length===8?"503"+dig:dig;if(tel.length<10||tel.length>15){await DAY.say("Ese número no es válido.");return}
-  const f=await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-   const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;width:320px;background:#fff";host.innerHTML=html;document.body.appendChild(host);
-   const el=host.querySelector(".tkt")||host.firstElementChild;el.style.maxWidth="none";el.style.width="300px";el.style.margin="0";
-   let c;try{await new Promise(r=>setTimeout(r,100));c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:3,logging:false,windowWidth:800,width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
-   const W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H],orientation:H>=W?"p":"l"});
-   p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,W,c.height*W/c.width);
-   return new File([p.output("blob")],"ticket-"+v.numero+".pdf",{type:"application/pdf"})},"Preparando PDF…");
+  const f=await espera(async()=>new File([await ticketPdfBlob(v,cf)],"ticket-"+v.numero+".pdf",{type:"application/pdf"}),"Preparando PDF…");
   if(!f)return;
   if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Ticket #"+v.numero,text:"Ticket de tu compra en "+(cf.nombre||"DAYMAR-SHOP")});return}catch(e){if(e&&e.name==="AbortError")return}}
   const a=document.createElement("a");a.download=f.name;a.href=URL.createObjectURL(f);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
@@ -1148,4 +1167,6 @@ await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()])},"Car
 try{const c=JSON.parse(sessionStorage.getItem("dms_cart")||"[]"),ok=c.filter(([id,q])=>S.byId.has(id)&&q>0&&q<=S.byId.get(id).stock);if(ok.length){S.sel=new Map(ok);S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");toast("Recuperé tu venta múltiple en curso")}}catch(e){}
 {const h0=(location.hash||"").slice(1);if(!SOLO&&h0==="pend")location.replace("pendientes.html");else tab(SOLO?"pend":["hoy","ven","fac"].includes(h0)?h0:"inv")}filtrar();
 addEventListener("hashchange",()=>{const h=(location.hash||"").slice(1);if(!SOLO&&h==="pend"){location.replace("pendientes.html");return}if(!SOLO&&["inv","hoy","ven","fac"].includes(h))tab(h)});
+/* precarga las librerías de PDF en segundo plano para que el primer ticket no tarde */
+setTimeout(()=>{lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js").catch(()=>{});setTimeout(()=>lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js").catch(()=>{}),1500)},2500);
 })();
