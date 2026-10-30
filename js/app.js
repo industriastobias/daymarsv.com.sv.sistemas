@@ -248,10 +248,12 @@ function selectBonito(sel){
  const pd=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");
  Object.defineProperty(sel,"value",{get(){return pd.get.call(sel)},set(v){pd.set.call(sel,v);lab()}});
  sel.addEventListener("change",lab);new MutationObserver(lab).observe(sel,{childList:true,subtree:true,characterData:true});
- const lbl=sel.id&&document.querySelector(`label[for="${sel.id}"]`);if(lbl)lbl.addEventListener("click",e=>{e.preventDefault();b.click()});
+ const lbl=(sel.id&&document.querySelector(`label[for="${sel.id}"]`))||(sel.previousElementSibling&&sel.previousElementSibling.tagName==="LABEL"?sel.previousElementSibling:null)||(sel.parentElement&&sel.parentElement.firstElementChild&&sel.parentElement.firstElementChild.tagName==="LABEL"?sel.parentElement.firstElementChild:null);
+ if(lbl&&sel.id)lbl.addEventListener("click",e=>{e.preventDefault();b.click()});
+ const st=sel.style;if(st.width&&st.width!=="100%")b.style.width=st.width;if(st.flex)b.style.flex=st.flex;if(st.minWidth)b.style.minWidth=st.minWidth;if(st.marginTop)b.style.marginTop=st.marginTop;if(st.maxWidth)b.style.maxWidth=st.maxWidth;
  b.onclick=()=>{
   const O=[...sel.options],d=document.createElement("dialog");d.className="sbd";
-  d.innerHTML=`<div class="sbh">${esc(lbl?lbl.textContent.replace(/\(opcional\)/i,"").trim():"Elegir")}<button type="button" data-x aria-label="Cerrar">×</button></div>${O.length>9?'<input type="search" class="sbq" placeholder="Buscar…" autocomplete="off">':""}<div class="sbl">${O.map((o,i)=>`<button type="button" class="sbo${i===sel.selectedIndex?" on":""}" data-i="${i}"${o.disabled?" disabled":""}><span>${esc(o.textContent)}</span><i></i></button>`).join("")}</div>`;
+  d.innerHTML=`<div class="sbh">${esc(lbl?lbl.textContent.replace(/\(opcional\)/i,"").trim():(sel.getAttribute("aria-label")||"Elegir"))}<button type="button" data-x aria-label="Cerrar">×</button></div>${O.length>9?'<input type="search" class="sbq" placeholder="Buscar…" autocomplete="off">':""}<div class="sbl">${O.map((o,i)=>`<button type="button" class="sbo${i===sel.selectedIndex?" on":""}" data-i="${i}"${o.disabled?" disabled":""}><span>${esc(o.textContent)}</span><i></i></button>`).join("")}</div>`;
   document.body.appendChild(d);const cerrar=()=>{try{d.close()}catch(e){}d.remove()};
   d.addEventListener("click",e=>{if(e.target===d||e.target.closest("[data-x]")){cerrar();return}
    const o=e.target.closest("[data-i]");if(o){sel.selectedIndex=+o.dataset.i;lab();sel.dispatchEvent(new Event("change",{bubbles:true}));cerrar()}});
@@ -259,6 +261,9 @@ function selectBonito(sel){
   const q=d.querySelector(".sbq");if(q)q.addEventListener("input",()=>{const t=q.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");d.querySelectorAll(".sbo").forEach(x=>{x.style.display=x.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(t)?"":"none"})});
   d.showModal();const on=d.querySelector(".sbo.on");if(on)on.scrollIntoView({block:"center"})};
  lab()}
+function autoSelects(r){(r||document).querySelectorAll("select:not([multiple]):not([data-sb]):not([data-nosb])").forEach(x=>{if(!(x.size>1)&&!x.closest(".sbd"))selectBonito(x)})}
+const iniSB=()=>{autoSelects();new MutationObserver(m=>{if(m.some(r=>r.addedNodes.length))autoSelects()}).observe(document.body,{childList:true,subtree:true})};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniSB);else iniSB();
 window.DAY={selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
