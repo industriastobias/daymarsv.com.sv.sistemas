@@ -483,6 +483,30 @@ async function accionPend(a,id){
   const ok=await espera(async()=>{await rpc("anular_venta",{p_venta:id});return true});
   if(ok){toast("Pedido eliminado y stock devuelto");snd("ok");await Promise.all([cargarPend(),cargarProductos()]);pintarPend();filtrar(true)}}}
 
+/* Imagen del recordatorio dibujada directamente (sin html2canvas): funciona igual en iPhone, Android y computadora */
+async function recordatorioPNG(v,fecha){
+ const L=v.venta_items||[],W=640,K=2,P=22,fam='"DM Sans",Arial,sans-serif';
+ const cargar=u=>new Promise(ok=>{if(!u)return ok(null);const im=new Image();im.crossOrigin="anonymous";const t=setTimeout(()=>ok(null),4000);im.onload=()=>{clearTimeout(t);ok(im)};im.onerror=()=>{clearTimeout(t);ok(null)};im.src=u});
+ const imgs=await Promise.all(L.map(i=>cargar(itImg(i))));
+ const H=P*2+34+L.length*84+18+176+34,c=document.createElement("canvas");c.width=W*K;c.height=H*K;const x=c.getContext("2d");x.scale(K,K);
+ x.fillStyle="#fff";x.fillRect(0,0,W,H);
+ const rr=(a,b,w,h,r,f)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();x.fillStyle=f;x.fill()};
+ const cut=(t,mw)=>{t=String(t);if(x.measureText(t).width<=mw)return t;while(t.length>1&&x.measureText(t+"…").width>mw)t=t.slice(0,-1);return t+"…"};
+ let y=P;x.textBaseline="alphabetic";
+ x.fillStyle="#6B2D3E";x.font="700 20px "+fam;x.fillText("Recordatorio de pago pendiente",P,y+20);y+=34;
+ L.forEach((i,k)=>{const top=y;rr(P,top,W-P*2,72,12,"#f6f1f2");
+  const im=imgs[k];if(im){x.save();x.beginPath();x.rect(P+8,top+8,56,56);x.clip();const r=Math.max(56/im.width,56/im.height);x.drawImage(im,P+8+(56-im.width*r)/2,top+8+(56-im.height*r)/2,im.width*r,im.height*r);x.restore()}
+  else{rr(P+8,top+8,56,56,10,"#8a3a4f");x.fillStyle="#fff";x.font="700 24px "+fam;x.textAlign="center";x.fillText(String(itName(i)).trim().charAt(0).toUpperCase(),P+36,top+46);x.textAlign="left"}
+  const tx=P+76,mw=W-P*2-76-120;
+  x.fillStyle="#222";x.font="700 15px "+fam;x.fillText(cut(itName(i),mw),tx,top+30);
+  x.fillStyle="#777";x.font="400 12px "+fam;x.fillText(cut(itCode(i),mw),tx,top+50);
+  x.textAlign="right";x.fillStyle="#222";x.font="700 15px "+fam;x.fillText($$(i.cantidad*i.precio_unit),W-P-12,top+30);
+  x.fillStyle="#777";x.font="400 12px "+fam;x.fillText(i.cantidad+" × "+$$(i.precio_unit),W-P-12,top+50);x.textAlign="left";y+=84});
+ y+=6;const bw=(W-P*2-12)/2,bh=78,caja=(a,b,t,val,col,bg)=>{rr(a,b,bw,bh,12,bg);x.fillStyle="#777";x.font="400 12px "+fam;x.fillText(t,a+14,b+24);x.fillStyle=col;x.font="700 20px "+fam;x.fillText(cut(val,bw-28),a+14,b+55)};
+ caja(P,y,"Cliente",v.cliente_nombre||"","#222","#f6f1f2");caja(P+bw+12,y,"Precio original",$$(v.subtotal),"#222","#f6f1f2");
+ caja(P,y+bh+10,"Abonado",$$(v.abonado),"#1f8a4c","#eef7f1");caja(P+bw+12,y+bh+10,"Saldo pendiente",$$(v.pendiente_monto),"#c05621","#fff2e8");
+ y+=bh*2+10+26;x.fillStyle="#666";x.font="400 12px "+fam;x.fillText("Pendiente desde: "+fecha,P,y);
+ return new Promise(ok=>c.toBlob(ok,"image/png"))}
 /* Recordatorio de cobro pendiente: copiar texto o imagen */
 function recordatorio(v){
  const fecha=new Date(v.created_at).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"});
@@ -494,9 +518,7 @@ function recordatorio(v){
  m.q("#rmT").onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast("Datos del recordatorio copiados")}catch(e){const a=document.createElement("textarea");a.value=txt;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(e2){}a.remove();toast(ok?"Datos del recordatorio copiados":"No se pudo copiar")}};
  m.q("#rmI").onclick=async()=>{
   /* la imagen se prepara mientras se pide copiar: Safari (iPhone) solo deja copiar si la copia se pide al tocar el botón */
-  const gen=(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");
-   const c=await DAY.h2c(m.q("#rmC"),{backgroundColor:"#ffffff",scale:Math.min(3,Math.max(2,devicePixelRatio||1)),useCORS:true,imageTimeout:6000,logging:false});
-   const b=await new Promise(r=>c.toBlob(r,"image/png"));if(!b)throw new Error("No se pudo generar la imagen");return b})();
+  const gen=(async()=>{const b=await recordatorioPNG(v,fecha);if(!b)throw new Error("No se pudo generar la imagen");return b})();
   gen.catch(()=>{});
   await espera(async()=>{
    let copiado=false;
