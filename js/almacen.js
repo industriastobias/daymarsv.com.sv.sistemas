@@ -718,7 +718,7 @@ async function excel(){
 /* ---------- navegación entre secciones ---------- */
 const ALLT=[["inv"],["pend"],["hoy"],["ven"],["fac"]];
 const TABS=SOLO?[]:[["inv","Inventario",IC.box],["hoy","Hoy",IC.cal],["ven","Ventas",IC.rec],["fac","Facturas",IC.fac]];
-if(SOLO){["bnav","bScan","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i);if(e)e.classList.add("hidden")});const t=document.querySelector(".head .tot");if(t)t.classList.add("hidden")}
+if(SOLO){["bnav","bScan","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i);if(e)e.classList.add("hidden")});const t=document.querySelector(".head .tot");if(t)t.classList.add("hidden");const mo=document.querySelector(".head .more");if(mo)mo.classList.add("hidden")}
 $("bnav").innerHTML=TABS.map(t=>`<button type="button" data-p="${t[0]}">${ic(t[2])}<span>${t[1]}</span><span class="nb hidden">0</span></button>`).join("");
 $("bScan").innerHTML=ic(IC.scan)+"Escanear";
 async function tab(k){
