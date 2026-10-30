@@ -236,7 +236,8 @@ function elegirCliente(){return new Promise(async res=>{
   const dup=L.find(x=>norm(x.nombre)===norm(n));if(dup){m.q("#enE").textContent="Ya existe «"+dup.nombre+"». Elígelo de la lista.";return}
   const {data,error}=await DAY.db.from("clientes").insert({nombre:n,telefono:m.q("#enT").value.trim()||null,correo:m.q("#enC").value.trim()||null}).select("id,nombre").single();
   if(error){m.q("#enE").textContent=error.message;return}
-  toast("Cliente guardado");fin({id:data.id,nombre:data.nombre});m.close()}})}
+  const nc=Array.isArray(data)?data[0]:data;if(!nc||!nc.id){m.q("#enE").textContent="No se pudo guardar el cliente. Intenta de nuevo.";return}
+  toast("Cliente guardado");fin({id:nc.id,nombre:nc.nombre||n});m.close()}})}
 function optForm(root,getSub,onChange){
  const st={ty:"inmediata",pm:"Efectivo",who:"client",cli:null},q=s=>root.querySelector(s);
  const val=n=>{const v=q(`[name=${n}]`).value.trim(),x=v===""?0:Number(v);if(!isFinite(x)||x<0)throw new Error("Revisa los importes: deben ser números válidos y no negativos.");return x};
