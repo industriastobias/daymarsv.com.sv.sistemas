@@ -193,3 +193,6 @@ body:has(#bMulti.on) #invList tr[data-id],body:has(#bMulti.on) #invList .pc{curs
 .qc button:active{background:var(--wine);color:#fff}
 /* editor de pedido: la cantidad no debe aplastar el nombre */
 #epL .ln{flex-wrap:wrap}#epL .ln .ti{flex:1 1 130px}#epL .stp{flex:0 0 140px}#epL .stp input{width:100%;min-width:0;padding-left:4px;padding-right:4px}#epL .stp button{width:40px;flex:none}
+
+/* evita que se vea el inventario un instante al abrir Hoy, Ventas o Facturas */
+html[data-h] #p-inv{display:none}html[data-h=hoy] #p-hoy,html[data-h=ven] #p-ven,html[data-h=fac] #p-fac{display:block!important}

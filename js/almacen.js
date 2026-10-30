@@ -722,7 +722,7 @@ if(SOLO){["bnav","bScan","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i
 $("bnav").innerHTML=TABS.map(t=>`<button type="button" data-p="${t[0]}">${ic(t[2])}<span>${t[1]}</span><span class="nb hidden">0</span></button>`).join("");
 $("bScan").innerHTML=ic(IC.scan)+"Escanear";
 async function tab(k){
- S.tab=k;document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.p===k));
+ document.documentElement.removeAttribute("data-h");S.tab=k;document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.p===k));
  ALLT.forEach(t=>$("p-"+t[0]).classList.toggle("hidden",t[0]!==k));
  if(k==="pend"){if(!S.pend.length)await cargarPend().catch(e=>toast(e.message));pintarPend()}
  if(k==="hoy")pintarHoy();

@@ -3,9 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMARSV – Pendientes</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202610301309">
-<link rel="stylesheet" href="css/compra.css?v=202610301309">
-<link rel="stylesheet" href="css/almacen.css?v=202610301309"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610301309"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202610301327">
+<link rel="stylesheet" href="css/compra.css?v=202610301327">
+<link rel="stylesheet" href="css/almacen.css?v=202610301327"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610301327"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -26,10 +26,10 @@
   </div>
  </div>
 
- <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+ <nav class="bnav hidden" id="bnav" aria-label="Secciones"></nav>
 
  <!-- INVENTARIO -->
- <section id="p-inv">
+ <section id="p-inv" class="hidden">
   <div class="mbar hidden" id="mBar"><div class="grow"><b id="mCount">0</b> productos · <b id="mUnits">0</b> unidades · Subtotal <b id="mSub">$0.00</b></div><button class="btn g" id="mClear" type="button">Limpiar</button><button class="btn" id="mGo" type="button" disabled>Continuar</button></div>
   <div class="fl" id="fl">
    <div class="full"><label for="fSearch">Buscar producto</label><input id="fSearch" type="search" placeholder="Nombre o código (tolera errores de escritura)" autocomplete="off"></div>
@@ -54,7 +54,7 @@
  </section>
 
  <!-- PENDIENTES -->
- <section id="p-pend" class="hidden">
+ <section id="p-pend">
   <div class="seg2" id="segPend">
    <button data-s="cod" class="on">Contra entrega <span class="badge" id="nCod">0</span></button>
    <button data-s="entrega_pendiente">Pend. entrega <span class="badge" id="nEnt">0</span></button>
@@ -108,6 +108,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="js/app.js?v=202610301309"></script>
-<script src="js/almacen.js?v=202610301309"></script>
+<script src="js/app.js?v=202610301327"></script>
+<script src="js/almacen.js?v=202610301327"></script>
 </body></html>
