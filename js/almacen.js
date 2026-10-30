@@ -936,8 +936,8 @@ async function liberarFotos(){
  try{const ids=S.prods.filter(p=>p.stock<=0).map(p=>p.id);if(!ids.length)return;
   let R=[];for(let i=0;i<ids.length;i+=100){const {data,error}=await db.from("producto_imagenes").select("id,producto_id,url,thumb_url,path,thumb_path,orden").in("producto_id",ids.slice(i,i+100)).order("orden");if(error)return;R=R.concat(data||[])}
   const by={};R.forEach(r=>(by[r.producto_id]=by[r.producto_id]||[]).push(r));
-  const keep=[],drop=[];Object.values(by).forEach(a=>{const k=a[0];if(k.path||k.thumb_url!==k.url)keep.push(k);a.slice(1).forEach(x=>drop.push(x))});
-  const files=[...keep.map(k=>k.path),...drop.flatMap(x=>[x.path,x.thumb_path])].filter(Boolean);
+  const keep=[],drop=[];Object.values(by).forEach(a=>{const k=a[0];if(k.thumb_path&&k.thumb_path!==k.path)keep.push(k);a.slice(1).forEach(x=>drop.push(x))});
+  const files=[...new Set([...keep.map(k=>k.path),...drop.flatMap(x=>[x.path,x.thumb_path])].filter(Boolean))];
   if(!files.length)return;
   if(!await confirmar(`Hay <b>${Object.keys(by).length}</b> productos agotados con fotos. Se borrarán <b>${files.length}</b> archivos y a cada producto le quedará <b>una miniatura</b> para reconocerlo. Las ventas y cierres no se tocan.<p class="pw">Si vuelves a surtirlos, puedes subir una foto nueva en Compra.</p>`,{titulo:"Liberar espacio de fotos",ok:"Liberar espacio"}))return;
   const ok=await espera(async()=>{

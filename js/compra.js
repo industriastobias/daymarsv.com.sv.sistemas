@@ -105,7 +105,8 @@ function recomprimir(o,max,q){
  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(o.src,0,0,c.width,c.height);
  return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
 async function comprimir(file,max,q){return recomprimir(await abrirImg(file),max,q)}
-const par=async f=>{const o=await abrirImg(f);const r={main:await recomprimir(o,1600,.85),thumb:await recomprimir(o,640,.8)};if(o.src.close)o.src.close();return r};
+/* una sola foto por imagen (1000 px): sirve para las tarjetas y para verla en grande */
+const par=async f=>{const o=await abrirImg(f);const m=await recomprimir(o,1000,.82);if(o.src.close)o.src.close();return {main:m,thumb:m}};
 function renderPrevs(urls){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=urls;$("prevs").innerHTML=urls.map((u,i)=>`<img src="${u}" alt="Vista previa ${i+1}">`).join("")}
 async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.type&&f.type.startsWith("image/"));if(!fs.length)return false;
  busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));imgsTemp=acumular?imgsTemp.concat(n):n;renderPrevs(imgsTemp.map(i=>URL.createObjectURL(i.thumb)))}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
@@ -119,8 +120,8 @@ async function subirImagenes(id,list,reemplazar){
  if(reemplazar){const old=await ok(db.from("producto_imagenes").select("id,path,thumb_path").eq("producto_id",id));
   const paths=old.flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await db.storage.from(BUCKET).remove(paths);
   if(old.length)await ok(db.from("producto_imagenes").delete().eq("producto_id",id))}
- const rows=await Promise.all(list.map(async(im,i)=>{const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",p2=base+"_t.jpg";
-  await Promise.all([ok(db.storage.from(BUCKET).upload(p1,im.main,{contentType:"image/jpeg"})),ok(db.storage.from(BUCKET).upload(p2,im.thumb,{contentType:"image/jpeg"}))]);
+ const rows=await Promise.all(list.map(async(im,i)=>{const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",una=!im.thumb||im.thumb===im.main,p2=una?p1:base+"_t.jpg";
+  await Promise.all([ok(db.storage.from(BUCKET).upload(p1,im.main,{contentType:"image/jpeg"})),...(una?[]:[ok(db.storage.from(BUCKET).upload(p2,im.thumb,{contentType:"image/jpeg"}))])]);
   return {producto_id:id,url:pub(p1),thumb_url:pub(p2),path:p1,thumb_path:p2,orden:i}}));
  if(rows.length){await ok(db.from("producto_imagenes").insert(rows));await ok(db.from("productos").update({foto_url:rows[0].thumb_url}).eq("id",id))}}
 
