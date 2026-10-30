@@ -26,9 +26,18 @@ async function cargar(){
  if(h){const x=new Date(h+"T00:00:00");x.setDate(x.getDate()+1);q=q.lt("created_at",x.toISOString())}
  const {data,error}=await q;if(error)throw new Error(error.message);
  fin=data.length>lim;L=data.slice(0,lim)}
+/* junta cambios idénticos hechos seguidos (p. ej. quitar el descuento a toda una categoría) en una sola fila */
+const firma=b=>{const c=b.cambios;if(!c||b.accion!=="editar")return"";const k=Object.keys(c).filter(x=>!OCULTOS.includes(x)).sort();if(!k.length)return"";return b.usuario_id+"|"+b.tabla+"|"+k.map(x=>x==="foto_url"?x:x+":"+JSON.stringify(c[x].antes)+">"+JSON.stringify(c[x].despues)).join(";")};
+function agrupar(R){const out=[];for(const b of R){const f=firma(b),g=out[out.length-1];
+  if(f&&g&&g.f===f&&Math.abs(new Date(g.items[0].created_at)-new Date(b.created_at))<=15*60000){g.items.push(b)}else out.push({f,items:[b]})}
+ return out}
+function filaGrupo(g){if(g.items.length<2)return fila(g.items[0]);const b=g.items[0],n=g.items.length,nom=(TB[b.tabla]||b.tabla).toLowerCase()+"s";
+ return `<div class="rw"><div class="th ph">${esc((b.usuario_nombre||"?")[0].toUpperCase())}</div><div class="ti"><b>${esc(b.usuario_nombre||"Sistema")}</b> <span class="bd wa">Editó</span> ${n} ${esc(nom)}
+ <small>${fdate(b.created_at)} ${ftime(b.created_at)}</small>${cambios(b.cambios)}
+ <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--wine);font-weight:700">Ver los ${n} ${esc(nom)}</summary><div style="margin-top:4px">${g.items.map(x=>`<small style="display:block">${esc(x.resumen||"—")}</small>`).join("")}</div></details></div></div>`}
 function pintar(){
  const s=norm($("aQ").value),R=s?L.filter(b=>norm((b.resumen||"")+" "+(b.usuario_nombre||"")+" "+(TB[b.tabla]||"")).includes(s)):L;
- $("aL").innerHTML=R.length?R.map(fila).join(""):`<div class="empty card">No hay actividad con esos filtros.</div>`;
+ $("aL").innerHTML=R.length?agrupar(R).map(filaGrupo).join(""):`<div class="empty card">No hay actividad con esos filtros.</div>`;
  $("aMas").classList.toggle("hidden",!fin)}
 function pintarUlt(){
  const vs=ult.filter(b=>b.tabla==="ventas"&&b.accion==="crear");
