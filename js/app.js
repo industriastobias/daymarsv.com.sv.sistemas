@@ -107,6 +107,17 @@ async function respaldo(){
   const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="respaldo-daymar-"+fch.slice(0,10)+".zip";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
   try{localStorage.setItem("dms_backup",fch)}catch(e){}toast("Respaldo descargado")}
  catch(e){await say("No se pudo crear el respaldo: "+e.message)}}
+async function borrarFotos(names,paso){
+ for(let i=0;i<names.length;i+=50){const e=await db.storage.from("productos").remove(names.slice(i,i+50));if(e.error)throw new Error(e.error.message);paso&&paso(Math.min(i+50,names.length),names.length)}}
+async function liberarFotos(btn){
+ btn.disabled=true;const t0=btn.textContent;
+ try{const r=await db.rpc("fotos_sobrantes",{p_todas:false});if(r.error)throw new Error(r.error.message);const L=r.data||[];
+  if(!L.length){await say("No hay fotos sobrantes. Todo el espacio de fotos lo usan tus productos.");return}
+  if(!await ask("Hay "+L.length+" archivos de foto que ya no pertenecen a ningún producto. ¿Borrarlos para liberar espacio? Las fotos de tus productos no se tocan."))return;
+  await borrarFotos(L,(a,b)=>{btn.textContent="Borrando… "+a+"/"+b});
+  await say("Listo. Se borraron "+L.length+" archivos de foto sobrantes. Cierra y abre Configuración para ver el espacio actualizado.")}
+ catch(e){await say("No se pudo liberar el espacio: "+e.message)}
+ finally{btn.disabled=false;btn.textContent=t0}}
 async function vaciarDatos(){
  const OPC=[["productos","Productos e inventario","incluye fotos, descuentos y códigos promo; exige borrar también las ventas"],["ventas","Ventas, devoluciones, facturas y cierres de caja","la numeración vuelve a #1"],["clientes","Clientes",""],["reservas","Reservas","apartados de clientes y sus abonos"],["cotizaciones","Cotizaciones","lotes de mercancía y sus productos"],["proveedores","Proveedores",""],["finanzas","Finanzas","movimientos, cuentas por cobrar y pagar, banco y capital"],["historial","Historial de Actividad e inicios de sesión",""]];
  dlgCss();const d=document.createElement("dialog");d.className="dday";
@@ -122,8 +133,9 @@ async function vaciarDatos(){
   if(q("#vcT").value.trim()!=="BORRAR TODO"){q("#vcE").textContent="Escribe exactamente BORRAR TODO.";return}
   q("#vcOk").disabled=true;q("#vcE").textContent="Borrando…";
   try{
-   if(op.productos){let paths=[];for(let f=0;;f+=1000){const r=await db.from("producto_imagenes").select("path,thumb_path").range(f,f+999);if(r.error)throw new Error(r.error.message);r.data.forEach(x=>{if(x.path)paths.push(x.path);if(x.thumb_path)paths.push(x.thumb_path)});if(r.data.length<1000)break}
-    for(let i=0;i<paths.length;i+=50){const e=await db.storage.from("productos").remove(paths.slice(i,i+50));if(e.error)throw new Error(e.error.message)}}
+   if(op.productos){let paths=null;const fs=await db.rpc("fotos_sobrantes",{p_todas:true});if(!fs.error&&Array.isArray(fs.data))paths=fs.data;
+    if(!paths){paths=[];for(let f=0;;f+=1000){const r=await db.from("producto_imagenes").select("path,thumb_path").range(f,f+999);if(r.error)throw new Error(r.error.message);r.data.forEach(x=>{if(x.path)paths.push(x.path);if(x.thumb_path)paths.push(x.thumb_path)});if(r.data.length<1000)break}}
+    await borrarFotos(paths)}
    const r=await db.rpc("reiniciar_datos",{p_opciones:op,p_confirmacion:"BORRAR TODO"});if(r.error)throw new Error(r.error.message);
    cerrar();await say("Listo. Los datos que marcaste se borraron. Ya puedes empezar con los reales.");location.reload()}
   catch(e){q("#vcOk").disabled=false;q("#vcE").textContent="No se pudo borrar: "+e.message}}
@@ -178,7 +190,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
   e.innerHTML=barra("Base de datos",d.db_bytes,500*MB)+barra("Fotos",d.storage_bytes,1024*MB)+`<p class="cf-m" style="margin:0">${d.productos} productos · ${d.fotos} archivos de foto · ${d.ventas} ventas · ${d.clientes} clientes. Límites del plan gratis de Supabase.</p>`});
  const bk=q("#cfBk");if(bk){const t=()=>{let u=null;try{u=localStorage.getItem("dms_backup")}catch(e){}q("#cfBkT").textContent=u?"Último respaldo en este dispositivo: "+new Date(u).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"}):"Aún no has descargado un respaldo desde este dispositivo."};t();
   bk.onclick=async()=>{bk.disabled=true;try{await respaldo();t()}finally{bk.disabled=false}}}
- db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()}}},()=>{});
+ db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3>Fotos</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 10px">Borra las fotos que ya no pertenecen a ningún producto (por ejemplo, de importaciones que se cortaron). Las fotos de tus productos no se tocan.</p><button type="button" class="btn g s" id="cfFo">Liberar espacio de fotos</button></div><h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()};q("#cfFo").onclick=()=>liberarFotos(q("#cfFo"))}},()=>{});
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
