@@ -6,7 +6,8 @@ const $=id=>document.getElementById(id);
 const me=await requireSession();if(!me)return;
 const ADM=me.rol==="admin";
 let EMAIL="";try{EMAIL=(await db.auth.getSession()).data.session.user.email}catch(e){}
-mountSide($("side"),"almacenamiento",me.rol);
+const SOLO=/pendientes(\.html)?$/.test(location.pathname);
+mountSide($("side"),SOLO?"pendientes":"almacenamiento",me.rol);
 $("app").classList.remove("hidden");
 
 /* ---------- utilidades ---------- */
@@ -715,12 +716,14 @@ async function excel(){
   toast("Inventario exportado a Excel.")},"Generando Excel…")}
 
 /* ---------- navegación entre secciones ---------- */
-const TABS=[["inv","Inventario",IC.box],["pend","Pendientes",IC.clock],["hoy","Hoy",IC.cal],["ven","Ventas",IC.rec],["fac","Facturas",IC.fac]];
+const ALLT=[["inv"],["pend"],["hoy"],["ven"],["fac"]];
+const TABS=SOLO?[]:[["inv","Inventario",IC.box],["hoy","Hoy",IC.cal],["ven","Ventas",IC.rec],["fac","Facturas",IC.fac]];
+if(SOLO){["bnav","bScan","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i);if(e)e.classList.add("hidden")});const t=document.querySelector(".head .tot");if(t)t.classList.add("hidden")}
 $("bnav").innerHTML=TABS.map(t=>`<button type="button" data-p="${t[0]}">${ic(t[2])}<span>${t[1]}</span><span class="nb hidden">0</span></button>`).join("");
 $("bScan").innerHTML=ic(IC.scan)+"Escanear";
 async function tab(k){
  S.tab=k;document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.p===k));
- TABS.forEach(t=>$("p-"+t[0]).classList.toggle("hidden",t[0]!==k));
+ ALLT.forEach(t=>$("p-"+t[0]).classList.toggle("hidden",t[0]!==k));
  if(k==="pend"){if(!S.pend.length)await cargarPend().catch(e=>toast(e.message));pintarPend()}
  if(k==="hoy")pintarHoy();
  if(k==="ven")pintarVentas();
@@ -1122,6 +1125,6 @@ drawHist();
 await db.rpc("aplicar_programados");
 await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()])},"Cargando inventario…");
 try{const c=JSON.parse(sessionStorage.getItem("dms_cart")||"[]"),ok=c.filter(([id,q])=>S.byId.has(id)&&q>0&&q<=S.byId.get(id).stock);if(ok.length){S.sel=new Map(ok);S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");toast("Recuperé tu venta múltiple en curso")}}catch(e){}
-{const h0=(location.hash||"").slice(1);tab(["pend","hoy","ven","fac"].includes(h0)?h0:"inv")}filtrar();
-addEventListener("hashchange",()=>{const h=(location.hash||"").slice(1);if(["inv","pend","hoy","ven","fac"].includes(h))tab(h)});
+{const h0=(location.hash||"").slice(1);if(!SOLO&&h0==="pend")location.replace("pendientes.html");else tab(SOLO?"pend":["hoy","ven","fac"].includes(h0)?h0:"inv")}filtrar();
+addEventListener("hashchange",()=>{const h=(location.hash||"").slice(1);if(!SOLO&&h==="pend"){location.replace("pendientes.html");return}if(!SOLO&&["inv","hoy","ven","fac"].includes(h))tab(h)});
 })();

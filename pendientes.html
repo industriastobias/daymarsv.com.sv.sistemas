@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMARSV – Pendientes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css?v=202610301203">
+<link rel="stylesheet" href="css/compra.css?v=202610301203">
+<link rel="stylesheet" href="css/almacen.css?v=202610301203"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610301203"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Pendientes</h1><small>Contra entrega, entregas y cobros por hacer</small></div>
+  <div class="hact">
+   <div class="tot"><span>Valor del inventario<button class="eye" id="bEye" type="button">Ocultar</button></span><b id="totalAmount">$0.00</b></div>
+   <button class="btn g" id="bScan" type="button" title="Escanear código con la cámara"></button>
+   <button class="btn g" id="bUsb" type="button" aria-pressed="false" title="Lector de códigos USB">Lector USB</button>
+   <button class="btn g" id="bMulti" type="button" aria-pressed="false" title="Vender varios productos en un solo pedido">Venta múltiple</button>
+   <button class="btn" id="bFast" type="button" title="Vender algo que no está en el inventario">Venta rápida</button>
+   <div class="more"><button class="btn g" id="bMore" type="button" aria-haspopup="true" aria-expanded="false">Más ▾</button>
+    <div class="menu" id="mMore" role="menu">
+     <button data-m="kiosk">Modo kiosco</button><button data-m="refresh">Actualizar datos</button><button data-m="excel">Exportar inventario a Excel</button><button data-m="keys">Atajos de teclado</button><hr>
+     <button data-m="out">Cerrar sesión</button>
+    </div></div>
+  </div>
+ </div>
+
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+
+ <!-- INVENTARIO -->
+ <section id="p-inv">
+  <div class="mbar hidden" id="mBar"><div class="grow"><b id="mCount">0</b> productos · <b id="mUnits">0</b> unidades · Subtotal <b id="mSub">$0.00</b></div><button class="btn g" id="mClear" type="button">Limpiar</button><button class="btn" id="mGo" type="button" disabled>Continuar</button></div>
+  <div class="fl" id="fl">
+   <div class="full"><label for="fSearch">Buscar producto</label><input id="fSearch" type="search" placeholder="Nombre o código (tolera errores de escritura)" autocomplete="off"></div>
+   <div class="fx"><label for="fCat">Categoría</label><select id="fCat"><option value="">Todas</option></select></div>
+   <div class="fx"><label for="fMin">Precio mín.</label><input id="fMin" type="number" min="0" step="0.01" placeholder="0"></div>
+   <div class="fx"><label for="fMax">Precio máx.</label><input id="fMax" type="number" min="0" step="0.01" placeholder="∞"></div>
+   <div class="fx"><label for="fBar">Código de barras (Ctrl+B)</label><input id="fBar" type="search" placeholder="Escanea o escribe" autocomplete="off"></div>
+   <div class="fx"><label for="fDate">Fecha</label><input id="fDate" type="date"></div>
+   <label class="chk fx"><input id="fLow" type="checkbox"> Stock bajo</label>
+   <button class="btn g fx" id="fClear" type="button">Limpiar</button>
+  </div>
+  <div class="hist" id="hist"></div>
+  <div class="ctl">
+   <div class="grow"><b id="nShown">0</b> de <b id="nTotal">0</b> productos</div>
+   <button class="btn g sm tgl" id="fTog" type="button">Filtros</button>
+   <label class="chk" style="margin:0">Ir a fila <input id="fGo" type="number" min="1" placeholder="#"></label>
+   <div class="vt" id="vt"><button type="button" data-v="table">Tabla</button><button type="button" data-v="cards">Tarjetas</button></div>
+  </div>
+  <div class="pager" id="pagerTop"></div>
+  <div id="invList"></div>
+  <div class="pager" id="pager"></div>
+ </section>
+
+ <!-- PENDIENTES -->
+ <section id="p-pend" class="hidden">
+  <div class="seg2" id="segPend">
+   <button data-s="cod" class="on">Contra entrega <span class="badge" id="nCod">0</span></button>
+   <button data-s="entrega_pendiente">Pend. entrega <span class="badge" id="nEnt">0</span></button>
+   <button data-s="cobro_pendiente">Pend. cobro <span class="badge" id="nCob">0</span></button>
+  </div>
+  <div class="stats" id="pendStats"></div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn g sm hidden" id="bImp" type="button" style="margin-right:8px">Importar del sistema anterior</button><button class="btn g sm hidden" id="bClean" type="button">Limpiar completados</button></div>
+  <div id="pendList"></div>
+ </section>
+
+ <!-- VENTAS DEL DÍA -->
+ <section id="p-hoy" class="hidden">
+  <div class="ctl"><label class="chk" style="margin:0">Fecha <input id="hDate" type="date" style="width:auto"></label><button class="btn g sm" id="hToday" type="button">Hoy</button><span class="grow"></span><button class="btn g sm" id="hHist" type="button">Cierres anteriores</button><button class="btn sm" id="hClose" type="button">Cerrar caja</button></div>
+  <div class="kp" id="hKpi"></div>
+  <div id="hList"></div>
+ </section>
+
+ <!-- HISTORIAL / REPORTE -->
+ <section id="p-ven" class="hidden">
+  <div class="dfl">
+   <div><label for="vQuick">Periodo</label><select id="vQuick"><option value="all">Todas las ventas</option><option value="today">Hoy</option><option value="yest">Ayer</option><option value="week">Esta semana</option><option value="month">Este mes</option><option value="year">Este año</option></select></div>
+   <div class="full"><label for="vSearch">Buscar</label><input id="vSearch" type="search" placeholder="Cliente, producto o n.º de venta"></div>
+   <div><label for="vFrom">Desde</label><input id="vFrom" type="date"></div>
+   <div><label for="vTo">Hasta</label><input id="vTo" type="date"></div>
+   <div><label for="vType">Tipo de venta</label><select id="vType"><option value="all">Todos los tipos</option><option value="inmediata">Inmediatas</option><option value="cod">Contra entrega (COD)</option><option value="entrega_pendiente">Pend. de entrega</option><option value="cobro_pendiente">Pend. de cobro</option></select></div>
+   <div><label for="vPay">Método de pago</label><select id="vPay"><option value="all">Todos</option><option value="Efectivo">Efectivo</option><option value="Transferencia">Transferencia</option></select></div>
+  </div>
+  <div class="kp" id="vKpi"></div>
+  <div id="vList"></div>
+  <button class="btn g rm hidden" id="vMore" type="button">Mostrar más</button>
+ </section>
+
+ <!-- FACTURAS -->
+ <section id="p-fac" class="hidden">
+  <div class="dfl">
+   <div class="full"><label for="fcQ">Buscar</label><input id="fcQ" type="search" placeholder="N.º de factura, cliente, NIT/DUI o producto"></div>
+   <div><label for="fcQuick">Periodo</label><select id="fcQuick"><option value="month">Este mes</option><option value="today">Hoy</option><option value="yest">Ayer</option><option value="week">Esta semana</option><option value="year">Este año</option><option value="all">Todas</option></select></div>
+   <div><label for="fcEst">Estado</label><select id="fcEst"><option value="all">Todas</option><option value="emitida">Emitidas</option><option value="anulada">Anuladas</option></select></div>
+   <div><label for="fcFrom">Desde</label><input id="fcFrom" type="date"></div>
+   <div><label for="fcTo">Hasta</label><input id="fcTo" type="date"></div>
+  </div>
+  <div class="ctl"><span class="grow"></span><button class="btn g sm" id="fcCfg" type="button">Datos del negocio</button><button class="btn" id="fcNew" type="button">Nueva factura</button></div>
+  <div class="kp" id="fcKpi"></div>
+  <div id="fcList"></div>
+ </section>
+</main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="js/app.js?v=202610301203"></script>
+<script src="js/almacen.js?v=202610301203"></script>
+</body></html>
