@@ -239,7 +239,27 @@ function fijarColores(doc){
   for(let n=0;n<cs.length;n++){const k=cs[n],v=cs.getPropertyValue(k);
    if(v&&(v.indexOf("color(")>-1||v.indexOf("color-mix(")>-1)){const r=v.replace(/color-mix\((?:[^()]|\([^()]*\))*\)|color\([^)]*\)/g,m=>conv(m));el.style.setProperty(k,r,"important")}}})}
 async function h2c(el,o){await cargarH2C();return html2canvas(el,Object.assign({logging:false,onclone:d=>{try{fijarColores(d)}catch(e){console.warn(e)}}},o))}
-window.DAY={h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+/* Lista desplegable con el diseño del sistema (reemplaza al menú gris del teléfono) */
+function selectBonito(sel){
+ if(!sel||sel.dataset.sb)return;sel.dataset.sb="1";
+ const b=document.createElement("button");b.type="button";b.className="sb";b.id=sel.id?sel.id+"_sb":"";
+ sel.classList.add("sb-orig");sel.setAttribute("tabindex","-1");sel.setAttribute("aria-hidden","true");sel.after(b);
+ const lab=()=>{const o=sel.options[sel.selectedIndex];b.innerHTML=`<span>${esc(o?o.textContent:"")}</span><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 8l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`};
+ const pd=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value");
+ Object.defineProperty(sel,"value",{get(){return pd.get.call(sel)},set(v){pd.set.call(sel,v);lab()}});
+ sel.addEventListener("change",lab);new MutationObserver(lab).observe(sel,{childList:true,subtree:true,characterData:true});
+ const lbl=sel.id&&document.querySelector(`label[for="${sel.id}"]`);if(lbl)lbl.addEventListener("click",e=>{e.preventDefault();b.click()});
+ b.onclick=()=>{
+  const O=[...sel.options],d=document.createElement("dialog");d.className="sbd";
+  d.innerHTML=`<div class="sbh">${esc(lbl?lbl.textContent.replace(/\(opcional\)/i,"").trim():"Elegir")}<button type="button" data-x aria-label="Cerrar">×</button></div>${O.length>9?'<input type="search" class="sbq" placeholder="Buscar…" autocomplete="off">':""}<div class="sbl">${O.map((o,i)=>`<button type="button" class="sbo${i===sel.selectedIndex?" on":""}" data-i="${i}"${o.disabled?" disabled":""}><span>${esc(o.textContent)}</span><i></i></button>`).join("")}</div>`;
+  document.body.appendChild(d);const cerrar=()=>{try{d.close()}catch(e){}d.remove()};
+  d.addEventListener("click",e=>{if(e.target===d||e.target.closest("[data-x]")){cerrar();return}
+   const o=e.target.closest("[data-i]");if(o){sel.selectedIndex=+o.dataset.i;lab();sel.dispatchEvent(new Event("change",{bubbles:true}));cerrar()}});
+  d.addEventListener("cancel",e=>{e.preventDefault();cerrar()});
+  const q=d.querySelector(".sbq");if(q)q.addEventListener("input",()=>{const t=q.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");d.querySelectorAll(".sbo").forEach(x=>{x.style.display=x.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(t)?"":"none"})});
+  d.showModal();const on=d.querySelector(".sbo.on");if(on)on.scrollIntoView({block:"center"})};
+ lab()}
+window.DAY={selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
 try{if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}catch(e){}

@@ -93,6 +93,7 @@ function setTab(t){esLote=t==="lote";document.querySelectorAll("#tabs button").f
  $("quantityLabel").textContent=esLote&&!edit?"Stock total calculado *":edit?"Stock actual *":"Stock inicial *";
  $("quantityHelp").textContent=esLote&&!edit?"Lotes × unidades por lote.":edit?"Si lo cambias, queda registrado en el historial como ajuste.":"Unidades disponibles.";
  if(esLote)lotStock();else if(!edit){$("lotQuantity").value="";$("unitsPerLot").value=""}}
+DAY.selectBonito($("categoryFilter"));DAY.selectBonito($("category"));
 $("tabs").onclick=e=>{const b=e.target.closest("button");if(b)setTab(b.dataset.t)};
 
 /* imágenes del formulario */
