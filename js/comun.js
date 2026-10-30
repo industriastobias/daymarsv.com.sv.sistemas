@@ -66,7 +66,7 @@ async function descargarPdf(html,nombre){
   await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
   const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
   await new Promise(r=>setTimeout(r,150));
-  const c=await h2c(host.firstElementChild,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false});host.remove();
+  const el=host.firstElementChild,c=await h2c(el,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight});host.remove();
   const {jsPDF}=window.jspdf,p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);
   for(let y=0;y<c.height;y+=pageH){const s=document.createElement("canvas");s.width=c.width;s.height=Math.min(pageH,c.height-y);const x=s.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,s.width,s.height);x.drawImage(c,0,y,c.width,s.height,0,0,c.width,s.height);
    if(y)p.addPage();p.addImage(s.toDataURL("image/jpeg",.95),"JPEG",0,0,W,s.height*W/c.width)}

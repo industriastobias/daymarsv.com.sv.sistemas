@@ -319,7 +319,10 @@ async function abrirTicket(v,nuevo){
   const t=await DAY.input("Número de WhatsApp del cliente (8 dígitos de El Salvador o con código de país):",(cli&&cli.telefono)||"");if(t===null)return;
   const dig=t.replace(/\D/g,""),tel=dig.length===8?"503"+dig:dig;if(tel.length<10||tel.length>15){await DAY.say("Ese número no es válido.");return}
   const f=await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
-   const c=await DAY.h2c(m.q(".tkt"),{backgroundColor:"#ffffff",scale:3,logging:false}),W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H]});
+   const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;width:320px;background:#fff";host.innerHTML=html;document.body.appendChild(host);
+   const el=host.querySelector(".tkt")||host.firstElementChild;el.style.maxWidth="none";el.style.width="300px";el.style.margin="0";
+   let c;try{await new Promise(r=>setTimeout(r,100));c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:3,logging:false,windowWidth:800,width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
+   const W=80,H=Math.max(40,c.height*W/c.width),{jsPDF}=window.jspdf,p=new jsPDF({unit:"mm",format:[W,H]});
    p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,W,c.height*W/c.width);
    return new File([p.output("blob")],"ticket-"+v.numero+".pdf",{type:"application/pdf"})},"Preparando PDF…");
   if(!f)return;
@@ -804,7 +807,7 @@ async function descargarPdf(html,fmt,nombre){
   await lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js");await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");
   const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
   await new Promise(r=>setTimeout(r,150));
-  const c=await DAY.h2c(host.firstElementChild,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false});host.remove();
+  const el=host.firstElementChild,c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:2,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight});host.remove();
   const {jsPDF}=window.jspdf;
   if(fmt==="t80"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)]});p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,w,h);p.save(nombre)}
   else{const p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);
