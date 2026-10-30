@@ -421,6 +421,15 @@ $("bZip").onclick=async()=>{if(!inv.length)return toast("No hay productos para e
   let n=0;await pool(inv,6,async p=>{const l=byId[p.id]||[];for(let k=0;k<l.length;k++){try{const r=await fetch(l[k].url);if(r.ok)folder.file(`${p.codigo}_${k+1}.jpg`,await r.blob())}catch(e){}}$("ovText").textContent=`Preparando ZIP… ${++n}/${inv.length}`});
   const blob=await zip.generateAsync({type:"blob"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`inventario_${hoy}.zip`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast("Exportación ZIP completa")
  }catch(e){toast("Error exportando")}busy(false)};
+/* fotos de un ZIP: images/CODIGO_1.jpg, CODIGO_2.png… se agrupan por código (una sola pasada) */
+const nomSeguro=c=>String(c||"").replace(/[\\/:*?"<>|\s]/g,"-").toLowerCase();
+function fotosDelZip(zip){
+ const M=new Map();
+ zip.forEach((rel,entry)=>{if(entry.dir||!/\.(jpg|jpeg|png|webp)$/i.test(rel))return;
+  const f=rel.split("/").pop().replace(/\.[a-z]+$/i,""),m=/^(.*)_(\d+)$/.exec(f),cod=(m?m[1]:f).toLowerCase(),n=m?+m[2]:0;
+  if(!M.has(cod))M.set(cod,[]);M.get(cod).push({n,entry,rel})});
+ M.forEach(l=>l.sort((a,b)=>a.n-b.n));
+ return {por:c=>M.get(String(c||"").toLowerCase())||M.get(nomSeguro(c))||[],total:[...M.values()].reduce((s,l)=>s+l.length,0)}}
 /* pendientes de cobro del sistema anterior (pendientes.json dentro del ZIP) */
 function pendientesDeZip(txt){
  let d=JSON.parse(txt);if(d&&!Array.isArray(d))d=d.pendingPaymentInventory||[];if(!Array.isArray(d))return [];
@@ -435,24 +444,26 @@ $("importFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.v
  busy(true,"Leyendo ZIP…");
  try{const zip=await JSZip.loadAsync(await file.arrayBuffer()),js=zip.file("inventory.json");if(!js){busy(false);return toast("ZIP no válido")}
   let lista=JSON.parse(await js.async("string"));if(!Array.isArray(lista))lista=[];
+  const FZ=fotosDelZip(zip);
   const usados=new Set([...inv,...trash].map(p=>p.codigo_barras).filter(Boolean)),items=[],imgsPorCodigo={};
   for(const p of lista){const codigo=String(p.code||"").trim(),nombre=String(p.name||"").trim()||codigo;if(!codigo)continue;
    let bc=String(p.barcode||"").trim();const dueño=[...inv,...trash].find(x=>x.codigo_barras===bc);if(!bc||usados.has(bc)&&!(dueño&&dueño.codigo===codigo)){bc=genUnico([...usados])}usados.add(bc);
    const lote=p.unitType==="lote";items.push({codigo,nombre,codigo_barras:inv.some(x=>x.codigo===codigo)?"":bc,categoria:String(p.category||"").trim(),precio_venta:num(p.price),precio_costo:num(p.valorReal),fecha_compra:p.fechaCompra||null,descuento_pct:num(p.discount),cantidad:Math.max(0,Math.trunc(num(p.quantity))),tipo_compra:lote?"lote":"normal",lotes:lote?num(p.lotCount):0,unidades_por_lote:lote?num(p.unitsPerLot):0,descripcion:String(p.description||""),sumar:true});
-   const en=[];zip.folder("images")&&zip.folder("images").forEach((rel,entry)=>{if(!entry.dir&&rel.toLowerCase().startsWith(codigo.toLowerCase()+"_")&&/\.(jpg|jpeg|png|webp)$/i.test(rel))en.push({rel,entry})});
-   en.sort((a,b)=>a.rel.localeCompare(b.rel,undefined,{numeric:true}));if(!en.length){const lg=zip.file(`images/${codigo}.jpg`)||zip.file(`images/${codigo}.jpeg`);if(lg)en.push({rel:lg.name,entry:lg})}
-   if(en.length)imgsPorCodigo[codigo]=en.map(x=>x.entry)}
+   const en=FZ.por(codigo);if(en.length)imgsPorCodigo[codigo]=en.map(x=>x.entry)}
   if(!items.length){busy(false);return toast("El ZIP no trae productos")}
   const ids=[];for(let k=0;k<items.length;k+=100){$("ovText").textContent=`Importando productos… ${Math.min(k+100,items.length)}/${items.length}`;ids.push(...await ok(db.rpc("registrar_compra",{p_items:items.slice(k,k+100)})))}
-  let n=0;const conImg=ids.filter(r=>imgsPorCodigo[r.codigo]);
-  await pool(conImg,4,async r=>{const bl=[];for(const en of imgsPorCodigo[r.codigo]){bl.push(await par(await en.async("blob")))}await subirImagenes(r.id,bl,true);$("ovText").textContent=`Subiendo imágenes… ${++n}/${conImg.length}`});
+  let n=0,fallos=0;const conImg=ids.filter(r=>imgsPorCodigo[r.codigo]);
+  await pool(conImg,4,async r=>{const bl=[];
+   for(const en of imgsPorCodigo[r.codigo]){try{bl.push(await par(await en.async("blob")))}catch(e){console.warn("Foto ilegible",r.codigo,e)}}
+   try{if(bl.length)await subirImagenes(r.id,bl,true);else fallos++}catch(e){fallos++;console.warn("No se subió la foto de",r.codigo,e)}
+   $("ovText").textContent=`Subiendo imágenes… ${++n}/${conImg.length}`});
   await refresh();$("dgBulk").close();
   let extra="";const pj=zip.file("pendientes.json");
   if(pj){try{const pr=pendientesDeZip(await pj.async("string"));
     if(pr.length){if(!DAY.principal)extra=" · Los pendientes de cobro solo los puede importar el administrador principal";
      else{const r=await ok(db.rpc("importar_pendientes_cobro",{p_ventas:pr}));extra=` · ${r.importadas} pendientes de cobro importados`+(r.omitidas?` (${r.omitidas} ya estaban)`:"")}}}
    catch(e){console.error(e);extra=" · No se pudieron importar los pendientes de cobro: "+(e.message||"")}}
-  toast(`Importación completada (${ids.length} productos)${extra}`)
+  toast(`Importación completada (${ids.length} productos)${fallos?` · ${fallos} sin foto: usa «Completar fotos desde ZIP»`:""}${extra}`)
  }catch(e){console.error(e);toast("Error importando: "+(e.message||""))}busy(false)};
 
 /* completar fotos: sube las fotos del ZIP a los productos que ya existen y no tienen foto */
@@ -460,16 +471,13 @@ $("bFotosZip").onclick=()=>$("fotosFile").click();
 $("fotosFile").onchange=async evt=>{const file=evt.target.files[0];evt.target.value="";if(!file||!/\.zip$/i.test(file.name))return toast("Selecciona un archivo ZIP");
  busy(true,"Leyendo ZIP…");
  try{const zip=await JSZip.loadAsync(await file.arrayBuffer());
-  const arch=[];zip.forEach((rel,entry)=>{if(!entry.dir&&/\.(jpg|jpeg|png|webp)$/i.test(rel))arch.push({rel:rel.split("/").pop(),entry})});
-  if(!arch.length){busy(false);return toast("El ZIP no trae fotos")}
+  const FZ=fotosDelZip(zip);
+  if(!FZ.total){busy(false);return toast("El ZIP no trae fotos")}
   const sin=inv.filter(p=>!p.foto_url);let falta=0,hechos=0,sinFoto=0;
   const trabajos=[];
-  for(const p of sin){const cod=String(p.codigo||"").toLowerCase();
-   const en=arch.filter(a=>{const r=a.rel.toLowerCase();return r.startsWith(cod+"_")||r.replace(/\.[a-z]+$/,"")===cod});
-   if(!en.length){sinFoto++;continue}
-   en.sort((a,b)=>a.rel.localeCompare(b.rel,undefined,{numeric:true}));trabajos.push({p,en})}
-  if(!trabajos.length){busy(false);return await DAY.say(`No encontré fotos para los productos sin foto. El ZIP trae ${arch.length} fotos y hay ${sin.length} productos sin foto. Los nombres de las fotos deben empezar con el código del producto, por ejemplo CODIGO_1.jpg.`)}
-  await pool(trabajos,4,async t=>{try{const bl=[];for(const a of t.en)bl.push(await par(await a.entry.async("blob")));await subirImagenes(t.p.id,bl,true);hechos++}catch(e){falta++}
+  for(const p of sin){const en=FZ.por(p.codigo);if(!en.length){sinFoto++;continue}trabajos.push({p,en})}
+  if(!trabajos.length){busy(false);return await DAY.say(`No encontré fotos para los productos sin foto. El ZIP trae ${FZ.total} fotos y hay ${sin.length} productos sin foto. Los nombres de las fotos deben empezar con el código del producto, por ejemplo CODIGO_1.jpg.`)}
+  await pool(trabajos,4,async t=>{try{const bl=[];for(const a of t.en){try{bl.push(await par(await a.entry.async("blob")))}catch(e){console.warn("Foto ilegible",t.p.codigo,e)}}if(!bl.length)throw new Error("sin fotos legibles");await subirImagenes(t.p.id,bl,true);hechos++}catch(e){falta++}
    $("ovText").textContent=`Subiendo fotos… ${hechos+falta}/${trabajos.length}`});
   await refresh();toast(`Fotos completadas en ${hechos} productos`+(falta?` · ${falta} con error`:"")+(sinFoto?` · ${sinFoto} productos sin foto en el ZIP`:""))
  }catch(e){console.error(e);toast("Error: "+(e.message||""))}busy(false)};
