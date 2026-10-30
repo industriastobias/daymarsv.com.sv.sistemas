@@ -7,7 +7,7 @@ const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',cap:'<path d="M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',ban:'<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/>',prov:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/>'};
-const S={q:"month",desde:"",hasta:"",V:[],M:[],VD:[],DV:[],C:[],PR:[],B:[],CL:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",ready:false,all:[]};
+const S={q:"month",desde:"",hasta:"",V:[],M:[],VD:[],DV:[],C:[],PR:[],B:[],CL:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",PC:[],ready:false,all:[]};
 const CATS=["Alquiler","Servicios (luz, agua, internet)","Salarios","Publicidad","Transporte y envíos","Empaque","Impuestos","Mercadería","Flete","Comisiones","Materiales","Otros ingresos","Otros gastos"];
 const TN={ingreso:["Ingreso","ok"],gasto:["Gasto","or"],costo:["Costo directo","wa"],compra:["Compra de mercadería","wa"]};
 const mkey=d=>String(d).slice(0,7);
@@ -29,6 +29,7 @@ async function cargarGeneral(){
  const [c,p,b,pr,all]=await Promise.all([db.from("fin_cuentas").select("*").order("vence",{ascending:true,nullsFirst:false}),db.from("proveedores").select("*").order("nombre"),db.from("fin_banco").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}).limit(12),
   fetchAll(()=>db.from("productos").select("stock,precio_costo").eq("activo",true)),fetchAll(()=>db.from("fin_movimientos").select("id,fecha,tipo,monto,conciliado,descripcion,categoria").order("fecha",{ascending:false}).limit(1000))]);
  [c,p,b].forEach(x=>{if(x.error)throw new Error(x.error.message)});
+ S.PC=await fetchAll(()=>db.from("ventas").select("id,numero,created_at,cliente_nombre,subtotal,abonado,pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente").order("created_at",{ascending:false})).catch(()=>[]);
  S.C=c.data;S.PR=p.data;S.B=b.data;S.inv=pr.reduce((s,x)=>s+x.stock*x.precio_costo,0);S.all=all}
 const sumM=(t)=>S.M.filter(m=>m.tipo===t).reduce((s,m)=>s+ +m.monto,0);
 function calc(){
@@ -37,7 +38,8 @@ function calc(){
  const ingresos=ventas+oi,egresos=costoV+co+ga,util=ingresos-egresos;
  const dias=Math.max(1,Math.round((new Date(S.hasta)-new Date(S.desde))/864e5)+1);
  return {ventas,costoV,nV,oi,ga,co,cm,ingresos,egresos,util,dias,bruta:ventas-costoV}}
-const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+(c.monto-c.abonado),0);
+const pcTot=()=>S.PC.reduce((s,v)=>s+(+v.pendiente_monto||0),0);
+const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+(c.monto-c.abonado),0)+(t==="cobrar"?pcTot():0);
 
 /* ---------- Resumen ---------- */
 function grafico(){
@@ -108,11 +110,13 @@ $("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha"
 function pintarCue(){
  $("cSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.cu));
  const L=S.C.filter(c=>c.tipo===S.cu),hoy=ymd(new Date()),p=L.filter(c=>c.estado==="pendiente");
- $("cK").innerHTML=`<div><span>${S.cu==="cobrar"?"Por cobrar":"Por pagar"}</span><b>${$$(p.reduce((s,c)=>s+c.monto-c.abonado,0))}</b><small>${p.length} pendiente(s)</small></div><div><span>Vencidas</span><b class="neg">${p.filter(c=>c.vence&&c.vence<hoy).length}</b></div>`;
- $("cL").innerHTML=L.length?L.map(c=>{const pc=c.monto?c.abonado/c.monto*100:0,v=c.estado==="pendiente"&&c.vence&&c.vence<hoy;
+ const pcs=S.cu==="cobrar"?S.PC:[],totC=p.reduce((s,c)=>s+c.monto-c.abonado,0);
+ $("cK").innerHTML=`<div><span>${S.cu==="cobrar"?"Total por cobrar":"Por pagar"}</span><b>${$$(totC+pcTot())}</b><small>${p.length+pcs.length} pendiente(s)</small></div>${S.cu==="cobrar"?`<div><span>Pendientes de cobro (ventas)</span><b>${$$(pcTot())}</b><small>${pcs.length} cliente(s)</small></div><div><span>Otras cuentas por cobrar</span><b>${$$(totC)}</b><small>${p.length} cuenta(s)</small></div>`:""}<div><span>Vencidas</span><b class="neg">${p.filter(c=>c.vence&&c.vence<hoy).length}</b></div>`;
+ const filasPC=pcs.map(v=>`<div class="rw"><div class="ti"><b>${esc(v.cliente_nombre||"Cliente")}</b><small>Venta #${v.numero} · pendiente de cobro · ${fdate(v.created_at)}</small><div class="bar" style="margin-top:6px"><i style="width:${+v.subtotal?(+v.abonado/+v.subtotal*100):0}%"></i></div></div><div class="am2"><b>${$$(v.pendiente_monto)}</b><br><small>de ${$$(v.subtotal)}</small></div><a class="btn g sm" href="pendientes.html">Ver</a></div>`).join("");
+ $("cL").innerHTML=filasPC+(L.length?L.map(c=>{const pc=c.monto?c.abonado/c.monto*100:0,v=c.estado==="pendiente"&&c.vence&&c.vence<hoy;
   return `<div class="rw"><div class="ti"><b>${esc(c.tercero)}</b><small>${c.cliente_id?"Cliente guardado · ":""}${esc(c.concepto||"")}${c.concepto?" · ":""}${c.vence?"vence "+fdate(c.vence):"sin vencimiento"}</small><div class="bar ${c.estado==="pagada"?"ok":""}" style="margin-top:6px"><i style="width:${pc}%"></i></div></div>
   <div class="am2"><b>${$$(c.monto-c.abonado)}</b><br><small>de ${$$(c.monto)}</small></div>${c.estado==="pagada"?'<span class="bd ok">Pagada</span>':v?'<span class="bd or">Vencida</span>':""}
-  ${c.estado==="pendiente"?`<button class="btn sm" data-ab="${c.id}">Abonar</button>`:""}<button class="btn g sm" data-cd="${c.id}" style="color:var(--bad)">Eliminar</button></div>`}).join(""):`<div class="empty card">No hay cuentas ${S.cu==="cobrar"?"por cobrar":"por pagar"}.</div>`}
+  ${c.estado==="pendiente"?`<button class="btn sm" data-ab="${c.id}">Abonar</button>`:""}<button class="btn g sm" data-cd="${c.id}" style="color:var(--bad)">Eliminar</button></div>`}).join(""):(filasPC?"":`<div class="empty card">No hay cuentas ${S.cu==="cobrar"?"por cobrar":"por pagar"}.</div>`))}
 $("cSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.cu=b.dataset.t;pintarCue()}});
 $("cNew").onclick=()=>{const d=modal("Nueva cuenta por "+(S.cu==="cobrar"?"cobrar":"pagar"),`<div class="fg">${S.cu==="cobrar"?`<div class="full"><label>Cliente guardado</label><select name="cl"><option value="">— Otra persona (escribir nombre) —</option>${S.CL.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join("")}</select></div>`:""}<div class="full"><label>${S.cu==="cobrar"?"Nombre":"Proveedor / acreedor"}</label><input name="t" maxlength="100"></div><div class="full"><label>Concepto <small>(opcional)</small></label><input name="c" maxlength="160"></div>
   <div><label>Monto ($)</label><input name="m" type="number" min="0.01" step="0.01" inputmode="decimal"></div><div><label>Vence <small>(opcional)</small></label><input name="v" type="date"></div></div><div class="err2" id="cnE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cnOk">Guardar</button>`});
