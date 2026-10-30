@@ -470,29 +470,38 @@ function pintarPend(){
  const sum=k=>pe.reduce((s,v)=>s+(+v[k]||0),0);
  $("pendStats").innerHTML=t==="cobro_pendiente"?
   `<div><b>${$$(sum("subtotal"))}</b><span>Total en productos</span></div><div><b>${$$(sum("abonado"))}</b><span>Abonado</span></div><div><b>${$$(sum("pendiente_monto"))}</b><span>Por cobrar</span></div><div><b>${pe.length}</b><span>Clientes con saldo</span></div>`:
-  `<div><b>${$$(sum("subtotal"))}</b><span>Productos</span></div><div><b>${$$(sum("envio"))}</b><span>Envíos</span></div><div><b>${$$(sum("comision_monto"))}</b><span>Comisiones</span></div><div><b>${$$(sum("total"))}</b><span>Total a cobrar</span></div>`;
+  `<div><b>${$$(sum("subtotal"))}</b><span>Productos</span></div><div><b>${$$(sum("envio"))}</b><span>Envíos</span></div><div><b>${$$(sum("comision_monto"))}</b><span>Comisiones</span></div><div><b>${$$(sum("total"))}</b><span>Total a cobrar</span></div>`+(t==="cod"?`<div><b>${$$(pe.filter(v=>v.entregado_en).reduce((s,v)=>s+(+v.total||0),0))}</b><span>Entregado, por liquidar (${pe.filter(v=>v.entregado_en).length})</span></div>`:"");
  $("bClean").classList.toggle("hidden",!(ADM&&t!=="cod"&&all.some(v=>v.estado==="completada")));
  $("bImp").classList.toggle("hidden",!(DAY.principal&&t==="cobro_pendiente"));
- $("pendList").innerHTML=all.length?all.map(cardPend).join(""):`<div class="empty card">${{cod:"No hay pedidos contra entrega pendientes",entrega_pendiente:"No hay ventas pendientes de entrega",cobro_pendiente:"No hay ventas pendientes de cobro"}[t]}</div>`}
+ const fl=t==="cod"&&pe.some(v=>v.entregado_en)?(S.pf||"todos"):"todos",lista=t==="cod"&&fl!=="todos"?all.filter(v=>fl==="liq"?(v.estado==="pendiente"&&v.entregado_en):(v.estado==="pendiente"&&!v.entregado_en)):all;
+ const filtro=t==="cod"&&pe.some(v=>v.entregado_en)?`<div class="seg2" style="margin-bottom:8px">${[["todos","Todos"],["ent","Por entregar"],["liq","Entregados · por liquidar"]].map(x=>`<button type="button" data-pf="${x[0]}" class="${fl===x[0]?"on":""}">${x[1]}</button>`).join("")}</div>`:"";
+ $("pendList").innerHTML=filtro+(lista.length?lista.map(cardPend).join(""):`<div class="empty card">${{cod:"No hay pedidos contra entrega pendientes",entrega_pendiente:"No hay ventas pendientes de entrega",cobro_pendiente:"No hay ventas pendientes de cobro"}[t]}</div>`)}
 function cardPend(v){
  const pen=v.estado==="pendiente",t=v.tipo;let am="",bt="";
+ const ent=t==="cod"&&v.entregado_en?`<div class="entb" style="margin:6px 0;font-size:13px;color:var(--mute)">📦 Entregado el ${fdate(v.entregado_en)}${v.empresa_envio?" · "+esc(v.empresa_envio):""} · esperando que liquiden el dinero</div>`:"";
  if(t==="cobro_pendiente")am=`<div><span>Cliente</span><b>${esc(v.cliente_nombre||"")}</b></div><div><span>Precio original</span><b>${$$(v.subtotal)}</b></div><div><span>Abonado</span><b style="color:var(--ok)">${$$(v.abonado)}</b></div><div class="o"><span>Pendiente</span><b>${$$(v.pendiente_monto)}</b></div>`;
  else{am=`<div><span>Productos</span><b>${$$(v.subtotal)}</b></div><div><span>Envío</span><b>${$$(v.envio)}</b></div><div><span>Comisión${t==="cod"?(v.quien_paga==="client"?" · paga cliente":" · pagamos nosotros"):""}</span><b>${$$(v.comision_monto)}</b></div>`+
   (t==="cod"?`<div><span>Seguro</span><b>${$$(v.seguro)}</b></div>`:"")+`<div class="k"><span>Total a cobrar</span><b>${$$(v.total)}</b></div>`}
  if(pen){
   if(t==="cobro_pendiente")bt=`<button class="btn g" data-a="rem" data-v="${v.id}">Recordatorio</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar pago completo</button>`;
-  else bt=`<button class="btn g" data-a="edit" data-v="${v.id}">Editar</button><button class="btn" data-a="ok" data-v="${v.id}">${t==="cod"?"Confirmar cobro":"Confirmar entrega"}</button>`;
+  else if(t==="cod"&&v.entregado_en)bt=`<button class="btn g" data-a="noent" data-v="${v.id}">Deshacer entrega</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar liquidación</button>`;
+  else if(t==="cod")bt=`<button class="btn g" data-a="edit" data-v="${v.id}">Editar</button><button class="btn g" data-a="ent" data-v="${v.id}">Marcar entregado</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar cobro</button>`;
+  else bt=`<button class="btn g" data-a="edit" data-v="${v.id}">Editar</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar entrega</button>`;
   if(ADM)bt=`<button class="btn g" style="color:var(--bad)" data-a="del" data-v="${v.id}">Eliminar</button>`+bt}
  else bt=`<span class="bd ok">${COMPLETADO[t]}</span>`;
- return `<div class="po"><div class="ph1"><span>${fdate(v.created_at)} ${ftime(v.created_at)}</span>${pagoBd(v.metodo_pago)}<span class="grow"></span><span class="bd ${pen?"wa":"ok"}">${pen?"Pendiente":COMPLETADO[t]}</span></div>
-  ${lineas(v)}<div class="am">${am}</div><div class="bt">${bt}</div></div>`}
+ return `<div class="po"><div class="ph1"><span>${fdate(v.created_at)} ${ftime(v.created_at)}</span>${pagoBd(v.metodo_pago)}<span class="grow"></span><span class="bd ${pen?"wa":"ok"}">${pen?(t==="cod"&&v.entregado_en?"Entregado · por liquidar":"Pendiente"):COMPLETADO[t]}</span></div>
+  ${lineas(v)}${ent}<div class="am">${am}</div><div class="bt">${bt}</div></div>`}
 
 async function accionPend(a,id){
  const v=S.pend.find(x=>x.id===id);if(!v){toast("Pedido no encontrado");return}
  if(a==="rem")return recordatorio(v);
  if(a==="edit")return editarPedido(v);
+ if(a==="ent"){const emp=await DAY.input("¿Qué empresa de envíos lo entregó? (opcional)",v.empresa_envio||"",{titulo:"Marcar como entregado"});if(emp===null)return;
+  const ok=await espera(async()=>{await rpc("marcar_entregado",{p_venta:id,p_empresa:emp});return true});if(ok){snd("ok");toast("Marcado como entregado. Queda por liquidar.");await cargarPend();pintarPend()}return}
+ if(a==="noent"){if(!await confirmar("El pedido volverá a «Por entregar».",{titulo:"Deshacer entrega",ok:"Deshacer"}))return;
+  const ok=await espera(async()=>{await rpc("deshacer_entrega",{p_venta:id});return true});if(ok){toast("Entrega deshecha");await cargarPend();pintarPend()}return}
  if(a==="ok"){
-  const txt={cod:["Confirmar cobro","Se registrará el pedido como cobrado."],entrega_pendiente:["Confirmar entrega","Se registrará la entrega y la venta."],cobro_pendiente:["Confirmar pago completo","El cliente "+esc(v.cliente_nombre||"")+" termina de pagar su saldo."]}[v.tipo];
+  const txt={cod:v.entregado_en?["Confirmar liquidación","La empresa de envíos ya liquidó el dinero. Se registrará el pedido como cobrado."]:["Confirmar cobro","Se registrará el pedido como cobrado."],entrega_pendiente:["Confirmar entrega","Se registrará la entrega y la venta."],cobro_pendiente:["Confirmar pago completo","El cliente "+esc(v.cliente_nombre||"")+" termina de pagar su saldo."]}[v.tipo];
   const monto=v.tipo==="cobro_pendiente"?`<div class="am"><div><span>Saldo pendiente</span><b>${$$(v.pendiente_monto)}</b></div><div class="k"><span>Total de la venta</span><b>${$$(v.subtotal)}</b></div></div>`:`<div class="am"><div class="k"><span>Total a cobrar</span><b>${$$(v.total)}</b></div></div>`;
   if(!await confirmar(lineas(v)+monto+`<p>${txt[1]}</p>`,{titulo:txt[0],ok:txt[0]}))return;
   const ok=await espera(async()=>{await rpc("completar_pedido",{p_venta:id});return true});
@@ -1036,6 +1045,7 @@ $("invList").addEventListener("click",e=>{
  if(S.multi)return;detalle(p)});
 
 $("bnav").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(b)tab(b.dataset.p)});
+$("pendList").addEventListener("click",e=>{const f=e.target.closest("[data-pf]");if(f){S.pf=f.dataset.pf;pintarPend()}});
 $("segPend").addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(b){S.pt=b.dataset.s;pintarPend()}});
 $("pendList").addEventListener("click",e=>{
  const img=e.target.closest("[data-img]");if(img){verImagen(img.dataset.img);return}
