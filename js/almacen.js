@@ -659,10 +659,11 @@ async function eliminarVenta(id,after){
   `<p class="pw">La venta desaparece por completo de ventas, reportes y cierres futuros. <b>No se puede deshacer.</b> Elige qué pasa con el stock:</p>
   <label class="cf-c"><input type="radio" name="evd" value="1" checked> Devolver los productos al stock</label>
   <label class="cf-c"><input type="radio" name="evd" value="0"> No devolver (el stock se queda como está)</label>
+  <label class="cf-c"><input type="checkbox" name="evf"> Conservar la factura (que NO se anule)</label>
   <p class="hint">Si solo quieres corregir un error y dejar constancia, usa <b>Anular</b>: la venta queda en el historial.</p>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn dg" id="evOk">Eliminar</button>`});
  m.q("#evOk").onclick=async()=>{const dev=m.q("[name=evd]:checked").value==="1";
-  const ok=await espera(async()=>{await rpc("eliminar_venta",{p_venta:id,p_devolver:dev});return true});
+  const ok=await espera(async()=>{await rpc("eliminar_venta",{p_venta:id,p_devolver:dev,p_conservar_factura:m.q("[name=evf]").checked});return true});
   if(ok){m.close();toast(dev?"Venta eliminada y stock devuelto":"Venta eliminada");snd("ok");await cargarProductos();filtrar(true);await after()}}}
 async function pintarHoy(){
  const d=$("hDate").value||ymd(new Date());$("hDate").value=d;
@@ -683,6 +684,16 @@ function aplicarQuick(){
  else if(q==="week"){const dw=t.getDay();a=new Date(t.getFullYear(),t.getMonth(),t.getDate()-(dw===0?6:dw-1))}
  else if(q==="month")a=new Date(t.getFullYear(),t.getMonth(),1);else a=new Date(t.getFullYear(),0,1);
  $("vFrom").value=ymd(a);$("vTo").value=ymd(t)}
+
+function limpiarVentas(){
+ const m=modal("Limpiar ventas (liberar espacio)",`<p class="pw" style="margin-top:0">Borra ventas ya cerradas (completadas o anuladas) para liberar espacio. <b>Las facturas se conservan tal cual y NO se anulan.</b> Las ventas pendientes de entrega o cobro no se tocan. No se puede deshacer.</p>
+  <div class="ctl" style="flex-direction:column;align-items:stretch;gap:8px"><button class="btn g" data-d="90" type="button">Borrar las de hace más de 90 días</button><button class="btn g" data-d="30" type="button">Borrar las de hace más de 30 días</button><button class="btn g" data-d="all" type="button" style="color:var(--bad)">Borrar todas las ventas cerradas</button></div>
+  <label class="cf-c" style="margin-top:8px"><input type="checkbox" id="lvDev"> Devolver los productos al stock</label>`,{foot:'<button class="btn g" data-x>Cancelar</button>'});
+ m.el.addEventListener("click",async e=>{const b=e.target.closest("[data-d]");if(!b)return;const dias=b.dataset.d==="all"?null:+b.dataset.d,dev=m.q("#lvDev").checked;m.close();
+  if(!await pedirClave("Vas a borrar ventas en bloque."))return;
+  if(!await confirmar((dias===null?"Se borrarán <b>todas</b> las ventas cerradas":"Se borrarán las ventas cerradas de hace más de <b>"+dias+" días</b>")+". Las facturas se conservan."+(dev?" El stock se devolverá.":" El stock no se toca."),{titulo:"Limpiar ventas",ok:"Borrar",peligro:true}))return;
+  const n=await espera(()=>rpc("limpiar_ventas",{p_dias:dias,p_devolver:dev}),"Borrando ventas…");
+  if(n!==undefined&&n!==null){toast(n+" venta"+(n===1?"":"s")+" borrada"+(n===1?"":"s")+" · facturas conservadas");snd("ok");await cargarProductos().catch(()=>{});filtrar(true);if(S.tab==="ven")pintarVentas();else if(S.tab==="hoy")pintarHoy();if(S.tab==="fac")pintarFacturas()}})}
 async function pintarVentas(){
  aplicarQuick();const a=$("vFrom").value,b=$("vTo").value,all=$("vQuick").value==="all"&&!a&&!b;
  const L=await espera(()=>ventasRango(all?null:a||null,all?null:b||null));if(!L)return;
@@ -1186,6 +1197,7 @@ async function nuevaFactura(pre){
   if(f&&mail&&CL&&CL.auto){const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,mail),"Factura enviada a "+mail);if(ok)snd("ok")}};
  lines()}
 $("fcNew").onclick=()=>nuevaFactura();
+if(DAY.principal&&$("vLimp")){$("vLimpWrap").classList.remove("hidden");$("vLimp").onclick=limpiarVentas}
 ["fcQ"].forEach(i=>$(i).addEventListener("input",(()=>{let t;return()=>{clearTimeout(t);t=setTimeout(pintarFacturas,250)}})()));
 $("fcQuick").onchange=()=>{if($("fcQuick").value==="all"){$("fcFrom").value="";$("fcTo").value=""}pintarFacturas()};
 ["fcFrom","fcTo"].forEach(i=>$(i).addEventListener("change",()=>{if(![...$("fcQuick").options].some(o=>o.value==="custom"))$("fcQuick").add(new Option("Personalizado","custom"));$("fcQuick").value="custom";pintarFacturas()}));
