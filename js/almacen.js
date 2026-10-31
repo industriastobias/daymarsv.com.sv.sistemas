@@ -779,9 +779,44 @@ const DOC_CSS=`.fx{font-family:Arial,Helvetica,sans-serif;color:#222;background:
 .fx .nt{margin-top:10px;color:#555}`;
 const money=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 async function qrSvg(txt){try{await lib("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js");const q=qrcode(0,"M");q.addData(txt);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}catch(e){return""}}
+const T80_CSS=`.fx-t80.v2{padding:14px 12px 16px;font-size:11.5px;line-height:1.35}
+.fx-t80.v2 .t8c{text-align:center}.fx-t80.v2 h1{font-size:20px;margin:0;color:#6B2D3E;letter-spacing:.3px}
+.fx-t80.v2 .t8e{color:#C9973F;font-style:italic;font-weight:700}
+.fx-t80.v2 .t8d{border:0;border-top:1px dashed #C9973F;margin:9px 0}
+.fx-t80.v2 .t8t{text-align:center;font-weight:800;font-size:15px;color:#6B2D3E;letter-spacing:1px}
+.fx-t80.v2 .t8s{color:#6B2D3E;font-weight:800;font-size:11px;letter-spacing:.5px;margin-bottom:2px}
+.fx-t80.v2 table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:2px}
+.fx-t80.v2 th{background:#6B2D3E;color:#fff;font-size:9.5px;letter-spacing:.3px;padding:5px 3px;border:0;text-align:left}
+.fx-t80.v2 th.r,.fx-t80.v2 td.r{text-align:right}.fx-t80.v2 th.t8m,.fx-t80.v2 td.t8m{text-align:center}
+.fx-t80.v2 td{padding:5px 3px;border-bottom:1px solid #eadfe2;font-size:11px;vertical-align:top;word-break:break-word}
+.fx-t80.v2 .t8x div{display:flex;justify-content:space-between;padding:2px 0}
+.fx-t80.v2 .t8g{display:flex;justify-content:space-between;align-items:center;background:#6B2D3E;color:#fff;border-radius:6px;padding:7px 10px;margin-top:8px;font-size:16px;font-weight:800}
+.fx-t80.v2 .t8q{text-align:center;margin-top:12px}.fx-t80.v2 .t8q .qr{width:104px;height:104px;margin:0 auto 4px}
+.fx-t80.v2 .t8k{font-size:7px;color:#666;word-break:break-all;line-height:1.25}
+.fx-t80.v2 .t8p{text-align:center;margin-top:10px;font-weight:700;color:#6B2D3E}.fx-t80.v2 .t8n{text-align:center;color:#888;font-size:8.5px;margin-top:6px}`;
+function facT80(f,c,its,qr){
+ const iv=f.iva_modo,r=s=>s?`<div>${esc(s)}</div>`:"",d=new Date(f.created_at||f.fecha),hora=f.created_at&&!isNaN(d)?", "+d.toLocaleTimeString("es-SV",{hour:"numeric",minute:"2-digit"}):"";
+ const cod=[c.nombre||"DAYMAR-SHOP",fnum(f.numero),c.nit||"",f.fecha,(+f.total).toFixed(2),f.codigo].join("|");
+ return `<div class="fx fx-t80 v2"><style>${DOC_CSS}${T80_CSS}</style>${f.estado==="anulada"?'<div class="an">ANULADA</div>':""}
+ <div class="t8c"><h1>${esc(c.nombre||"DAYMAR-SHOP")}</h1>${c.eslogan?`<div class="t8e">${esc(c.eslogan)}</div>`:""}${c.razon_social?r(c.razon_social):""}${r(c.direccion)}${r(c.correo)}${r(c.telefono)}${c.nit?r("NIT: "+c.nit):""}${c.nrc?r("NRC: "+c.nrc):""}${c.giro?r("Giro: "+c.giro):""}</div>
+ <hr class="t8d"><div class="t8t">FACTURA</div><hr class="t8d">
+ <div>Serie-N°: <b>${fnum(f.numero)}</b></div><div>Fecha: ${fdate(f.fecha)}${hora}</div><div>Pago: ${esc(f.metodo_pago||"")}</div>
+ <hr class="t8d"><div class="t8s">CLIENTE</div><div>${esc(f.cliente_nombre||"Consumidor Final")}</div>${f.cliente_doc?`<div>NIT/DUI: ${esc(f.cliente_doc)}</div>`:""}${f.cliente_direccion?`<div>${esc(f.cliente_direccion)}</div>`:""}${f.cliente_telefono?`<div>Tel.: ${esc(f.cliente_telefono)}</div>`:""}
+ <hr class="t8d">
+ <table><colgroup><col style="width:42%"><col style="width:12%"><col style="width:23%"><col style="width:23%"></colgroup><thead><tr><th>PRODUCTO</th><th class="t8m">CANT</th><th class="r">P.UNIT</th><th class="r">TOTAL</th></tr></thead>
+ <tbody>${its.map(i=>`<tr><td>${esc(i.nombre)}</td><td class="t8m">${i.cantidad}</td><td class="r">${(+i.precio_unit).toFixed(2)}</td><td class="r">${(+i.total).toFixed(2)}</td></tr>`).join("")}</tbody></table>
+ <hr class="t8d"><div class="t8x"><div><span>Subtotal:</span><span>${money(f.subtotal)}</span></div>
+ ${+f.descuento_monto?`<div><span>Descuento:</span><span>-${money(f.descuento_monto)}</span></div>`:""}${+f.envio?`<div><span>Envío:</span><span>${money(f.envio)}</span></div>`:""}
+ ${iv!=="ninguno"?`<div><span>IVA ${+f.iva_pct}%${iv==="incluido"?" (incluido)":""}:</span><span>${money(f.iva_monto)}</span></div>`:`<div><span>Base imponible:</span><span>${money(f.subtotal)}</span></div>`}
+ ${f.efectivo!=null?`<div><span>Efectivo recibido:</span><span>${money(f.efectivo)}</span></div><div><span>Cambio:</span><span>${money(f.cambio)}</span></div>`:""}</div>
+ <div class="t8g"><span>TOTAL :</span><span>${money(f.total)}</span></div>
+ ${f.nota?`<div class="nt" style="margin-top:6px">${esc(f.nota)}</div>`:""}
+ <div class="t8q">${qr?`<div class="qr">${qr}</div>`:""}<div style="font-size:9px">Escanea para verificar factura</div><div class="t8k">${esc(cod)}</div></div>
+ <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div><div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMAR-SHOP")}</div></div>`}
 async function facHTML(f,fmt){
  const c=await ensureCfg(),its=f.factura_items||[],iv=f.iva_modo;
  const qr=await qrSvg(["FACTURA",fnum(f.numero),f.codigo,f.fecha,f.total].join("|"));
+ if(fmt==="t80")return facT80(f,c,its,qr);
  const fila=i=>fmt==="t80"?`<tr><td colspan="3">${esc(i.nombre)}</td></tr><tr><td>${i.cantidad} × ${money(i.precio_unit)}</td><td></td><td class="r">${money(i.total)}</td></tr>`
   :`<tr><td>${i.cantidad}</td><td>${esc(i.nombre)}${i.codigo?` <small>(${esc(i.codigo)})</small>`:""}</td><td class="r">${money(i.precio_unit)}</td><td class="r">${money(i.total)}</td></tr>`;
  const dato=(l,v)=>v?`<div><small>${l}</small> ${esc(v)}</div>`:"";
@@ -849,7 +884,7 @@ async function descargarPdf(html,fmt,nombre,modo){
  await espera(async()=>{const b=await pdfBlob(html,fmt);await entregarPdf(b,nombre,modo||"descargar");toast("PDF generado")},"Generando PDF…")}
 /* Vista previa con botones de impresión y PDF */
 async function vistaDoc(titulo,build,nombre,extra){
- const fmtSaved=LS("dms_fmt")||"a4";let fmt=fmtSaved;
+ const fmtSaved=LS("dms_fmt")||"t80";let fmt=fmtSaved;
  const m=modal(esc(titulo),`<div class="tp" id="dfF"><button type="button" data-f="a4">Carta / A4</button><button type="button" data-f="t80">Ticket 80 mm</button></div><div class="docv" id="dvB"></div>`,
   {big:true,foot:`${extra||""}<button class="btn g" data-x>Cerrar</button><button class="btn g" id="dvP">Imprimir</button><button class="btn" id="dvD">Descargar PDF</button>`});
  let html="";
@@ -887,8 +922,8 @@ $("fcList").addEventListener("click",async e=>{
  const b=e.target.closest("[data-fa]"),r=e.target.closest("[data-fid]");if(!r)return;const id=r.dataset.fid;
  try{
   if(!b||b.dataset.fa==="ver"){const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f)}
-  else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"a4",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
-  else if(b.dataset.fa==="pdf"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"a4";descargarPdf(await facHTML(f,fm),fm,fnum(f.numero)+(fm==="t80"?"-ticket":"")+".pdf")}}
+  else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"t80",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
+  else if(b.dataset.fa==="pdf"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"t80";descargarPdf(await facHTML(f,fm),fm,fnum(f.numero)+(fm==="t80"?"-ticket":"")+".pdf")}}
  }catch(err){toast(err.message)}});
 async function abrirFactura(f){
  const anu=ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"";
