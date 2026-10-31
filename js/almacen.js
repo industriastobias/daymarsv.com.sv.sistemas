@@ -779,28 +779,32 @@ const DOC_CSS=`.fx{font-family:Arial,Helvetica,sans-serif;color:#222;background:
 .fx .nt{margin-top:10px;color:#555}`;
 const money=n=>"$"+Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 async function qrSvg(txt){try{await lib("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js");const q=qrcode(0,"M");q.addData(txt);q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}catch(e){return""}}
-const T80_CSS=`.fx-t80.v2{padding:14px 12px 16px;font-size:11.5px;line-height:1.35}
-.fx-t80.v2 .t8c{text-align:center}.fx-t80.v2 h1{font-size:20px;margin:0;color:#6B2D3E;letter-spacing:.3px}
-.fx-t80.v2 .t8e{color:#C9973F;font-style:italic;font-weight:700}
-.fx-t80.v2 .t8d{border:0;border-top:1px dashed #C9973F;margin:9px 0}
-.fx-t80.v2 .t8t{text-align:center;font-weight:800;font-size:15px;color:#6B2D3E;letter-spacing:1px}
-.fx-t80.v2 .t8s{color:#6B2D3E;font-weight:800;font-size:11px;letter-spacing:.5px;margin-bottom:2px}
-.fx-t80.v2 table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:2px}
-.fx-t80.v2 th{background:#6B2D3E;color:#fff;font-size:9.5px;letter-spacing:.3px;padding:5px 3px;border:0;text-align:left}
+const T80_CSS=`.fx-t80.v2{padding:14px 14px 16px;font-size:11.5px;line-height:1.4;font-family:Helvetica,Arial,sans-serif;color:#111}
+.fx-t80.v2 .t8c{text-align:center}.fx-t80.v2 h1{font-size:22px;margin:0 0 2px;color:#6B2D3E;font-weight:800}
+.fx-t80.v2 .t8e{font-style:italic;color:#6B2D3E}
+.fx-t80.v2 .t8d{border:0;border-top:1px dashed #9a8a8e;margin:10px 0}
+.fx-t80.v2 .t8t{text-align:center;font-weight:800;font-size:15px;color:#6B2D3E}
+.fx-t80.v2 .t8s{font-weight:800;font-size:11.5px;color:#6B2D3E;margin-bottom:2px}
+.fx-t80.v2 table{width:100%;border-collapse:collapse;table-layout:fixed}
+.fx-t80.v2 th{font-size:10px;font-weight:800;padding:5px 2px;border:0;border-bottom:1.5px solid #111;text-align:left;background:none;color:#111}
 .fx-t80.v2 th.r,.fx-t80.v2 td.r{text-align:right}.fx-t80.v2 th.t8m,.fx-t80.v2 td.t8m{text-align:center}
-.fx-t80.v2 td{padding:5px 3px;border-bottom:1px solid #eadfe2;font-size:11px;vertical-align:top;word-break:break-word}
-.fx-t80.v2 .t8x div{display:flex;justify-content:space-between;padding:2px 0}
-.fx-t80.v2 .t8g{display:flex;justify-content:space-between;align-items:center;background:#6B2D3E;color:#fff;border-radius:6px;padding:7px 10px;margin-top:8px;font-size:16px;font-weight:800}
+.fx-t80.v2 td{padding:6px 2px;border:0;font-size:11px;vertical-align:top;word-break:break-word}
+.fx-t80.v2 tbody tr:last-child td{border-bottom:1.5px solid #111}
+.fx-t80.v2 .t8x{margin-top:6px}.fx-t80.v2 .t8x div{display:flex;justify-content:space-between;padding:1px 0}
+.fx-t80.v2 .t8g{display:flex;justify-content:space-between;align-items:center;color:#6B2D3E;padding:2px 0;font-size:18px;font-weight:800}
 .fx-t80.v2 .t8q{text-align:center;margin-top:12px}.fx-t80.v2 .t8q .qr{width:104px;height:104px;margin:0 auto 4px}
-.fx-t80.v2 .t8k{font-size:7px;color:#666;word-break:break-all;line-height:1.25}
-.fx-t80.v2 .t8p{text-align:center;margin-top:10px;font-weight:700;color:#6B2D3E}.fx-t80.v2 .t8n{text-align:center;color:#888;font-size:8.5px;margin-top:6px}`;
+.fx-t80.v2 .t8k{font-size:7px;color:#333;word-break:break-all;line-height:1.25}
+.fx-t80.v2 .t8p{text-align:center;margin-top:10px;font-weight:800;font-size:13px;color:#6B2D3E}.fx-t80.v2 .t8i{text-align:center;margin-top:3px}
+.fx-t80.v2 .t8l{text-align:center;font-size:9px;margin-top:8px;line-height:1.3}
+.fx-t80.v2 .t8n{text-align:center;color:#333;font-size:8.5px;margin-top:10px}`;
+function venceF(f){const d=new Date((f.fecha||"")+"T12:00:00");if(isNaN(d))return "";d.setDate(d.getDate()+30);return d.toLocaleDateString("es-SV")}
 function facT80(f,c,its,qr){
  const iv=f.iva_modo,r=s=>s?`<div>${esc(s)}</div>`:"",d=new Date(f.created_at||f.fecha),hora=f.created_at&&!isNaN(d)?", "+d.toLocaleTimeString("es-SV",{hour:"numeric",minute:"2-digit"}):"";
  const cod=[c.nombre||"DAYMARSV",fnum(f.numero),c.nit||"",f.fecha,(+f.total).toFixed(2),f.codigo].join("|");
  return `<div class="fx fx-t80 v2"><style>${DOC_CSS}${T80_CSS}</style>${f.estado==="anulada"?'<div class="an">ANULADA</div>':""}
- <div class="t8c"><h1>${esc(c.nombre||"DAYMARSV")}</h1>${c.eslogan?`<div class="t8e">${esc(c.eslogan)}</div>`:""}${c.razon_social?r(c.razon_social):""}${r(c.direccion)}${r(c.correo)}${c.telefono?r("Tel.: "+c.telefono):""}${c.instagram?r("Instagram: "+(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram)):""}${c.nit?r("NIT: "+c.nit):""}${c.nrc?r("NRC: "+c.nrc):""}${c.giro?r("Giro: "+c.giro):""}</div>
+ <div class="t8c"><h1>${esc(c.nombre||"DAYMARSV")}</h1>${c.eslogan?`<div class="t8e">${esc(c.eslogan)}</div>`:""}${c.razon_social?r(c.razon_social):""}${r(c.direccion)}${r(c.correo)}${r(c.telefono)}${c.nit?r("NIT: "+c.nit):""}${c.nrc?r("NRC: "+c.nrc):""}${c.giro?r("Giro: "+c.giro):""}</div>
  <hr class="t8d"><div class="t8t">FACTURA</div><hr class="t8d">
- <div>Serie-N°: <b>${fnum(f.numero)}</b></div><div>Fecha: ${fdate(f.fecha)}${hora}</div><div>Pago: ${esc(f.metodo_pago||"")}</div>
+ <div>Serie-N°: <b>${fnum(f.numero)}</b></div><div>Fecha: ${fdate(f.fecha)}${hora}</div><div>Vence: ${venceF(f)}</div><div>Pago: ${esc(f.metodo_pago||"")}</div><div>Caja: 001</div><div>Cajero: ${esc(String(f.cajero||(DAY.me&&DAY.me.nombre)||"ADMIN").toUpperCase())}</div>
  <hr class="t8d"><div class="t8s">CLIENTE</div><div>${esc(f.cliente_nombre||"Consumidor Final")}</div>${f.cliente_doc?`<div>NIT/DUI: ${esc(f.cliente_doc)}</div>`:""}${f.cliente_direccion?`<div>${esc(f.cliente_direccion)}</div>`:""}${f.cliente_telefono?`<div>Tel.: ${esc(f.cliente_telefono)}</div>`:""}
  <hr class="t8d">
  <table><colgroup><col style="width:42%"><col style="width:12%"><col style="width:23%"><col style="width:23%"></colgroup><thead><tr><th>PRODUCTO</th><th class="t8m">CANT</th><th class="r">P.UNIT</th><th class="r">TOTAL</th></tr></thead>
@@ -812,7 +816,7 @@ function facT80(f,c,its,qr){
  <div class="t8g"><span>TOTAL :</span><span>${money(f.total)}</span></div>
  ${f.nota?`<div class="nt" style="margin-top:6px">${esc(f.nota)}</div>`:""}
  <div class="t8q">${qr?`<div class="qr">${qr}</div>`:""}<div style="font-size:9px">Escanea para verificar factura</div><div class="t8k">${esc(cod)}</div></div>
- <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div><div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMARSV")}</div></div>`}
+ <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div>${c.instagram?`<div class="t8i">Instagram: ${esc(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram)}</div>`:""}${c.condiciones?`<div class="t8l">${esc(c.condiciones)}</div>`:""}<div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMARSV")} - Facturación POS</div></div>`}
 async function facHTML(f,fmt){
  const c=await ensureCfg(),its=f.factura_items||[],iv=f.iva_modo;
  const qr=await qrSvg(["FACTURA",fnum(f.numero),f.codigo,f.fecha,f.total].join("|"));
@@ -1028,11 +1032,11 @@ $("fcEst").onchange=()=>pintarFacturas();
 if(!ADM)$("fcCfg").classList.add("hidden");
 $("fcCfg").onclick=async()=>{await ensureCfg();const c=CFG;const F=(n,l,v,x)=>`<div${x?` class="${x}"`:""}><label>${l}</label><input name="${n}" value="${esc(v||"")}" maxlength="160"></div>`;
  const m=modal("Datos del negocio",`<p class="pw" style="margin-top:0">Aparecen en el encabezado de las facturas y del cierre de caja.</p><div class="fg">${F("nombre","Nombre comercial",c.nombre)}${F("eslogan","Eslogan",c.eslogan)}${F("razon_social","Razón social",c.razon_social)}${F("giro","Giro",c.giro)}${F("nit","NIT",c.nit)}${F("nrc","NRC",c.nrc)}${F("direccion","Dirección",c.direccion,"full")}${F("telefono","Teléfono",c.telefono)}${F("instagram","Instagram",c.instagram)}${F("correo","Correo",c.correo)}
-  <div><label>IVA (%)</label><input name="iva" type="number" min="0" max="100" step="0.01" value="${+c.iva_pct}"></div>${F("pie","Mensaje al pie",c.pie)}</div><div class="err2" id="cgE"></div>`,
+  <div><label>IVA (%)</label><input name="iva" type="number" min="0" max="100" step="0.01" value="${+c.iva_pct}"></div>${F("pie","Mensaje al pie",c.pie)}${F("condiciones","Condiciones (cambios y devoluciones)",c.condiciones,"full")}</div><div class="err2" id="cgE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cgOk">Guardar</button>`});
  const g=n=>m.q(`[name=${n}]`).value.trim();
  m.q("#cgOk").onclick=async()=>{const iva=Number(g("iva"));if(!g("nombre")){m.q("#cgE").textContent="El nombre es obligatorio.";return}if(!(iva>=0&&iva<=100)){m.q("#cgE").textContent="IVA entre 0 y 100.";return}
-  const r=await espera(async()=>{const {error}=await db.from("config_negocio").update({nombre:g("nombre"),eslogan:g("eslogan")||null,razon_social:g("razon_social")||null,giro:g("giro")||null,nit:g("nit")||null,nrc:g("nrc")||null,direccion:g("direccion")||null,telefono:g("telefono")||null,instagram:g("instagram")||null,correo:g("correo")||null,iva_pct:iva,pie:g("pie")||null,updated_at:new Date().toISOString()}).eq("id",1);if(error)throw new Error(error.message);return true});
+  const r=await espera(async()=>{const {error}=await db.from("config_negocio").update({nombre:g("nombre"),eslogan:g("eslogan")||null,razon_social:g("razon_social")||null,giro:g("giro")||null,nit:g("nit")||null,nrc:g("nrc")||null,direccion:g("direccion")||null,telefono:g("telefono")||null,instagram:g("instagram")||null,condiciones:g("condiciones")||null,correo:g("correo")||null,iva_pct:iva,pie:g("pie")||null,updated_at:new Date().toISOString()}).eq("id",1);if(error)throw new Error(error.message);return true});
   if(r){CFG=null;m.close();toast("Datos guardados")}}};
 
 /* ---------- CIERRE DE CAJA (guarda un registro; no borra ventas) ---------- */
