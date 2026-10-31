@@ -100,5 +100,5 @@ function dlgEstado(txt){const d=document.createElement("dialog");d.style.cssText
  const set=(h,spin,btn)=>{d.innerHTML=(spin?'<div class="spin" style="margin:0 auto 12px;width:34px;height:34px"></div>':"")+'<div style="font-size:16px;font-weight:600">'+h+"</div>"+(btn?'<button class="btn" style="margin-top:16px" id="pgOk" type="button">Entendido</button>':"");const b=d.querySelector("#pgOk");if(b)b.onclick=close};
  d.showModal();set(txt,true);return {set,close}}
 async function progreso(txt,fn,okTxt){const g=dlgEstado(txt);try{const r=await fn();g.set('<div style="font-size:38px;color:#2f7d4f;line-height:1">✓</div>'+okTxt);setTimeout(g.close,1100);return r}catch(e){g.set(String(e&&e.message||e).replace(/</g,"&lt;"),false,true);return null}}
-window.UI={progreso,h2c,$,r2,cents,norm,fdate,ftime,money,ic,deb,rpc,fetchAll,lib,espera,modal,confirmar,pedirClave,pestanas,DOC_CSS,imprimir,descargarPdf,vistaDoc,excel,rango};
+window.UI={dlgEstado,progreso,h2c,$,r2,cents,norm,fdate,ftime,money,ic,deb,rpc,fetchAll,lib,espera,modal,confirmar,pedirClave,pestanas,DOC_CSS,imprimir,descargarPdf,vistaDoc,excel,rango};
 })();

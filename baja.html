@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMARSV – Dejar de recibir promociones</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#6B2D3E;font-family:Arial,Helvetica,sans-serif;color:#2a1a20;padding:16px}
+.c{background:#fff;border-radius:16px;max-width:420px;width:100%;padding:30px 26px;text-align:center;box-shadow:0 20px 60px #0004}
+h1{margin:0 0 4px;color:#6B2D3E;font-size:26px;letter-spacing:1px}h1 i{color:#C9973F;font-style:normal}
+h2{font-size:18px;margin:18px 0 8px}p{font-size:15px;line-height:1.5;color:#444;margin:8px 0}
+button{margin-top:16px;width:100%;padding:14px;border:0;border-radius:28px;background:#6B2D3E;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}button[disabled]{opacity:.6}
+.ok{color:#2f7d4f;font-size:44px;line-height:1}.err{color:#b3261e}
+</style></head><body>
+<div class="c"><h1>DAYMAR<i>SV</i></h1>
+<div id="v"><h2>¿Dejar de recibir promociones?</h2><p>Dejarás de recibir nuestras promociones por correo. Seguirás recibiendo las facturas de tus compras.</p><button id="b" type="button">Sí, dejar de recibirlas</button></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script>
+(function(){
+var t=new URLSearchParams(location.search).get("t")||"",v=document.getElementById("v"),b=document.getElementById("b");
+var re=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if(!re.test(t)){v.innerHTML='<h2 class="err">Enlace no válido</h2><p>El enlace está incompleto. Abre el enlace directamente desde el correo.</p>';return}
+var db=supabase.createClient("https://itafqiemoulcztmhfqah.supabase.co","sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB");
+b.onclick=async function(){b.disabled=true;b.textContent="Un momento…";
+ try{var r=await db.rpc("baja_promociones",{p_token:t});if(r.error)throw r.error;
+  if(r.data==="ok")v.innerHTML='<div class="ok">✓</div><h2>Listo</h2><p>Ya no recibirás promociones por correo. ¡Gracias!</p>';
+  else v.innerHTML='<h2 class="err">Enlace no válido</h2><p>No encontramos tu registro. Si ya te diste de baja, no tienes que hacer nada más.</p>'}
+ catch(e){b.disabled=false;b.textContent="Sí, dejar de recibirlas";v.insertAdjacentHTML("beforeend",'<p class="err">No se pudo completar. Intenta de nuevo en un momento.</p>')}};
+})();
+</script></div></body></html>

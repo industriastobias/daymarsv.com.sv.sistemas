@@ -44,7 +44,7 @@ function pintar(){
  $("cSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.o===S.orden));
  const L=filtrados();
  $("cL").innerHTML=L.length?L.slice(0,400).map(c=>{const s=S.stats[c.id];
-  return `<div class="rw" data-c="${c.id}" style="cursor:pointer"><div class="th ph" style="padding:0;overflow:hidden;border-radius:50%">${avatar(c.nombre)}</div><div class="ti"><b>${esc(c.nombre)}</b><small>${esc([c.codigo,c.telefono,c.correo].filter(Boolean).join(" · ")||"Sin contacto")}</small></div>
+  return `<div class="rw" data-c="${c.id}" style="cursor:pointer"><div class="th ph" style="padding:0;overflow:hidden;border-radius:50%">${avatar(c.nombre)}</div><div class="ti"><b>${esc(c.nombre)}</b><small>${esc([c.codigo,c.telefono,c.correo].filter(Boolean).join(" · ")||"Sin contacto")}${c.acepta_promos?" · ✉ promos":""}</small></div>
   ${waUrl(c,s)?`<a class="cwa" href="${waUrl(c,s)}" target="_blank" rel="noopener" aria-label="WhatsApp de ${esc(c.nombre)}" title="Escribir por WhatsApp" style="flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#25d366;color:#fff;margin-right:8px"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15.1L2 22l5-1.3A10 10 0 1012 2zm0 18.2a8.2 8.2 0 01-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1112 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.6.8-.8 1-.3.2-.6.1a6.7 6.7 0 01-3.3-2.9c-.2-.4.2-.4.6-1.2a.5.5 0 000-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 00-.7.3 3 3 0 00-.9 2.2 5.2 5.2 0 001.1 2.8 11.9 11.9 0 004.6 4c1.7.7 2.4.8 3.2.7a2.7 2.7 0 001.8-1.3 2.2 2.2 0 00.2-1.3c-.1-.1-.3-.2-.6-.3z"/></svg></a>`:""}<div class="am2"><b>${$$(s.t)}</b><br><small>${s.n} compra${s.n===1?"":"s"}${s.u?" · "+fdate(s.u):""}</small>${s.deuda>0?`<br><span class="bd or">Debe ${$$(s.deuda)}</span>`:""}</div></div>`}).join("")
   :`<div class="empty card">${S.C.length?"Ningún cliente coincide con la búsqueda.":"Aún no hay clientes. Toca “Nuevo cliente” para crear el primero."}</div>`}
 /* ---------- formulario ---------- */
@@ -53,15 +53,77 @@ function form(c){
  const d=modal(nuevo?"Nuevo cliente":"Editar cliente",`<div class="fg"><div class="full"><label>Nombre</label><input name="n" maxlength="100" value="${esc(c.nombre||"")}" autocomplete="off"></div>
   <div><label>Teléfono</label><input name="t" type="tel" maxlength="30" inputmode="tel" value="${esc(c.telefono||"")}"></div><div><label>Correo</label><input name="c" type="email" maxlength="100" value="${esc(c.correo||"")}"></div>
   <div><label>DUI / NIT <small>(para factura)</small></label><input name="d" maxlength="30" value="${esc(c.documento||"")}"></div><div><label>Dirección <small>(opcional)</small></label><input name="a" maxlength="200" value="${esc(c.direccion||"")}"></div>
-  <div class="full"><label>Notas <small>(opcional)</small></label><input name="o" maxlength="300" value="${esc(c.notas||"")}"></div></div><div class="err2" id="fE" role="alert"></div>`,
+  <div class="full"><label>Notas <small>(opcional)</small></label><input name="o" maxlength="300" value="${esc(c.notas||"")}"></div><div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" name="ap" ${c.acepta_promos?"checked":""} style="width:auto;flex:none"> Acepta recibir promociones por correo</label>${c.baja_promos_en&&!c.acepta_promos?`<small style="color:var(--mute)">Se dio de baja el ${fdate(c.baja_promos_en)}.</small>`:""}</div></div><div class="err2" id="fE" role="alert"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="fOk">Guardar</button>`});
  const g=n=>d.q(`[name=${n}]`).value.trim();setTimeout(()=>d.q("[name=n]").focus(),60);
  d.q("#fOk").onclick=async()=>{if(!g("n")){d.q("#fE").textContent="Escribe el nombre del cliente.";return}
   const dup=S.C.find(x=>x.id!==c.id&&(norm(x.nombre)===norm(g("n"))||(g("t")&&x.telefono&&x.telefono.replace(/\D/g,"")===g("t").replace(/\D/g,""))));
   if(dup&&!await confirmar(`Ya existe un cliente parecido: <b>${esc(dup.nombre)}</b>${dup.telefono?" ("+esc(dup.telefono)+")":""}. ¿Guardar igual?`,{titulo:"Posible duplicado",ok:"Guardar igual"}))return;
   const row={nombre:g("n"),telefono:g("t")||null,correo:g("c")||null,documento:g("d")||null,direccion:g("a")||null,notas:g("o")||null};
+  const ap=d.q("[name=ap]").checked&&!!g("c");if(d.q("[name=ap]").checked&&!g("c")){d.q("#fE").textContent="Para activar las promociones, escribe el correo del cliente.";return}
+  if(ap!==!!c.acepta_promos||!c.id){row.acepta_promos=ap;if(ap)row.baja_promos_en=null}
   const ok=await espera(async()=>{const {error}=c.id?await db.from("clientes").update(row).eq("id",c.id):await db.from("clientes").insert(row);if(error)throw new Error(/documento|direccion/.test(error.message)?"Falta aplicar la migración de clientes (002_clientes.sql).":error.message);return true});
   if(ok){d.close();toast("Cliente guardado");await recargar()}}}
+
+/* ---------- promociones por correo ---------- */
+async function promo(){
+ let cfg={},codes=[],hoy={enviados:0,limite:250};
+ try{const {data}=await db.from("config_negocio").select("*").eq("id",1).maybeSingle();cfg=data||{}}catch(e){}
+ try{const {data}=await db.from("promo_codigos").select("codigo,pct").eq("activo",true);codes=data||[]}catch(e){}
+ let st=null;try{st=await rpc("config_correo_estado")}catch(e){}
+ if(!st||!st.listo){toast("Primero configura el correo (Finanzas → Datos del negocio, administrador principal)");return}
+ try{hoy=await rpc("correos_hoy")}catch(e){}
+ const dias=c=>{const u=S.stats[c.id]&&S.stats[c.id].u;return u?(Date.now()-new Date(u))/864e5:Infinity};
+ const OK=S.C.filter(c=>c.correo&&c.acepta_promos).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+ const sinAcep=S.C.filter(c=>c.correo&&!c.acepta_promos&&!c.baja_promos_en).length;
+ const opt=(v,t,n)=>`<option value="${v}">${t} (${n})</option>`;
+ const m=modal("Enviar promoción por correo",`
+  <p class="pw" style="margin-top:0" id="pmH">Hoy van <b>${hoy.enviados}</b> correos de <b>${hoy.limite}</b> permitidos. Solo se envía a clientes que aceptan promociones y tienen correo.</p>
+  <div class="fg"><div class="full"><label>Destinatarios</label><select id="pmD">${opt("todos","Todos los que aceptan promociones",OK.length)}${opt("30","Compraron en los últimos 30 días",OK.filter(c=>dias(c)<=30).length)}${opt("90","Compraron en los últimos 90 días",OK.filter(c=>dias(c)<=90).length)}${opt("no90","No han comprado en 90 días",OK.filter(c=>dias(c)>90).length)}<option value="man">Elegir manualmente…</option></select></div>
+  <div class="full hidden" id="pmMan" style="max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:6px">${OK.map(c=>`<label style="display:flex;gap:8px;align-items:center;font-weight:500;padding:4px"><input type="checkbox" data-pc="${c.id}" style="width:auto;flex:none"> ${esc(c.nombre)} <small style="color:var(--mute)">${esc(c.correo)}</small></label>`).join("")||'<p class="hint">Ningún cliente acepta promociones todavía.</p>'}</div>
+  ${sinAcep?`<div class="full"><small>Hay ${sinAcep} cliente(s) con correo que aún no aceptan promociones. <button class="btn g sm" id="pmAct" type="button">Activarles las promociones</button></small></div>`:""}
+  <div class="full"><label>Asunto</label><input id="pmS" maxlength="120" value="¡Una promoción para ti, {{NOMBRE}}!"></div>
+  <div class="full"><label>Mensaje <small>(usa {{NOMBRE}} para poner su nombre)</small></label><textarea id="pmM" rows="5" maxlength="1200" style="width:100%">Hola {{NOMBRE}}, tenemos novedades y una promoción pensada para ti. ¡Esperamos verte pronto!</textarea></div>
+  <div><label>Código de descuento</label><select id="pmC"><option value="">Sin código</option>${codes.map(c=>`<option value="${esc(c.codigo)}">${esc(c.codigo)} · ${+c.pct}%</option>`).join("")}</select></div>
+  <div style="display:flex;align-items:end"><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" id="pmP" checked style="width:auto;flex:none"> Incluir productos nuevos</label></div></div>
+  <p class="hint" id="pmN"></p><div class="err2" id="pmE"></div>`,
+  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="pmV" type="button">Vista previa</button><button class="btn g" id="pmT" type="button">Enviarme prueba</button><button class="btn" id="pmOk" type="button">Enviar promoción</button>`});
+ const dest=()=>{const v=m.q("#pmD").value;if(v==="man"){const ids=[...m.el.querySelectorAll("[data-pc]:checked")].map(x=>x.dataset.pc);return OK.filter(c=>ids.includes(c.id))}
+  return v==="todos"?OK:v==="no90"?OK.filter(c=>dias(c)>90):OK.filter(c=>dias(c)<=+v)};
+ const pintN=()=>{m.q("#pmMan").classList.toggle("hidden",m.q("#pmD").value!=="man");const n=dest().length;m.q("#pmN").textContent=n+" cliente"+(n===1?"":"s")+" recibirá"+(n===1?"":"n")+" esta promoción."};
+ m.q("#pmD").onchange=pintN;m.el.addEventListener("change",e=>{if(e.target.closest("[data-pc]"))pintN()});pintN();
+ const nuevos=async()=>{if(!m.q("#pmP").checked)return[];try{const {data}=await db.from("productos").select("nombre,precio_venta,descuento_pct,foto_url").gt("stock",0).not("foto_url","is",null).order("created_at",{ascending:false}).limit(30);const L=data||[];for(let i=L.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[L[i],L[j]]=[L[j],L[i]]}return L.slice(0,3)}catch(e){return[]}};
+ const armar=async()=>{const msg=m.q("#pmM").value.trim(),asu=m.q("#pmS").value.trim();if(!asu||!msg){m.q("#pmE").textContent="Escribe el asunto y el mensaje.";return null}m.q("#pmE").textContent="";
+  const cod=m.q("#pmC").value,pr=cod?codes.find(c=>c.codigo===cod):null;return {asu,html:promoHTML(cfg,{msg,promo:pr,nuevos:await nuevos()})}};
+ const act=m.q("#pmAct");if(act)act.onclick=async()=>{
+  if(!await confirmar("Se activarán las promociones de <b>"+sinAcep+"</b> cliente(s) con correo. Hazlo <b>solo si te dieron permiso</b> para escribirles. Quienes se hayan dado de baja no se tocan.",{titulo:"Activar promociones",ok:"Activar"}))return;
+  const ok=await espera(async()=>{const {error}=await db.from("clientes").update({acepta_promos:true}).not("correo","is",null).eq("acepta_promos",false).is("baja_promos_en",null);if(error)throw new Error(error.message);return true});
+  if(ok){m.close();toast("Promociones activadas");await recargar();promo()}};
+ m.q("#pmV").onclick=async()=>{const r=await armar();if(!r)return;const v=modal("Vista previa",`<iframe id="pvF" style="width:100%;height:62vh;border:0;background:#f5f1f2;border-radius:10px"></iframe>`,{foot:'<button class="btn g" data-x>Cerrar</button>'});v.q("#pvF").srcdoc=r.html.replace(/\{\{NOMBRE\}\}/g,"María").replace(/\{\{BAJA\}\}/g,"#")};
+ m.q("#pmT").onclick=async()=>{const r=await armar();if(!r)return;const para=DAY.email;
+  await UI.progreso("Enviando prueba…",async()=>{await rpc("enviar_correo_simple",{p_para:para,p_asunto:"[Prueba] "+r.asu.replace(/\{\{NOMBRE\}\}/g,"María"),p_html:r.html.replace(/\{\{NOMBRE\}\}/g,"María").replace(/\{\{BAJA\}\}/g,"#"),p_copia:false,p_tipo:"promocion",p_ref:"Prueba"});return true},"Prueba enviada a "+esc(para))};
+ m.q("#pmOk").onclick=async()=>{const L=dest();if(!L.length){m.q("#pmE").textContent="No hay destinatarios con esa selección.";return}
+  const r=await armar();if(!r)return;
+  const libres=Math.max(0,hoy.limite-hoy.enviados);
+  if(!await confirmar("Se enviará esta promoción a <b>"+L.length+"</b> cliente"+(L.length===1?"":"s")+"."+(L.length>libres?" <br><br>Hoy solo quedan <b>"+libres+"</b> envíos disponibles; el resto no saldrá hoy.":""),{titulo:"Enviar promoción",ok:"Enviar"}))return;
+  m.close();const g=UI.dlgEstado("Enviando 0 de "+L.length+"…");const base=new URL("./",location.href).href,res={ok:0,no:0,limite:0};
+  for(let i=0;i<L.length;i++){g.set("Enviando "+(i+1)+" de "+L.length+"…<br><small>No cierres esta pantalla</small>",true);
+   try{const x=await rpc("enviar_promocion",{p_cliente:L[i].id,p_asunto:r.asu,p_html:r.html,p_base:base,p_campana:r.asu.slice(0,50)});if(x==="ok")res.ok++;else if(x==="limite"){res.limite=L.length-i;break}else res.no++}catch(e){g.set(esc(e.message),false,true);return}
+   await new Promise(z=>setTimeout(z,250))}
+  g.set('<div style="font-size:38px;color:#2f7d4f;line-height:1">'+(res.ok?"✓":"!")+"</div>"+res.ok+" enviado"+(res.ok===1?"":"s")+(res.no?"<br><small>"+res.no+" omitido(s) (sin permiso o sin correo)</small>":"")+(res.limite?"<br><small>"+res.limite+" quedaron sin enviar: se alcanzó el límite diario. Envíalos mañana.</small>":""),false,true)}}
+function promoHTML(c,x){
+ const W="#6B2D3E",neg=c.nombre||"DAYMARSV",ig=c.instagram?String(c.instagram).replace(/^@/,""):"",tel=String(c.telefono||"").replace(/\D/g,""),wa=tel.length===8?"503"+tel:tel;
+ const logo=new URL("img/logo-correo.jpg",location.href).href,money=v=>"$"+(+v).toFixed(2);
+ const btn=(url,txt,bg)=>`<a href="${esc(url)}" style="display:inline-block;margin:4px;padding:11px 18px;background:${bg};color:#fff;text-decoration:none;border-radius:24px;font-weight:bold;font-size:14px">${txt}</a>`;
+ const nv=(x.nuevos||[]).length?`<div style="margin-top:22px"><div style="font-weight:bold;color:${W};font-size:15px;margin-bottom:6px">Novedades que te pueden gustar</div><table width="100%" style="border-collapse:collapse"><tr>${x.nuevos.map(p=>{const pr=(+p.precio_venta)*(1-(+p.descuento_pct||0)/100);return `<td style="width:33%;padding:4px;text-align:center;vertical-align:top"><img src="${esc(p.foto_url)}" alt="" width="140" style="width:100%;max-width:140px;height:auto;border-radius:8px;display:block;margin:0 auto 4px"><div style="font-size:12px;line-height:1.3">${esc(p.nombre)}</div><div style="font-weight:bold;color:${W};font-size:13px">${money(pr)}</div></td>`}).join("")}</tr></table></div>`:"";
+ const botones=[wa?btn("https://wa.me/"+wa+"?text="+encodeURIComponent("Hola, vi su promoción y me interesa"),"Escríbenos por WhatsApp","#25D366"):"",ig?btn("https://instagram.com/"+ig,"Síguenos en Instagram",W):"",c.url_tienda?btn(c.url_tienda,"Ver nuestra tienda","#8a3a4f"):""].join("");
+ return `<div style="background:#f5f1f2;padding:16px 6px;font-family:Arial,Helvetica,sans-serif;color:#222"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden">
+ <img src="${esc(logo)}" alt="${esc(neg)}" width="560" style="display:block;width:100%;height:auto;background:${W}">
+ <div style="padding:22px 24px"><div style="font-size:15px;line-height:1.6">${esc(x.msg).replace(/\n/g,"<br>")}</div>
+ ${x.promo?`<div style="margin-top:22px;text-align:center;background:#fbf4e6;border:1px dashed #C9973F;border-radius:10px;padding:14px"><div style="font-size:13px;color:#555">Tu código de descuento</div><div style="font-size:24px;font-weight:bold;color:${W};letter-spacing:2px;margin:4px 0">${esc(x.promo.codigo)}</div><div style="font-size:14px">${+x.promo.pct}% de descuento</div></div>`:""}
+ ${nv}<div style="text-align:center;margin-top:22px">${botones}</div>
+ <p style="text-align:center;font-size:11px;color:#999;margin:18px 0 0;line-height:1.5">${esc(neg)}${c.direccion?" · "+esc(c.direccion):""}<br>Recibes este correo porque aceptaste recibir nuestras promociones.<br><a href="{{BAJA}}" style="color:#999">Dejar de recibir promociones</a></p>
+ </div></div></div>`}
 /* ---------- ficha ---------- */
 function ficha(id){
  const c=S.C.find(x=>x.id===id);if(!c)return;const s=S.stats[id];
@@ -107,6 +169,7 @@ $("cQ").addEventListener("input",deb(pintar,150));
 $("cSg").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(b){S.orden=b.dataset.o;pintar()}});
 $("cL").addEventListener("click",e=>{if(e.target.closest(".cwa"))return;const r=e.target.closest("[data-c]");if(r)ficha(r.dataset.c)});
 $("cNew").onclick=()=>form();
+if(ADM){const bp=document.createElement("button");bp.className="btn g sm";bp.type="button";bp.id="cPromo";bp.textContent="Enviar promoción";$("cXls").insertAdjacentElement("afterend",bp);bp.onclick=()=>promo()}
 $("cXls").onclick=()=>excel("clientes",[{n:"Clientes",c:[["Código",10],["Nombre",28],["Teléfono",16],["Correo",26],["DUI / NIT",18],["Dirección",34],["Compras",10],["Total comprado",16,"money"],["Última compra",14],["Notas",30]],f:S.C.map(c=>{const s=S.stats[c.id];return[c.codigo||"",c.nombre,c.telefono||"",c.correo||"",c.documento||"",c.direccion||"",s.n,s.t,s.u?s.u.slice(0,10):"",c.notas||""]})}]);
 await recargar();
 const hc=location.hash.match(/c=([\w-]+)/);if(hc&&S.stats[hc[1]])ficha(hc[1]);
