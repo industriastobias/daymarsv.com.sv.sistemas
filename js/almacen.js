@@ -224,20 +224,20 @@ function optHTML(){return `
 
 /* elegir o crear cliente desde la venta */
 function elegirCliente(){return new Promise(async res=>{
- let L=[];try{const {data}=await DAY.db.from("clientes").select("id,nombre,telefono,codigo").order("nombre").limit(1000);L=data||[]}catch(e){}
+ let L=[];try{const {data}=await DAY.db.from("clientes").select("id,nombre,telefono,codigo,correo,documento,direccion").order("nombre").limit(1000);L=data||[]}catch(e){}
  let hecho=false;const fin=v=>{if(hecho)return;hecho=true;res(v)};
  const m=modal("Cliente",`<input id="ecQ" type="search" placeholder="Buscar cliente…" autocomplete="off"><div class="ecl" id="ecL"></div>
   <details class="ecn"><summary>+ Nuevo cliente</summary><div class="fg"><div class="full"><label>Nombre *</label><input id="enN" maxlength="100" autocomplete="off"></div><div><label>Teléfono</label><input id="enT" type="tel" maxlength="30" inputmode="tel"></div><div><label>Correo</label><input id="enC" type="email" maxlength="100"></div></div><div class="err2" id="enE" role="alert"></div><button class="btn" id="enOk" type="button" style="margin-top:8px">Guardar cliente</button></details>`,{onclose:()=>fin(null)});
  const pint=()=>{const t=norm(m.q("#ecQ").value);const R=L.filter(c=>!t||norm(c.nombre+" "+(c.telefono||"")+" "+(c.codigo||"")).includes(t)).slice(0,30);
   m.q("#ecL").innerHTML=R.length?R.map(c=>`<button type="button" class="eco" data-i="${c.id}"><b>${esc(c.nombre)}</b><small>${esc([c.codigo,c.telefono].filter(Boolean).join(" · "))}</small></button>`).join(""):'<p class="hint">Sin resultados. Crea uno nuevo abajo.</p>'};
  pint();m.q("#ecQ").addEventListener("input",pint);
- m.el.addEventListener("click",e=>{const b=e.target.closest("[data-i]");if(b){const c=L.find(x=>x.id===b.dataset.i);if(c){fin({id:c.id,nombre:c.nombre});m.close()}}});
+ m.el.addEventListener("click",e=>{const b=e.target.closest("[data-i]");if(b){const c=L.find(x=>x.id===b.dataset.i);if(c){fin({id:c.id,nombre:c.nombre,telefono:c.telefono,correo:c.correo,documento:c.documento,direccion:c.direccion});m.close()}}});
  m.q("#enOk").onclick=async()=>{const n=m.q("#enN").value.trim();if(!n){m.q("#enE").textContent="Escribe el nombre del cliente.";return}
   const dup=L.find(x=>norm(x.nombre)===norm(n));if(dup){m.q("#enE").textContent="Ya existe «"+dup.nombre+"». Elígelo de la lista.";return}
-  const {data,error}=await DAY.db.from("clientes").insert({nombre:n,telefono:m.q("#enT").value.trim()||null,correo:m.q("#enC").value.trim()||null}).select("id,nombre").single();
+  const {data,error}=await DAY.db.from("clientes").insert({nombre:n,telefono:m.q("#enT").value.trim()||null,correo:m.q("#enC").value.trim()||null}).select("id,nombre,telefono,correo").single();
   if(error){m.q("#enE").textContent=error.message;return}
   const nc=Array.isArray(data)?data[0]:data;if(!nc||!nc.id){m.q("#enE").textContent="No se pudo guardar el cliente. Intenta de nuevo.";return}
-  toast("Cliente guardado");fin({id:nc.id,nombre:nc.nombre||n});m.close()}})}
+  toast("Cliente guardado");fin({id:nc.id,nombre:nc.nombre||n,telefono:nc.telefono,correo:nc.correo});m.close()}})}
 function optForm(root,getSub,onChange){
  const st={ty:"inmediata",pm:"Efectivo",who:"client",cli:null},q=s=>root.querySelector(s);
  const val=n=>{const v=q(`[name=${n}]`).value.trim(),x=v===""?0:Number(v);if(!isFinite(x)||x<0)throw new Error("Revisa los importes: deben ser números válidos y no negativos.");return x};
@@ -952,14 +952,16 @@ function pedirCorreo(titulo,texto,pre,btn){return new Promise(res=>{let hecho=fa
  const fin=v=>{if(!hecho){hecho=true;res(v)}};
  mm.q("#emOk").onclick=()=>{const para=mm.q("#emP").value.trim();if(!mailOk(para)){mm.q("#emE").textContent="Escribe un correo válido.";return}fin(para);mm.close()};
  mm.el.addEventListener("click",e=>{if(e.target.closest("[data-x]"))fin(null)});mm.el.addEventListener("close",()=>fin(null))})}
-async function correoDeCliente(id,nombre){try{
+async function correoDeCliente(id,nombre,tel){try{
  if(id){const {data}=await db.from("clientes").select("correo").eq("id",id).maybeSingle();if(data&&data.correo)return data.correo}
+ const d8=String(tel||"").replace(/\D/g,"").slice(-8);
+ if(d8.length===8){const {data}=await db.from("clientes").select("telefono,correo").not("correo","is",null).not("telefono","is",null).limit(1000);const h=(data||[]).find(c=>String(c.telefono).replace(/\D/g,"").slice(-8)===d8);if(h)return h.correo}
  if(nombre&&nombre.trim()&&!/^consumidor/i.test(nombre.trim())){const {data}=await db.from("clientes").select("correo").ilike("nombre",nombre.trim().replace(/[%_\\]/g,"\\$&")).not("correo","is",null).limit(1);if(data&&data[0])return data[0].correo}}catch(e){}return""}
 const caja=(neg,tit,cuerpo)=>`<div style="background:#f5f1f2;padding:20px 8px;font-family:Arial,Helvetica,sans-serif;color:#222"><div style="max-width:520px;margin:0 auto;background:#fff;border-radius:10px;padding:24px"><h1 style="margin:0;text-align:center;color:#6B2D3E;font-size:24px">${esc(neg)}</h1><div style="text-align:center;color:#6B2D3E;font-style:italic;margin-bottom:14px">${esc(tit)}</div>${cuerpo}</div></div>`;
 const filaK=(l,v,b)=>`<tr><td style="padding:4px 6px;${b?"font-weight:bold;color:#6B2D3E;font-size:16px":""}">${l}</td><td style="padding:4px 6px;text-align:right;${b?"font-weight:bold;color:#6B2D3E;font-size:16px":""}">${v}</td></tr>`;
 async function modalEnviarFactura(f,despues){
  const st=await correoListo();if(!st)return;
- const pre=f.cliente_correo||await correoDeCliente(null,f.cliente_nombre);
+ const pre=f.cliente_correo||await correoDeCliente(f.cliente_id,f.cliente_nombre,f.cliente_telefono);
  const para=await pedirCorreo("Enviar factura por correo","Se enviará la factura <b>"+fnum(f.numero)+"</b> con el detalle y el PDF adjunto.",pre,"Enviar factura");if(!para)return;
  const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,para),"Factura enviada a "+para);if(ok){f.cliente_correo=para;snd("ok");if(despues)despues()}}
 const b64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(b)});
@@ -1103,11 +1105,12 @@ async function nuevaFactura(pre){
  const F={items:(pre.items||[]).map(x=>({...x})),ventas:(pre.ventas||[]).slice()};
  const m=modal("Nueva factura",`
  <div class="fg">
+  <div class="full"><button type="button" class="btn g" id="fCli" style="width:100%">Buscar cliente registrado (por nombre o teléfono)</button></div>
   <div><label>Cliente</label><input name="cn" maxlength="120" placeholder="Consumidor final" value="${esc(pre.cliente||"")}"></div>
   <div><label>NIT / DUI <small>(opcional)</small></label><input name="cd" maxlength="40"></div>
   <div><label>Dirección <small>(opcional)</small></label><input name="ca" maxlength="160"></div>
-  <div><label>Teléfono <small>(opcional)</small></label><input name="ct" maxlength="30" inputmode="tel"></div>${CL&&CL.listo&&CL.auto?`
-  <div class="full"><label>Correo <small>(opcional · se le envía la factura automáticamente)</small></label><input name="cc" type="email" maxlength="120" inputmode="email"></div>`:""}
+  <div><label>Teléfono <small>(opcional)</small></label><input name="ct" maxlength="30" inputmode="tel"></div>${CL&&CL.listo?`
+  <div class="full"><label>Correo <small>(opcional · ${CL.auto?"se le envía la factura automáticamente":"para enviarla con el botón Correo"})</small></label><input name="cc" type="email" maxlength="120" inputmode="email"></div>`:""}
  </div>
  <h3 style="margin:14px 0 6px;font-size:15px">Productos</h3>
  <div class="elh"><span>Descripción</span><span>Cant.</span><span>Precio</span><span>Total</span><span></span></div>
@@ -1141,6 +1144,9 @@ async function nuevaFactura(pre){
  m.q("#fLines").addEventListener("input",e=>{const r=e.target.closest("[data-i]"),f=e.target.dataset.f;if(!r||!f)return;const it=F.items[+r.dataset.i];it[f]=f==="nombre"?e.target.value:Number(e.target.value)||0;r.querySelector("[data-t]").textContent=$$(it.cantidad*it.precio);calc()});
  m.q("#fLines").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(b){F.items.splice(+b.dataset.rm,1);lines()}});
  m.el.addEventListener("input",e=>{if(!e.target.closest("#fLines"))calc()});m.el.addEventListener("change",()=>calc());
+ m.q("#fCli").onclick=async()=>{const c=await elegirCliente();if(!c)return;
+  const set=(n,v)=>{const i=m.q("[name="+n+"]");if(i&&v)i.value=v};set("cn",c.nombre);set("cd",c.documento);set("ca",c.direccion);set("ct",c.telefono);set("cc",c.correo);
+  toast(c.correo?"Cliente cargado con su correo":"Cliente cargado (no tiene correo guardado)")};
  m.q("#fAddM").onclick=()=>{F.items.push({nombre:"",codigo:"",cantidad:1,precio:0});lines();const l=m.el.querySelectorAll("#fLines .el input[data-f=nombre]");l[l.length-1].focus()};
  m.q("#fAddP").onclick=()=>pickProducto(p=>{const ex=F.items.find(i=>i.codigo&&i.codigo===p.codigo&&i.precio===p.fin);if(ex)ex.cantidad++;else F.items.push({nombre:p.nombre,codigo:p.codigo||"",cantidad:1,precio:p.fin});lines()});
  m.q("#fAddV").onclick=()=>pickVentas(L=>{const x=fromVentas(L);F.items.push(...x.items);F.ventas=[...new Set([...F.ventas,...x.ventas])];
@@ -1157,13 +1163,13 @@ async function nuevaFactura(pre){
   const tot=calc()/100,ef=q("ef").value.trim();if(q("met").value==="Efectivo"&&ef!==""&&cents(ef)<cents(tot)){err.textContent="El efectivo recibido es menor al total.";return}
   const o={cliente_nombre:q("cn").value,cliente_doc:q("cd").value,cliente_direccion:q("ca").value,cliente_telefono:q("ct").value,metodo:q("met").value,iva_modo:q("modo").value,
    descuento_tipo:q("dt").value,descuento_valor:dv,envio:num("env"),efectivo:q("met").value==="Efectivo"&&ef!==""?Number(ef):null,nota:q("nota").value,venta_ids:F.ventas};
-  let mail=q("cc")?q("cc").value.trim():"";const nomCli=q("cn").value;
+  let mail=q("cc")?q("cc").value.trim():"";const nomCli=q("cn").value,telCli=q("ct").value;
   const id=await espera(()=>rpc("crear_factura",{p_items:its,p_opts:o}),"Emitiendo factura…");if(!id)return;
   LS("dms_iva",o.iva_modo);m.close();toast("Factura emitida");snd("ok");
   if(S.tab==="fac")pintarFacturas();
   const f=await espera(()=>cargarFactura(id));if(f)await abrirFactura(f);
-  if(f&&!mail&&CL&&CL.listo&&CL.auto){mail=await correoDeCliente(null,nomCli)}
-  if(f&&mail){const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,mail),"Factura enviada a "+mail);if(ok)snd("ok")}};
+  if(f&&!mail&&CL&&CL.listo&&CL.auto){mail=await correoDeCliente(null,nomCli,telCli)}
+  if(f&&mail&&CL&&CL.auto){const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,mail),"Factura enviada a "+mail);if(ok)snd("ok")}};
  lines()}
 $("fcNew").onclick=()=>nuevaFactura();
 ["fcQ"].forEach(i=>$(i).addEventListener("input",(()=>{let t;return()=>{clearTimeout(t);t=setTimeout(pintarFacturas,250)}})()));
