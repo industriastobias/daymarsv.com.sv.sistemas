@@ -496,7 +496,9 @@ function pintarPend(){
  $("bClean").classList.toggle("hidden",!(ADM&&t!=="cod"&&all.some(v=>v.estado==="completada")));
  $("bImp").classList.toggle("hidden",!(DAY.principal&&t==="cobro_pendiente"));
  const fl=t==="cod"&&pe.some(v=>v.entregado_en)?(S.pf||"todos"):"todos",lista=t==="cod"&&fl!=="todos"?all.filter(v=>fl==="liq"?(v.estado==="pendiente"&&v.entregado_en):(v.estado==="pendiente"&&!v.entregado_en)):all;
- const filtro=t==="cod"&&pe.some(v=>v.entregado_en)?`<div class="seg2" style="margin-bottom:8px">${[["todos","Todos"],["ent","Por entregar"],["liq","Entregados · por liquidar"]].map(x=>`<button type="button" data-pf="${x[0]}" class="${fl===x[0]?"on":""}">${x[1]}</button>`).join("")}</div>`:"";
+ const liqs=t==="cod"?pe.filter(v=>v.entregado_en):[],porE={};liqs.forEach(v=>{const k=(v.empresa_envio||"").trim()||"Sin empresa indicada",o=porE[k]||(porE[k]={n:0,t:0,d:v.entregado_en});o.n++;o.t+=+v.total||0;if(v.entregado_en<o.d)o.d=v.entregado_en});
+ const resumenE=liqs.length?`<div class="card" style="margin-bottom:10px"><b>Lo que te deben las empresas de envío</b><div style="margin-top:6px">${Object.keys(porE).sort((a,b)=>porE[b].t-porE[a].t).map(k=>{const o=porE[k],dias=Math.max(0,Math.floor((Date.now()-new Date(o.d))/864e5));return `<div class="rw"><div class="ti"><b>${esc(k)}</b><small>${o.n} paquete${o.n===1?"":"s"} entregado${o.n===1?"":"s"} · el más antiguo hace ${dias} día${dias===1?"":"s"}</small></div><div class="am2"><b style="color:${dias>=15?"var(--bad)":"inherit"}">${$$(o.t)}</b></div></div>`}).join("")}<div class="rw"><div class="ti"><b>Total por liquidar</b></div><div class="am2"><b>${$$(liqs.reduce((s,v)=>s+(+v.total||0),0))}</b></div></div></div></div>`:"";
+ const filtro=resumenE+(t==="cod"&&pe.some(v=>v.entregado_en)?`<div class="seg2" style="margin-bottom:8px">${[["todos","Todos"],["ent","Por entregar"],["liq","Entregados · por liquidar"]].map(x=>`<button type="button" data-pf="${x[0]}" class="${fl===x[0]?"on":""}">${x[1]}</button>`).join("")}</div>`:"");
  $("pendList").innerHTML=filtro+(lista.length?lista.map(cardPend).join(""):`<div class="empty card">${{cod:"No hay pedidos contra entrega pendientes",entrega_pendiente:"No hay ventas pendientes de entrega",cobro_pendiente:"No hay ventas pendientes de cobro"}[t]}</div>`)}
 function cardPend(v){
  const pen=v.estado==="pendiente",t=v.tipo;let am="",bt="";
@@ -566,7 +568,15 @@ function recordatorio(v){
  const m=modal("Recordatorio de pago pendiente",`<div id="rmC" style="background:#fff;color:#222;border-radius:12px;padding:12px">${lineas(v).replace(/class="ln"/g,'class="ln" style="color:#222"')}
   <div class="am"><div><span>Cliente</span><b>${esc(v.cliente_nombre||"")}</b></div><div><span>Precio original</span><b>${$$(v.subtotal)}</b></div><div><span>Abonado</span><b>${$$(v.abonado)}</b></div><div class="o"><span>Saldo pendiente</span><b>${$$(v.pendiente_monto)}</b></div></div>
   <small style="color:#666">Pendiente desde: ${esc(fecha)}</small></div>`,
-  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="rmT">Copiar texto</button><button class="btn" id="rmI">Copiar imagen</button>`});
+  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="rmT">Copiar texto</button><button class="btn g" id="rmM">Enviar por correo</button><button class="btn" id="rmI">Copiar imagen</button>`});
+ m.q("#rmM").onclick=async()=>{
+  const st=await correoListo();if(!st)return;
+  const pre=await correoDeCliente(v.cliente_id,v.cliente_nombre);
+  const para=await pedirCorreo("Recordatorio de pago por correo","Se enviará el recordatorio del saldo pendiente de <b>"+esc(v.cliente_nombre||"el cliente")+"</b> ("+$$(v.pendiente_monto)+").",pre,"Enviar recordatorio");if(!para)return;
+  const c=await ensureCfg(),neg=c.nombre||"DAYMARSV",ig=c.instagram?(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram):"";
+  const its=(v.venta_items||[]).map(i=>`<tr><td style="padding:6px;border-bottom:1px solid #eee">${esc(itName(i))}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${i.cantidad}</td></tr>`).join("");
+  const h=caja(neg,"Recordatorio de pago",`<p style="font-size:15px">Hola${v.cliente_nombre?" "+esc(v.cliente_nombre):""}, te recordamos que tienes un saldo pendiente de tu compra del ${esc(fecha)}.</p><table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #222">Producto</th><th style="padding:6px;border-bottom:2px solid #222">Cant.</th></tr>${its}</table><table style="width:100%;font-size:14px;margin-top:10px">${filaK("Precio original",$$(v.subtotal))}${filaK("Abonado",$$(v.abonado))}${filaK("Saldo pendiente",$$(v.pendiente_monto),1)}</table><p style="text-align:center;font-size:13px;color:#444;margin-top:18px">Para pagar o aclarar cualquier duda, escríbenos${c.telefono?" por WhatsApp al "+esc(/^\+/.test(c.telefono)?c.telefono:"+503 "+c.telefono):""}${ig?" o en Instagram "+esc(ig):""}. ¡Gracias!</p>`);
+  try{await espera(async()=>{await rpc("enviar_correo_simple",{p_para:para,p_asunto:"Recordatorio de pago – "+neg,p_html:h,p_copia:true});return true},"Enviando recordatorio…");toast("Recordatorio enviado a "+para);snd("ok")}catch(e){toast(e.message)}};
  m.q("#rmT").onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast("Datos del recordatorio copiados")}catch(e){const a=document.createElement("textarea");a.value=txt;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(e2){}a.remove();toast(ok?"Datos del recordatorio copiados":"No se pudo copiar")}};
  m.q("#rmI").onclick=async()=>{
   /* la imagen se prepara mientras se pide copiar: Safari (iPhone) solo deja copiar si la copia se pide al tocar el botón */
@@ -922,8 +932,8 @@ async function pintarFacturas(){
  S.fac=L.filter(f=>!q||norm(fnum(f.numero)+" "+f.numero+" "+(f.cliente_nombre||"")+" "+f.codigo+" "+(f.cliente_doc||"")+" "+f.factura_items.map(i=>i.nombre).join(" ")).includes(q));
  const em=S.fac.filter(f=>f.estado==="emitida"),sm=k=>em.reduce((s,f)=>s+ +f[k],0);
  $("fcKpi").innerHTML=`<div><span>Facturado</span><b>${$$(sm("total"))}</b><small>${em.length} emitidas</small></div><div><span>IVA</span><b>${$$(sm("iva_monto"))}</b></div><div><span>Descuentos</span><b>${$$(sm("descuento_monto"))}</b></div><div><span>Anuladas</span><b>${S.fac.length-em.length}</b></div><div><span>Ticket promedio</span><b>${$$(em.length?sm("total")/em.length:0)}</b></div>`;
- $("fcList").innerHTML=S.fac.length?S.fac.slice(0,300).map(f=>`<div class="sv" data-fid="${f.id}"><div class="ti"><b>${fnum(f.numero)} · ${esc(f.cliente_nombre||"Consumidor final")}</b><small>${fdate(f.fecha)} · ${f.factura_items.length} línea${f.factura_items.length===1?"":"s"}</small><br>${pagoBd(f.metodo_pago)} ${f.estado==="anulada"?'<span class="bd or">Anulada</span>':""}</div>
-  <div class="am2"><b style="${f.estado==="anulada"?"text-decoration:line-through;color:var(--mute)":""}">${$$(f.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="ver">Ver</button><button class="btn g sm" data-fa="print">Imprimir</button><button class="btn g sm" data-fa="pdf">PDF</button></div></div></div>`).join("")
+ $("fcList").innerHTML=S.fac.length?S.fac.slice(0,300).map(f=>`<div class="sv" data-fid="${f.id}"><div class="ti"><b>${fnum(f.numero)} · ${esc(f.cliente_nombre||"Consumidor final")}</b><small>${fdate(f.fecha)} · ${f.factura_items.length} línea${f.factura_items.length===1?"":"s"}</small><br>${pagoBd(f.metodo_pago)} ${f.estado==="anulada"?'<span class="bd or">Anulada</span>':""}${f.correo_enviado_en?`<span class="bd ok" title="Enviada a ${esc(f.cliente_correo||"")}">✉ Enviada ${fdate(f.correo_enviado_en)}</span>`:""}</div>
+  <div class="am2"><b style="${f.estado==="anulada"?"text-decoration:line-through;color:var(--mute)":""}">${$$(f.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="ver">Ver</button><button class="btn g sm" data-fa="print">Imprimir</button><button class="btn g sm" data-fa="pdf">PDF</button>${f.estado==="emitida"?`<button class="btn g sm" data-fa="mail">${f.correo_enviado_en?"Reenviar":"Correo"}</button>`:""}</div></div></div>`).join("")
   :`<div class="empty card">No hay facturas con estos filtros.<br><button class="btn" id="fcNew2" style="margin-top:10px">Crear la primera factura</button></div>`;
  const n2=$("fcNew2");if(n2)n2.onclick=()=>nuevaFactura()}
 $("fcList").addEventListener("click",async e=>{
@@ -931,8 +941,27 @@ $("fcList").addEventListener("click",async e=>{
  try{
   if(!b||b.dataset.fa==="ver"){const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f)}
   else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt2")||"t80",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
+  else if(b.dataset.fa==="mail"){const f=await espera(()=>cargarFactura(id));if(f)await modalEnviarFactura(f,pintarFacturas)}
   else if(b.dataset.fa==="pdf"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt2")||"t80";descargarPdf(await facHTML(f,fm),fm,fnum(f.numero)+(fm==="t80"?"-ticket":"")+".pdf")}}
  }catch(err){toast(err.message)}});
+async function correoListo(){let st=null;try{st=await rpc("config_correo_estado")}catch(e){}
+ if(!st||!st.listo){toast("El correo automático aún no está configurado (Finanzas → Datos del negocio, administrador principal)");return null}return st}
+const mailOk=v=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+function pedirCorreo(titulo,texto,pre,btn){return new Promise(res=>{let hecho=false;
+ const mm=modal(titulo,`<p class="pw" style="margin-top:0">${texto}</p><label>Correo del cliente</label><input id="emP" type="email" inputmode="email" maxlength="120" placeholder="cliente@correo.com" value="${esc(pre||"")}"><div class="err2" id="emE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="emOk">${btn||"Enviar"}</button>`});
+ const fin=v=>{if(!hecho){hecho=true;res(v)}};
+ mm.q("#emOk").onclick=()=>{const para=mm.q("#emP").value.trim();if(!mailOk(para)){mm.q("#emE").textContent="Escribe un correo válido.";return}fin(para);mm.close()};
+ mm.el.addEventListener("click",e=>{if(e.target.closest("[data-x]"))fin(null)});mm.el.addEventListener("close",()=>fin(null))})}
+async function correoDeCliente(id,nombre){try{
+ if(id){const {data}=await db.from("clientes").select("correo").eq("id",id).maybeSingle();if(data&&data.correo)return data.correo}
+ if(nombre&&nombre.trim()&&!/^consumidor/i.test(nombre.trim())){const {data}=await db.from("clientes").select("correo").ilike("nombre",nombre.trim().replace(/[%_\\]/g,"\\$&")).not("correo","is",null).limit(1);if(data&&data[0])return data[0].correo}}catch(e){}return""}
+const caja=(neg,tit,cuerpo)=>`<div style="background:#f5f1f2;padding:20px 8px;font-family:Arial,Helvetica,sans-serif;color:#222"><div style="max-width:520px;margin:0 auto;background:#fff;border-radius:10px;padding:24px"><h1 style="margin:0;text-align:center;color:#6B2D3E;font-size:24px">${esc(neg)}</h1><div style="text-align:center;color:#6B2D3E;font-style:italic;margin-bottom:14px">${esc(tit)}</div>${cuerpo}</div></div>`;
+const filaK=(l,v,b)=>`<tr><td style="padding:4px 6px;${b?"font-weight:bold;color:#6B2D3E;font-size:16px":""}">${l}</td><td style="padding:4px 6px;text-align:right;${b?"font-weight:bold;color:#6B2D3E;font-size:16px":""}">${v}</td></tr>`;
+async function modalEnviarFactura(f,despues){
+ const st=await correoListo();if(!st)return;
+ const pre=f.cliente_correo||await correoDeCliente(null,f.cliente_nombre);
+ const para=await pedirCorreo("Enviar factura por correo","Se enviará la factura <b>"+fnum(f.numero)+"</b> con el detalle y el PDF adjunto.",pre,"Enviar factura");if(!para)return;
+ try{const ok=await espera(()=>enviarFacturaCorreo(f,para),"Enviando factura…");if(ok){f.cliente_correo=para;toast("Factura enviada a "+para);snd("ok");if(despues)despues()}}catch(err){toast(err.message)}}
 const b64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(b)});
 async function enviarFacturaCorreo(f,para){
  const c=await ensureCfg(),fm="t80",html=await facHTML(f,fm),blob=await pdfBlob(html,fm),pdf=await b64(blob);
@@ -956,12 +985,7 @@ async function compartirFactura(f){
 async function abrirFactura(f){
  const anu=(f.estado==="emitida"?`<button class="btn g" id="dvM">Enviar por correo</button>`:"")+(ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"");
  const m=await vistaDoc("Factura "+fnum(f.numero),fm=>facHTML(f,fm),fnum(f.numero),anu);
- const mb=m.q("#dvM");if(mb)mb.onclick=async()=>{
-  let st=null;try{st=await rpc("config_correo_estado")}catch(e){}
-  if(!st||!st.listo){try{await espera(()=>compartirFactura(f),"Preparando factura…")}catch(err){toast(err.message)}return}
-  const mm=modal("Enviar factura por correo",`<p class="pw" style="margin-top:0">Se enviará la factura <b>${fnum(f.numero)}</b> con el detalle y el PDF adjunto.</p><label>Correo del cliente</label><input id="emP" type="email" inputmode="email" maxlength="120" placeholder="cliente@correo.com" value="${esc(f.cliente_correo||"")}"><div class="err2" id="emE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="emOk">Enviar factura</button>`});
-  mm.q("#emOk").onclick=async()=>{const para=mm.q("#emP").value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)){mm.q("#emE").textContent="Escribe un correo válido.";return}
-   mm.close();try{const ok=await espera(()=>enviarFacturaCorreo(f,para),"Enviando factura…");if(ok){f.cliente_correo=para;toast("Factura enviada a "+para);snd("ok")}}catch(err){toast(err.message)}}};
+ const mb=m.q("#dvM");if(mb)mb.onclick=async()=>{const st=await correoListo().catch(()=>null);if(!st)return;await modalEnviarFactura(f,()=>{if(S.tab==="fac")pintarFacturas()})};
  const a=m.q("#dvA");if(a)a.onclick=async()=>{
   if(!await pedirClave("Vas a anular la factura "+fnum(f.numero)+"."))return;
   if(!await confirmar("La factura quedará marcada como <b>ANULADA</b>. No se modifica el stock ni las ventas.",{titulo:"Anular factura",ok:"Anular",peligro:true}))return;
@@ -995,7 +1019,7 @@ async function nuevaFactura(pre){
   <div><label>Cliente</label><input name="cn" maxlength="120" placeholder="Consumidor final" value="${esc(pre.cliente||"")}"></div>
   <div><label>NIT / DUI <small>(opcional)</small></label><input name="cd" maxlength="40"></div>
   <div><label>Dirección <small>(opcional)</small></label><input name="ca" maxlength="160"></div>
-  <div><label>Teléfono <small>(opcional)</small></label><input name="ct" maxlength="30" inputmode="tel"></div>${CL&&CL.listo?`
+  <div><label>Teléfono <small>(opcional)</small></label><input name="ct" maxlength="30" inputmode="tel"></div>${CL&&CL.listo&&CL.auto?`
   <div class="full"><label>Correo <small>(opcional · se le envía la factura automáticamente)</small></label><input name="cc" type="email" maxlength="120" inputmode="email"></div>`:""}
  </div>
  <h3 style="margin:14px 0 6px;font-size:15px">Productos</h3>
@@ -1046,11 +1070,12 @@ async function nuevaFactura(pre){
   const tot=calc()/100,ef=q("ef").value.trim();if(q("met").value==="Efectivo"&&ef!==""&&cents(ef)<cents(tot)){err.textContent="El efectivo recibido es menor al total.";return}
   const o={cliente_nombre:q("cn").value,cliente_doc:q("cd").value,cliente_direccion:q("ca").value,cliente_telefono:q("ct").value,metodo:q("met").value,iva_modo:q("modo").value,
    descuento_tipo:q("dt").value,descuento_valor:dv,envio:num("env"),efectivo:q("met").value==="Efectivo"&&ef!==""?Number(ef):null,nota:q("nota").value,venta_ids:F.ventas};
-  const mail=q("cc")?q("cc").value.trim():"";
+  let mail=q("cc")?q("cc").value.trim():"";const nomCli=q("cn").value;
   const id=await espera(()=>rpc("crear_factura",{p_items:its,p_opts:o}),"Emitiendo factura…");if(!id)return;
   LS("dms_iva",o.iva_modo);m.close();toast("Factura emitida");snd("ok");
   if(S.tab==="fac")pintarFacturas();
   const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f);
+  if(f&&!mail&&CL&&CL.listo&&CL.auto){mail=await correoDeCliente(null,nomCli)}
   if(f&&mail){try{await enviarFacturaCorreo(f,mail);toast("Factura enviada a "+mail)}catch(err){toast("La factura se emitió, pero el correo falló: "+err.message)}}};
  lines()}
 $("fcNew").onclick=()=>nuevaFactura();
@@ -1066,12 +1091,13 @@ $("fcEst").onchange=()=>pintarFacturas();
 if(!ADM)$("fcCfg").classList.add("hidden");
 $("fcCfg").onclick=async()=>{await ensureCfg();const c=CFG;let CC=null;if(DAY.principal){try{CC=await rpc("config_correo_estado")}catch(e){}}const F=(n,l,v,x)=>`<div${x?` class="${x}"`:""}><label>${l}</label><input name="${n}" value="${esc(v||"")}" maxlength="160"></div>`;
  const m=modal("Datos del negocio",`<p class="pw" style="margin-top:0">Aparecen en el encabezado de las facturas y del cierre de caja.</p><div class="fg">${F("nombre","Nombre comercial",c.nombre)}${F("eslogan","Eslogan",c.eslogan)}${F("razon_social","Razón social",c.razon_social)}${F("giro","Giro",c.giro)}${F("nit","NIT",c.nit)}${F("nrc","NRC",c.nrc)}${F("direccion","Dirección",c.direccion,"full")}${F("telefono","Teléfono",c.telefono)}${F("instagram","Instagram",c.instagram)}${F("correo","Correo",c.correo)}
-  <div><label>IVA (%)</label><input name="iva" type="number" min="0" max="100" step="0.01" value="${+c.iva_pct}"></div>${F("pie","Mensaje al pie",c.pie)}${DAY.principal?`<div class="full"><label>Correo automático · clave de API (SMTP2GO, Brevo o Resend) <small>(${CC&&CC.listo?"ya configurada; déjalo vacío para no cambiarla":"pégala aquí"})</small></label><input name="rkey" type="password" autocomplete="off" maxlength="200" placeholder="api-..."></div><div class="full"><label>Remitente <small>(el correo verificado en el servicio, ej.: DAYMARSV &lt;daymarsv@gmail.com&gt;)</small></label><input name="rfrom" maxlength="160" value="${esc((CC&&CC.remitente)||"")}"></div>`:""}${F("condiciones","Condiciones (cambios y devoluciones)",c.condiciones,"full")}</div><div class="err2" id="cgE"></div>`,
+  <div><label>IVA (%)</label><input name="iva" type="number" min="0" max="100" step="0.01" value="${+c.iva_pct}"></div>${F("pie","Mensaje al pie",c.pie)}${DAY.principal?`<div class="full"><label>Correo automático · clave de API (SMTP2GO, Brevo o Resend) <small>(${CC&&CC.listo?"ya configurada; déjalo vacío para no cambiarla":"pégala aquí"})</small></label><input name="rkey" type="password" autocomplete="off" maxlength="200" placeholder="api-..."></div><div class="full"><label>Enviarme copia de cada factura y del cierre de caja a <small>(opcional)</small></label><input name="rcopia" type="email" maxlength="120" value="${esc((CC&&CC.copia)||"")}"></div><div class="full"><label style="display:flex;gap:8px;align-items:center;font-weight:500"><input type="checkbox" name="rauto" ${CC&&CC.auto===false?"":"checked"} style="width:auto;flex:none"> Enviar la factura automáticamente al emitir, si hay correo del cliente</label></div><div class="full"><label>Remitente <small>(el correo verificado en el servicio, ej.: DAYMARSV &lt;daymarsv@gmail.com&gt;)</small></label><input name="rfrom" maxlength="160" value="${esc((CC&&CC.remitente)||"")}"></div>`:""}${F("condiciones","Condiciones (cambios y devoluciones)",c.condiciones,"full")}</div><div class="err2" id="cgE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cgOk">Guardar</button>`});
  const g=n=>m.q(`[name=${n}]`).value.trim();
  m.q("#cgOk").onclick=async()=>{const iva=Number(g("iva"));if(!g("nombre")){m.q("#cgE").textContent="El nombre es obligatorio.";return}if(!(iva>=0&&iva<=100)){m.q("#cgE").textContent="IVA entre 0 y 100.";return}
   const r=await espera(async()=>{const {error}=await db.from("config_negocio").update({nombre:g("nombre"),eslogan:g("eslogan")||null,razon_social:g("razon_social")||null,giro:g("giro")||null,nit:g("nit")||null,nrc:g("nrc")||null,direccion:g("direccion")||null,telefono:g("telefono")||null,instagram:g("instagram")||null,condiciones:g("condiciones")||null,correo:g("correo")||null,iva_pct:iva,pie:g("pie")||null,updated_at:new Date().toISOString()}).eq("id",1);if(error)throw new Error(error.message);return true});
   if(r&&DAY.principal&&(m.q("[name=rkey]").value.trim()||m.q("[name=rfrom]").value.trim())){try{await rpc("guardar_config_correo",{p_key:m.q("[name=rkey]").value.trim(),p_remitente:m.q("[name=rfrom]").value.trim()})}catch(e){toast(e.message)}}
+  if(r&&DAY.principal){try{await rpc("guardar_opciones_correo",{p_copia:m.q("[name=rcopia]").value.trim(),p_auto:m.q("[name=rauto]").checked})}catch(e){toast(e.message)}}
   if(r){CFG=null;m.close();toast("Datos guardados")}}};
 
 /* ---------- CIERRE DE CAJA (guarda un registro; no borra ventas) ---------- */
@@ -1109,7 +1135,7 @@ async function cerrarPeriodo(d,h){
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="ccOk">Guardar cierre</button>`});
  m.q("#ccOk").onclick=async()=>{const v=m.q("[name=cc]").value.trim();if(v!==""&&!(Number(v)>=0)){m.q("#ccE").textContent="Efectivo no válido.";return}
   const id=await espera(()=>rpc("cerrar_caja",{p_fecha:d,p_hasta:un?null:h,p_contado:v===""?null:Number(v),p_nota:m.q("[name=cn]").value}),"Guardando cierre…");if(!id)return;
-  m.close();toast("Cierre de caja guardado");snd("ok");await verCierre(id);if(ADM)liberarFotos()}}
+  m.close();toast("Cierre de caja guardado");snd("ok");await verCierre(id,true);if(ADM)liberarFotos()}}
 /* Tras el cierre: quita las fotos grandes de productos agotados y deja una sola miniatura para reconocerlos */
 async function liberarFotos(){
  try{const ids=S.prods.filter(p=>p.stock<=0).map(p=>p.id);if(!ids.length)return;
@@ -1126,9 +1152,21 @@ async function liberarFotos(){
    return true},"Liberando espacio…");
   if(ok){toast("Espacio liberado: "+files.length+" fotos borradas");snd("ok")}
  }catch(e){}}
-async function verCierre(id){
+async function correoCierre(c,auto){
+ let st=null;try{st=await rpc("config_correo_estado")}catch(e){}
+ if(!st||!st.listo){if(!auto)toast("El correo automático aún no está configurado");return}
+ const para=st.copia||DAY.email;if(!para||!mailOk(para)){if(!auto)toast("Escribe tu correo en Datos del negocio (copia)");return}
+ const cf=await ensureCfg(),neg=cf.nombre||"DAYMARSV",R=c.resumen||{},util=+c.total_ventas-+c.costo_total;
+ const N={ef:"Efectivo",tr:"Transferencia",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)",dev:"Devoluciones y cambios (neto)"};
+ const rows=Object.keys(N).filter(k=>k!=="dev"||R.dev).map(k=>`<tr><td style="padding:6px;border-bottom:1px solid #eee">${N[k]}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${(R[k]||{}).n||0}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right">${money((R[k]||{}).total||0)}</td></tr>`).join("");
+ const h=caja(neg,"Cierre de caja · "+rangoTxt(c.fecha,c.fecha_hasta),`<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #222">Concepto</th><th style="padding:6px;border-bottom:2px solid #222">Ventas</th><th style="text-align:right;padding:6px;border-bottom:2px solid #222">Total</th></tr>${rows}</table><table style="width:100%;font-size:14px;margin-top:10px">${filaK("Total vendido",money(c.total_ventas),1)}${filaK("Ventas completadas",c.n_ventas)}${filaK("Ventas anuladas",c.n_anuladas)}${filaK("Costo de lo vendido",money(c.costo_total))}${filaK("Utilidad bruta",money(util))}${filaK("Efectivo esperado",money(c.esperado_efectivo))}${c.efectivo_contado!=null?filaK("Efectivo contado",money(c.efectivo_contado))+filaK("Diferencia",money(c.diferencia),1):""}</table>${c.nota?`<p style="font-size:13px;color:#444"><b>Nota:</b> ${esc(c.nota)}</p>`:""}<p style="text-align:center;font-size:12px;color:#777;margin-top:16px">Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)}${c.profiles?" por "+esc(c.profiles.nombre):""}</p>`);
+ try{await rpc("enviar_correo_simple",{p_para:para,p_asunto:"Cierre de caja "+rangoTxt(c.fecha,c.fecha_hasta)+" – "+neg,p_html:h,p_copia:false});toast("Cierre enviado a "+para)}catch(e){if(!auto)toast(e.message)}}
+async function verCierre(id,auto){
  const c=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("*,profiles(nombre)").eq("id",id).single();if(error)throw new Error(error.message);return data});
- if(c)vistaDoc("Cierre de caja "+rangoTxt(c.fecha,c.fecha_hasta),fm=>cierreHTML(c,fm),"cierre-caja-"+c.fecha+(c.fecha_hasta?"_a_"+c.fecha_hasta:""))}
+ if(!c)return;
+ if(auto&&ADM)correoCierre(c,true);
+ const m=await vistaDoc("Cierre de caja "+rangoTxt(c.fecha,c.fecha_hasta),fm=>cierreHTML(c,fm),"cierre-caja-"+c.fecha+(c.fecha_hasta?"_a_"+c.fecha_hasta:""),ADM?'<button class="btn g" id="dvC">Enviar por correo</button>':"");
+ const bc=m&&m.q("#dvC");if(bc)bc.onclick=()=>correoCierre(c,false)}
 async function historialCierres(){
  const L=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("id,fecha,fecha_hasta,total_ventas,n_ventas,diferencia,created_at").order("created_at",{ascending:false}).limit(60);if(error)throw new Error(error.message);return data});if(!L)return;
  const m=modal("Cierres de caja anteriores",L.length?L.map(c=>`<div class="sv" data-cc="${c.id}" style="cursor:pointer"><div class="ti"><b>${rangoTxt(c.fecha,c.fecha_hasta)}</b><small>Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)} · ${c.n_ventas} ventas</small></div><div class="am2"><b>${$$(c.total_ventas)}</b>${c.diferencia!=null?`<small style="color:${+c.diferencia===0?"var(--ok)":"var(--bad)"}">dif. ${$$(c.diferencia)}</small>`:""}</div></div>`).join(""):`<div class="empty">Todavía no hay cierres guardados.</div>`,{});
