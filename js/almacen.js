@@ -933,9 +933,22 @@ $("fcList").addEventListener("click",async e=>{
   else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt2")||"t80",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
   else if(b.dataset.fa==="pdf"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt2")||"t80";descargarPdf(await facHTML(f,fm),fm,fnum(f.numero)+(fm==="t80"?"-ticket":"")+".pdf")}}
  }catch(err){toast(err.message)}});
+const b64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(b)});
+async function enviarFacturaCorreo(f,para){
+ const c=await ensureCfg(),fm="t80",html=await facHTML(f,fm),blob=await pdfBlob(html,fm),pdf=await b64(blob);
+ const neg=c.nombre||"DAYMARSV",asunto="Tu factura "+fnum(f.numero)+" – "+neg;
+ const cuerpo=`<div style="font-family:Arial,sans-serif;color:#222"><h2 style="color:#6B2D3E;margin:0 0 8px">${esc(neg)}</h2><p>Hola${f.cliente_nombre&&f.cliente_nombre!=="Consumidor Final"?" "+esc(f.cliente_nombre):""}, gracias por tu compra. Adjuntamos tu factura <b>${fnum(f.numero)}</b> por un total de <b>${money(f.total)}</b>.</p>${c.instagram?`<p>Síguenos en Instagram: ${esc(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram)}</p>`:""}</div>`;
+ const req=await rpc("enviar_factura_correo",{p_factura:f.id,p_para:para,p_asunto:asunto,p_html:cuerpo,p_pdf_b64:pdf,p_nombre:fnum(f.numero)+".pdf"});
+ for(let i=0;i<8;i++){await new Promise(r=>setTimeout(r,1500));const e=await rpc("estado_envio_correo",{p_req:req});
+  if(e&&e.estado==="ok")return true;if(e&&e.estado==="error")throw new Error("No se pudo enviar ("+e.codigo+"): "+(e.detalle||""))}
+ return true}
 async function abrirFactura(f){
- const anu=ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"";
+ const anu=(f.estado==="emitida"?`<button class="btn g" id="dvM">Enviar por correo</button>`:"")+(ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"");
  const m=await vistaDoc("Factura "+fnum(f.numero),fm=>facHTML(f,fm),fnum(f.numero),anu);
+ const mb=m.q("#dvM");if(mb)mb.onclick=async()=>{
+  const st=await rpc("config_correo_estado");if(!st||!st.listo){toast("Primero configura el correo en Datos del negocio (administrador principal)");return}
+  const para=(prompt("Correo del cliente:",f.cliente_correo||"")||"").trim();if(!para)return;
+  try{const ok=await espera(()=>enviarFacturaCorreo(f,para),"Enviando factura…");if(ok){f.cliente_correo=para;toast("Factura enviada a "+para)}}catch(err){toast(err.message)}};
  const a=m.q("#dvA");if(a)a.onclick=async()=>{
   if(!await pedirClave("Vas a anular la factura "+fnum(f.numero)+"."))return;
   if(!await confirmar("La factura quedará marcada como <b>ANULADA</b>. No se modifica el stock ni las ventas.",{titulo:"Anular factura",ok:"Anular",peligro:true}))return;
@@ -969,6 +982,7 @@ async function nuevaFactura(pre){
   <div><label>NIT / DUI <small>(opcional)</small></label><input name="cd" maxlength="40"></div>
   <div><label>Dirección <small>(opcional)</small></label><input name="ca" maxlength="160"></div>
   <div><label>Teléfono <small>(opcional)</small></label><input name="ct" maxlength="30" inputmode="tel"></div>
+  <div class="full"><label>Correo <small>(opcional · se le envía la factura automáticamente)</small></label><input name="cc" type="email" maxlength="120" inputmode="email"></div>
  </div>
  <h3 style="margin:14px 0 6px;font-size:15px">Productos</h3>
  <div class="elh"><span>Descripción</span><span>Cant.</span><span>Precio</span><span>Total</span><span></span></div>
@@ -1018,10 +1032,12 @@ async function nuevaFactura(pre){
   const tot=calc()/100,ef=q("ef").value.trim();if(q("met").value==="Efectivo"&&ef!==""&&cents(ef)<cents(tot)){err.textContent="El efectivo recibido es menor al total.";return}
   const o={cliente_nombre:q("cn").value,cliente_doc:q("cd").value,cliente_direccion:q("ca").value,cliente_telefono:q("ct").value,metodo:q("met").value,iva_modo:q("modo").value,
    descuento_tipo:q("dt").value,descuento_valor:dv,envio:num("env"),efectivo:q("met").value==="Efectivo"&&ef!==""?Number(ef):null,nota:q("nota").value,venta_ids:F.ventas};
+  const mail=q("cc")?q("cc").value.trim():"";
   const id=await espera(()=>rpc("crear_factura",{p_items:its,p_opts:o}),"Emitiendo factura…");if(!id)return;
   LS("dms_iva",o.iva_modo);m.close();toast("Factura emitida");snd("ok");
   if(S.tab==="fac")pintarFacturas();
-  const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f)};
+  const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f);
+  if(f&&mail){try{await enviarFacturaCorreo(f,mail);toast("Factura enviada a "+mail)}catch(err){toast("La factura se emitió, pero el correo falló: "+err.message)}}};
  lines()}
 $("fcNew").onclick=()=>nuevaFactura();
 ["fcQ"].forEach(i=>$(i).addEventListener("input",(()=>{let t;return()=>{clearTimeout(t);t=setTimeout(pintarFacturas,250)}})()));
@@ -1034,13 +1050,14 @@ $("fcEst").onchange=()=>pintarFacturas();
 
 /* Datos del negocio (solo administrador) */
 if(!ADM)$("fcCfg").classList.add("hidden");
-$("fcCfg").onclick=async()=>{await ensureCfg();const c=CFG;const F=(n,l,v,x)=>`<div${x?` class="${x}"`:""}><label>${l}</label><input name="${n}" value="${esc(v||"")}" maxlength="160"></div>`;
+$("fcCfg").onclick=async()=>{await ensureCfg();const c=CFG;let CC=null;if(DAY.principal){try{CC=await rpc("config_correo_estado")}catch(e){}}const F=(n,l,v,x)=>`<div${x?` class="${x}"`:""}><label>${l}</label><input name="${n}" value="${esc(v||"")}" maxlength="160"></div>`;
  const m=modal("Datos del negocio",`<p class="pw" style="margin-top:0">Aparecen en el encabezado de las facturas y del cierre de caja.</p><div class="fg">${F("nombre","Nombre comercial",c.nombre)}${F("eslogan","Eslogan",c.eslogan)}${F("razon_social","Razón social",c.razon_social)}${F("giro","Giro",c.giro)}${F("nit","NIT",c.nit)}${F("nrc","NRC",c.nrc)}${F("direccion","Dirección",c.direccion,"full")}${F("telefono","Teléfono",c.telefono)}${F("instagram","Instagram",c.instagram)}${F("correo","Correo",c.correo)}
-  <div><label>IVA (%)</label><input name="iva" type="number" min="0" max="100" step="0.01" value="${+c.iva_pct}"></div>${F("pie","Mensaje al pie",c.pie)}${F("condiciones","Condiciones (cambios y devoluciones)",c.condiciones,"full")}</div><div class="err2" id="cgE"></div>`,
+  <div><label>IVA (%)</label><input name="iva" type="number" min="0" max="100" step="0.01" value="${+c.iva_pct}"></div>${F("pie","Mensaje al pie",c.pie)}${DAY.principal?`<div class="full"><label>Correo automático · clave de Resend <small>(${CC&&CC.listo?"ya configurada; déjalo vacío para no cambiarla":"pégala aquí"})</small></label><input name="rkey" type="password" autocomplete="off" maxlength="200" placeholder="re_..."></div><div class="full"><label>Remitente <small>(ej.: DAYMARSV &lt;facturas@tudominio.com&gt;)</small></label><input name="rfrom" maxlength="160" value="${esc((CC&&CC.remitente)||"")}"></div>`:""}${F("condiciones","Condiciones (cambios y devoluciones)",c.condiciones,"full")}</div><div class="err2" id="cgE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cgOk">Guardar</button>`});
  const g=n=>m.q(`[name=${n}]`).value.trim();
  m.q("#cgOk").onclick=async()=>{const iva=Number(g("iva"));if(!g("nombre")){m.q("#cgE").textContent="El nombre es obligatorio.";return}if(!(iva>=0&&iva<=100)){m.q("#cgE").textContent="IVA entre 0 y 100.";return}
   const r=await espera(async()=>{const {error}=await db.from("config_negocio").update({nombre:g("nombre"),eslogan:g("eslogan")||null,razon_social:g("razon_social")||null,giro:g("giro")||null,nit:g("nit")||null,nrc:g("nrc")||null,direccion:g("direccion")||null,telefono:g("telefono")||null,instagram:g("instagram")||null,condiciones:g("condiciones")||null,correo:g("correo")||null,iva_pct:iva,pie:g("pie")||null,updated_at:new Date().toISOString()}).eq("id",1);if(error)throw new Error(error.message);return true});
+  if(r&&DAY.principal&&(m.q("[name=rkey]").value.trim()||m.q("[name=rfrom]").value.trim())){try{await rpc("guardar_config_correo",{p_key:m.q("[name=rkey]").value.trim(),p_remitente:m.q("[name=rfrom]").value.trim()})}catch(e){toast(e.message)}}
   if(r){CFG=null;m.close();toast("Datos guardados")}}};
 
 /* ---------- CIERRE DE CAJA (guarda un registro; no borra ventas) ---------- */
