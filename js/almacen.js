@@ -952,7 +952,7 @@ function quickFac(){
  $("fcFrom").value=ymd(a);$("fcTo").value=ymd(b)}
 async function pintarFacturas(){
  quickFac();const a=$("fcFrom").value,b=$("fcTo").value,es=$("fcEst").value,q=norm($("fcQ").value);
- const L=await espera(()=>fetchAll(()=>{let r=db.from("facturas").select("*,factura_items(nombre)").order("numero",{ascending:false});
+ const L=await espera(()=>fetchAll(()=>{let r=db.from("facturas").select("*,factura_items(nombre)").order("created_at",{ascending:false});
   if(a)r=r.gte("fecha",a);if(b)r=r.lte("fecha",b);if(es!=="all")r=r.eq("estado",es);return r}),"Cargando facturas…");if(!L)return;
  S.fac=L.filter(f=>!q||norm(fnum(f.numero)+" "+f.numero+" "+(f.cliente_nombre||"")+" "+f.codigo+" "+(f.cliente_doc||"")+" "+f.factura_items.map(i=>i.nombre).join(" ")).includes(q));
  const em=S.fac.filter(f=>f.estado==="emitida"),sm=k=>em.reduce((s,f)=>s+ +f[k],0);
