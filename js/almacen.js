@@ -942,13 +942,18 @@ async function enviarFacturaCorreo(f,para){
  for(let i=0;i<8;i++){await new Promise(r=>setTimeout(r,1500));const e=await rpc("estado_envio_correo",{p_req:req});
   if(e&&e.estado==="ok")return true;if(e&&e.estado==="error")throw new Error("No se pudo enviar ("+e.codigo+"): "+(e.detalle||""))}
  return true}
+async function compartirFactura(f){
+ const c=await ensureCfg(),neg=c.nombre||"DAYMARSV",html=await facHTML(f,"t80"),blob=await pdfBlob(html,"t80"),nombre=fnum(f.numero)+".pdf";
+ const asunto="Tu factura "+fnum(f.numero)+" – "+neg,cuerpo="Hola"+(f.cliente_nombre&&f.cliente_nombre!=="Consumidor Final"?" "+f.cliente_nombre:"")+", gracias por tu compra en "+neg+". Te comparto tu factura "+fnum(f.numero)+" por un total de "+money(f.total)+"."+(c.instagram?"\nSíguenos en Instagram: "+(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram):"");
+ const file=new File([blob],nombre,{type:"application/pdf"});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:asunto,text:cuerpo});return}catch(e){if(e&&e.name==="AbortError")return}}
+ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=nombre;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+ toast("PDF descargado: adjúntalo en el correo que se abrirá");
+ setTimeout(()=>{location.href="mailto:"+encodeURIComponent(f.cliente_correo||"")+"?subject="+encodeURIComponent(asunto)+"&body="+encodeURIComponent(cuerpo)},700)}
 async function abrirFactura(f){
  const anu=(f.estado==="emitida"?`<button class="btn g" id="dvM">Enviar por correo</button>`:"")+(ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"");
  const m=await vistaDoc("Factura "+fnum(f.numero),fm=>facHTML(f,fm),fnum(f.numero),anu);
- const mb=m.q("#dvM");if(mb)mb.onclick=async()=>{
-  const st=await rpc("config_correo_estado");if(!st||!st.listo){toast("Primero configura el correo en Datos del negocio (administrador principal)");return}
-  const para=(prompt("Correo del cliente:",f.cliente_correo||"")||"").trim();if(!para)return;
-  try{const ok=await espera(()=>enviarFacturaCorreo(f,para),"Enviando factura…");if(ok){f.cliente_correo=para;toast("Factura enviada a "+para)}}catch(err){toast(err.message)}};
+ const mb=m.q("#dvM");if(mb)mb.onclick=async()=>{try{await espera(()=>compartirFactura(f),"Preparando factura…")}catch(err){toast(err.message)}};
  const a=m.q("#dvA");if(a)a.onclick=async()=>{
   if(!await pedirClave("Vas a anular la factura "+fnum(f.numero)+"."))return;
   if(!await confirmar("La factura quedará marcada como <b>ANULADA</b>. No se modifica el stock ni las ventas.",{titulo:"Anular factura",ok:"Anular",peligro:true}))return;
@@ -974,6 +979,7 @@ const fromVentas=L=>({items:L.flatMap(v=>(v.venta_items||[]).map(i=>({nombre:itN
  ventas:L.map(v=>v.id),cliente:(L.find(v=>v.cliente_nombre)||{}).cliente_nombre||"",metodo:L[0].metodo_pago,envio:r2(L.filter(v=>v.tipo==="cod"||v.tipo==="entrega_pendiente").reduce((s,v)=>s+ +v.envio,0))});
 
 async function nuevaFactura(pre){
+ let CL=null;try{CL=await rpc("config_correo_estado")}catch(e){}
  pre=pre||{};await ensureCfg();
  const F={items:(pre.items||[]).map(x=>({...x})),ventas:(pre.ventas||[]).slice()};
  const m=modal("Nueva factura",`
@@ -981,8 +987,8 @@ async function nuevaFactura(pre){
   <div><label>Cliente</label><input name="cn" maxlength="120" placeholder="Consumidor final" value="${esc(pre.cliente||"")}"></div>
   <div><label>NIT / DUI <small>(opcional)</small></label><input name="cd" maxlength="40"></div>
   <div><label>Dirección <small>(opcional)</small></label><input name="ca" maxlength="160"></div>
-  <div><label>Teléfono <small>(opcional)</small></label><input name="ct" maxlength="30" inputmode="tel"></div>
-  <div class="full"><label>Correo <small>(opcional · se le envía la factura automáticamente)</small></label><input name="cc" type="email" maxlength="120" inputmode="email"></div>
+  <div><label>Teléfono <small>(opcional)</small></label><input name="ct" maxlength="30" inputmode="tel"></div>${CL&&CL.listo?`
+  <div class="full"><label>Correo <small>(opcional · se le envía la factura automáticamente)</small></label><input name="cc" type="email" maxlength="120" inputmode="email"></div>`:""}
  </div>
  <h3 style="margin:14px 0 6px;font-size:15px">Productos</h3>
  <div class="elh"><span>Descripción</span><span>Cant.</span><span>Precio</span><span>Total</span><span></span></div>
