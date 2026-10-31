@@ -768,6 +768,7 @@ async function tab(k){
  if(!SOLO){const T={inv:["Almacenamiento","Inventario y punto de venta"],hoy:["Hoy","Ventas y movimientos del día"],ven:["Ventas","Historial de ventas del punto de venta"],fac:["Facturas","Emite y consulta tus facturas"]}[k];
   if(T){const h=document.querySelector(".head h1"),s=document.querySelector(".head h1+small");if(h)h.textContent=T[0];if(s)s.textContent=T[1];document.title="DAYMARSV – "+T[0]}}document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.p===k));
  ALLT.forEach(t=>$("p-"+t[0]).classList.toggle("hidden",t[0]!==k));
+ {const sd=$("side");if(sd&&!SOLO){const hf=k==="fac"?"almacenamiento.html#fac":"almacenamiento.html";sd.querySelectorAll("nav a").forEach(l=>{const h=l.getAttribute("href");if(h==="almacenamiento.html"||h==="almacenamiento.html#fac")l.classList.toggle("on",h===hf)})}}
  if(k==="pend"){if(!S.pend.length)await cargarPend().catch(e=>toast(e.message));pintarPend()}
  if(k==="hoy")pintarHoy();
  if(k==="ven")pintarVentas();
