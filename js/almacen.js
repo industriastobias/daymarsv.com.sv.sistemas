@@ -576,7 +576,7 @@ function recordatorio(v){
   const c=await ensureCfg(),neg=c.nombre||"DAYMARSV",ig=c.instagram?(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram):"";
   const its=(v.venta_items||[]).map(i=>`<tr><td style="padding:6px;border-bottom:1px solid #eee">${esc(itName(i))}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${i.cantidad}</td></tr>`).join("");
   const h=caja(neg,"Recordatorio de pago",`<p style="font-size:15px">Hola${v.cliente_nombre?" "+esc(v.cliente_nombre):""}, te recordamos que tienes un saldo pendiente de tu compra del ${esc(fecha)}.</p><table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #222">Producto</th><th style="padding:6px;border-bottom:2px solid #222">Cant.</th></tr>${its}</table><table style="width:100%;font-size:14px;margin-top:10px">${filaK("Precio original",$$(v.subtotal))}${filaK("Abonado",$$(v.abonado))}${filaK("Saldo pendiente",$$(v.pendiente_monto),1)}</table><p style="text-align:center;font-size:13px;color:#444;margin-top:18px">Para pagar o aclarar cualquier duda, escríbenos${c.telefono?" por WhatsApp al "+esc(/^\+/.test(c.telefono)?c.telefono:"+503 "+c.telefono):""}${ig?" o en Instagram "+esc(ig):""}. ¡Gracias!</p>`);
-  try{await espera(async()=>{await rpc("enviar_correo_simple",{p_para:para,p_asunto:"Recordatorio de pago – "+neg,p_html:h,p_copia:true,p_tipo:"recordatorio",p_ref:"Venta #"+v.numero});return true},"Enviando recordatorio…");toast("Recordatorio enviado a "+para);snd("ok")}catch(e){toast(e.message)}};
+  const ok=await conProgreso("Enviando recordatorio…",async()=>{await rpc("enviar_correo_simple",{p_para:para,p_asunto:"Recordatorio de pago – "+neg,p_html:h,p_copia:true,p_tipo:"recordatorio",p_ref:"Venta #"+v.numero});return true},"Recordatorio enviado a "+para);if(ok)snd("ok")};
  m.q("#rmT").onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast("Datos del recordatorio copiados")}catch(e){const a=document.createElement("textarea");a.value=txt;document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(e2){}a.remove();toast(ok?"Datos del recordatorio copiados":"No se pudo copiar")}};
  m.q("#rmI").onclick=async()=>{
   /* la imagen se prepara mientras se pide copiar: Safari (iPhone) solo deja copiar si la copia se pide al tocar el botón */
@@ -961,18 +961,71 @@ async function modalEnviarFactura(f,despues){
  const st=await correoListo();if(!st)return;
  const pre=f.cliente_correo||await correoDeCliente(null,f.cliente_nombre);
  const para=await pedirCorreo("Enviar factura por correo","Se enviará la factura <b>"+fnum(f.numero)+"</b> con el detalle y el PDF adjunto.",pre,"Enviar factura");if(!para)return;
- try{const ok=await espera(()=>enviarFacturaCorreo(f,para),"Enviando factura…");if(ok){f.cliente_correo=para;toast("Factura enviada a "+para);snd("ok");if(despues)despues()}}catch(err){toast(err.message)}}
+ const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,para),"Factura enviada a "+para);if(ok){f.cliente_correo=para;snd("ok");if(despues)despues()}}
 const b64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(b)});
+
+/* PDF de la factura dibujado con texto (rápido en el celular, sin capturar la pantalla) */
+async function facturaPdfVector(f,c){
+ await lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js");await lib("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js");
+ const {jsPDF}=window.jspdf,W=80,M=5,AN=W-2*M,WN=[107,45,62],NG=[17,17,17];
+ const lim=s=>String(s==null?"":s).replace(/[^ -ÿ]/g,""),its=f.factura_items||[],iv=f.iva_modo;
+ const ig=c.instagram?(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram):"",tel=c.telefono?(/^\+/.test(c.telefono)?c.telefono:"+503 "+c.telefono):"";
+ let qr=null;try{qr=qrcode(0,"M");qr.addData(["FACTURA",fnum(f.numero),f.codigo,f.fecha,f.total].join("|"));qr.make()}catch(e){qr=null}
+ const d=new Date(f.created_at||f.fecha),hora=f.created_at&&!isNaN(d)?", "+d.toLocaleTimeString("es-SV",{hour:"numeric",minute:"2-digit"}):"";
+ const cod=[c.nombre||"DAYMARSV",fnum(f.numero),c.nit||"",f.fecha,(+f.total).toFixed(2),f.codigo].join("|");
+ const draw=p=>{let y=M+5;
+  const font=o=>{p.setFont("helvetica",o.b?"bold":(o.i?"italic":"normal"));p.setFontSize(o.sz||8);p.setTextColor(...(o.c||NG))};
+  const lh=o=>(o.sz||8)*0.43;
+  const line=(s,x,o={})=>{font(o);p.text(lim(s),x,y,{align:o.a||"left"})};
+  const para=(s,o={})=>{font(o);p.splitTextToSize(lim(s),AN).forEach(l=>{p.text(l,o.a==="c"?W/2:M,y,{align:o.a==="c"?"center":"left"});y+=lh(o)})};
+  const raya=()=>{y+=0.8;p.setDrawColor(150);p.setLineDashPattern([1,1],0);p.line(M,y,W-M,y);p.setLineDashPattern([],0);y+=4.4};
+  const solida=()=>{p.setDrawColor(20);p.setLineWidth(0.3);p.line(M,y,W-M,y);p.setLineWidth(0.2)};
+  const fila=(a,b,o={})=>{line(a,M,o);line(b,W-M,{...o,a:"right"});y+=lh(o)+0.6};
+  para(c.nombre||"DAYMARSV",{sz:16,b:1,c:WN,a:"c"});y+=0.5;
+  if(c.eslogan)para(c.eslogan,{sz:9,i:1,c:WN,a:"c"});
+  [c.razon_social,c.direccion,c.correo,c.telefono,c.nit&&"NIT: "+c.nit,c.nrc&&"NRC: "+c.nrc,c.giro&&"Giro: "+c.giro].filter(Boolean).forEach(t=>para(t,{sz:8,a:"c"}));
+  raya();para("FACTURA",{sz:11,b:1,c:WN,a:"c"});raya();
+  line("Serie-N°: "+fnum(f.numero),M,{b:1});y+=3.8;line("Fecha: "+fdate(f.fecha)+hora,M);y+=3.8;
+  const dv=new Date((f.fecha||"")+"T12:00:00");if(!isNaN(dv)){dv.setDate(dv.getDate()+30);line("Vence: "+dv.toLocaleDateString("es-SV"),M);y+=3.8}
+  line("Pago: "+(f.metodo_pago||""),M);y+=3.8;line("Caja: 001",M);y+=3.8;line("Cajero: "+String(f.cajero||(DAY.me&&DAY.me.nombre)||"ADMIN").toUpperCase(),M);y+=3.8;
+  raya();line("CLIENTE",M,{b:1,c:WN});y+=3.8;
+  [f.cliente_nombre||"Consumidor Final",f.cliente_doc&&"NIT/DUI: "+f.cliente_doc,f.cliente_direccion,f.cliente_telefono&&"Tel.: "+f.cliente_telefono].filter(Boolean).forEach(t=>para(t,{sz:8}));
+  raya();
+  const X1=M+37,X2=M+55;line("PRODUCTO",M,{b:1,sz:7.5});line("CANT",X1,{b:1,sz:7.5,a:"center"});line("P.UNIT",X2,{b:1,sz:7.5,a:"right"});line("TOTAL",W-M,{b:1,sz:7.5,a:"right"});y+=1.6;solida();y+=3.6;
+  its.forEach(i=>{const ls=p.splitTextToSize(lim(i.nombre),31);font({sz:8});ls.forEach((l,k)=>{p.text(l,M,y);if(k===0){p.text(String(i.cantidad),X1,y,{align:"center"});p.text((+i.precio_unit).toFixed(2),X2,y,{align:"right"});p.text((+i.total).toFixed(2),W-M,y,{align:"right"})}y+=3.6});y+=0.8});
+  solida();y+=4;
+  fila("Subtotal:",money(subN(f)));
+  if(+f.descuento_monto)fila("Descuento:","-"+money(f.descuento_monto));
+  if(+f.envio)fila("Envío:",money(f.envio));
+  if(iv!=="ninguno")fila("IVA "+(+f.iva_pct)+"%"+(iv==="incluido"?" (incluido):":":"),money(f.iva_monto));else fila("Base imponible:",money(f.subtotal));
+  if(f.efectivo!=null){fila("Efectivo recibido:",money(f.efectivo));fila("Cambio:",money(f.cambio))}
+  y+=2.2;line("TOTAL :",M,{b:1,sz:13,c:WN});line(money(f.total),W-M,{b:1,sz:13,c:WN,a:"right"});y+=3;
+  if(f.nota){y+=2;para(f.nota,{sz:7})}
+  y+=3;
+  if(qr){const n=qr.getModuleCount(),S=30,cs=S/n,x0=(W-S)/2;p.setFillColor(0,0,0);for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(qr.isDark(r,k))p.rect(x0+k*cs,y+r*cs,cs+0.02,cs+0.02,"F");y+=S+3}
+  para("Escanea para verificar factura",{sz:7,a:"c"});para(cod,{sz:5,a:"c"});y+=2;
+  raya();para(c.pie||"¡GRACIAS POR SU COMPRA!",{sz:10,b:1,c:WN,a:"c"});y+=0.5;
+  if(ig||tel)para([ig&&"Instagram: "+ig,tel&&"WhatsApp: "+tel].filter(Boolean).join("   "),{sz:7.5,a:"c"});
+  if(c.condiciones){y+=1.5;para(c.condiciones,{sz:6.2,a:"c"})}
+  y+=2;para("Documento generado electrónicamente",{sz:6.5,a:"c",c:[60,60,60]});para((c.nombre||"DAYMARSV")+" - Facturación POS",{sz:6.5,a:"c",c:[60,60,60]});
+  return y+M};
+ const tmp=new jsPDF({unit:"mm",format:[W,600]});const h=Math.max(60,Math.ceil(draw(tmp)));
+ const p=new jsPDF({unit:"mm",format:[W,h],orientation:h>=W?"p":"l"});draw(p);return p.output("blob")}
+function dlgEstado(txt){const d=document.createElement("dialog");d.style.cssText="border:0;border-radius:18px;padding:26px 30px;text-align:center;min-width:230px;max-width:86vw;background:#fff;color:#2a1a20;box-shadow:0 20px 60px #0006;font:inherit";
+ d.addEventListener("cancel",e=>e.preventDefault());document.body.appendChild(d);
+ const close=()=>{try{d.close()}catch(e){}d.remove()};
+ const set=(h,spin,btn)=>{d.innerHTML=(spin?'<div class="spin" style="margin:0 auto 12px;width:34px;height:34px"></div>':"")+'<div style="font-size:16px;font-weight:600">'+h+"</div>"+(btn?'<button class="btn" style="margin-top:16px" id="pgOk" type="button">Entendido</button>':"");const b=d.querySelector("#pgOk");if(b)b.onclick=close};
+ d.showModal();set(txt,true);return {set,close}}
+async function conProgreso(txt,fn,okTxt){const g=dlgEstado(esc(txt));try{const r=await fn();g.set('<div style="font-size:38px;color:#2f7d4f;line-height:1">✓</div>'+esc(okTxt||"Listo"));setTimeout(g.close,1100);return r}catch(e){g.set(esc(e&&e.message||String(e)),false,true);return null}}
 async function enviarFacturaCorreo(f,para){
- const c=await ensureCfg(),fm="t80",html=await facHTML(f,fm),blob=await pdfBlob(html,fm),pdf=await b64(blob);
+ const c=await ensureCfg(),blob=await facturaPdfVector(f,c),pdf=await b64(blob);
  const neg=c.nombre||"DAYMARSV",asunto="Tu factura "+fnum(f.numero)+" – "+neg;
  const its=f.factura_items||[],ig=c.instagram?(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram):"",cli=f.cliente_nombre&&f.cliente_nombre!=="Consumidor Final"?" "+esc(f.cliente_nombre):"",iv=f.iva_modo;
  const tr=its.map(i=>`<tr><td style="padding:8px 6px;border-bottom:1px solid #eee">${esc(i.nombre)}</td><td style="padding:8px 6px;border-bottom:1px solid #eee;text-align:center">${i.cantidad}</td><td style="padding:8px 6px;border-bottom:1px solid #eee;text-align:right">${money(i.precio_unit)}</td><td style="padding:8px 6px;border-bottom:1px solid #eee;text-align:right">${money(i.total)}</td></tr>`).join("");
  const fl=(l,v,b)=>`<tr><td style="padding:3px 6px;${b?"font-size:18px;font-weight:bold;color:#6B2D3E":""}">${l}</td><td style="padding:3px 6px;text-align:right;${b?"font-size:18px;font-weight:bold;color:#6B2D3E":""}">${v}</td></tr>`;
  const cuerpo=`<div style="background:#f5f1f2;padding:20px 8px;font-family:Arial,Helvetica,sans-serif;color:#222"><div style="max-width:520px;margin:0 auto;background:#fff;border-radius:10px;padding:24px"><h1 style="margin:0;text-align:center;color:#6B2D3E;font-size:26px">${esc(neg)}</h1>${c.eslogan?`<div style="text-align:center;font-style:italic;color:#6B2D3E">${esc(c.eslogan)}</div>`:""}<p style="font-size:15px;margin:18px 0 6px">Hola${cli}, ¡gracias por tu compra!</p><p style="font-size:14px;margin:0 0 14px;color:#444">Aquí está el detalle de tu factura <b>${fnum(f.numero)}</b> del ${fdate(f.fecha)}. También la encuentras adjunta en PDF.</p><table style="width:100%;border-collapse:collapse;font-size:14px"><tr style="border-bottom:2px solid #222"><th style="text-align:left;padding:6px">Producto</th><th style="padding:6px">Cant.</th><th style="text-align:right;padding:6px">P. unit.</th><th style="text-align:right;padding:6px">Total</th></tr>${tr}</table><table style="width:100%;font-size:14px;margin-top:10px">${fl("Subtotal",money(subN(f)))}${+f.descuento_monto?fl("Descuento","-"+money(f.descuento_monto)):""}${+f.envio?fl("Envío",money(f.envio)):""}${iv!=="ninguno"?fl("IVA "+(+f.iva_pct)+"%"+(iv==="incluido"?" (incluido)":""),money(f.iva_monto)):""}${fl("TOTAL",money(f.total),1)}</table><p style="text-align:center;font-weight:bold;color:#6B2D3E;margin:22px 0 4px">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</p><p style="text-align:center;font-size:13px;margin:0;color:#444">${ig?"Instagram: "+esc(ig):""}${ig&&c.telefono?" · ":""}${c.telefono?"WhatsApp: "+esc(/^\+/.test(c.telefono)?c.telefono:"+503 "+c.telefono):""}</p>${c.condiciones?`<p style="text-align:center;font-size:11px;color:#777;margin:14px 0 0">${esc(c.condiciones)}</p>`:""}</div></div>`;
  const req=await rpc("enviar_factura_correo",{p_factura:f.id,p_para:para,p_asunto:asunto,p_html:cuerpo,p_pdf_b64:pdf,p_nombre:fnum(f.numero)+".pdf"});
- for(let i=0;i<8;i++){await new Promise(r=>setTimeout(r,1500));const e=await rpc("estado_envio_correo",{p_req:req});
-  if(e&&e.estado==="ok")return true;if(e&&e.estado==="error")throw new Error("No se pudo enviar ("+e.codigo+"): "+(e.detalle||""))}
+ setTimeout(async()=>{try{const e=await rpc("estado_envio_correo",{p_req:req});if(e&&e.estado==="error"){const g=dlgEstado("El correo a "+esc(para)+" no se pudo entregar");g.set("El correo a "+esc(para)+" no se pudo entregar:<br><small>"+esc(e.detalle||("código "+e.codigo))+"</small>",false,true)}}catch(x){}},7000);
  return true}
 async function compartirFactura(f){
  const c=await ensureCfg(),neg=c.nombre||"DAYMARSV",html=await facHTML(f,"t80"),blob=await pdfBlob(html,"t80"),nombre=fnum(f.numero)+".pdf";
@@ -1074,9 +1127,9 @@ async function nuevaFactura(pre){
   const id=await espera(()=>rpc("crear_factura",{p_items:its,p_opts:o}),"Emitiendo factura…");if(!id)return;
   LS("dms_iva",o.iva_modo);m.close();toast("Factura emitida");snd("ok");
   if(S.tab==="fac")pintarFacturas();
-  const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f);
+  const f=await espera(()=>cargarFactura(id));if(f)await abrirFactura(f);
   if(f&&!mail&&CL&&CL.listo&&CL.auto){mail=await correoDeCliente(null,nomCli)}
-  if(f&&mail){try{await enviarFacturaCorreo(f,mail);toast("Factura enviada a "+mail)}catch(err){toast("La factura se emitió, pero el correo falló: "+err.message)}}};
+  if(f&&mail){const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,mail),"Factura enviada a "+mail);if(ok)snd("ok")}};
  lines()}
 $("fcNew").onclick=()=>nuevaFactura();
 ["fcQ"].forEach(i=>$(i).addEventListener("input",(()=>{let t;return()=>{clearTimeout(t);t=setTimeout(pintarFacturas,250)}})()));

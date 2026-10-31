@@ -94,5 +94,11 @@ function rango(q){const t=new Date(),y=t.getFullYear(),m=t.getMonth(),d=t.getDat
  if(q==="year")return[ymd(new Date(y,0,1)),ymd(t)];
  return["2000-01-01",ymd(t)]}
 const h2c=(el,o)=>DAY.h2c(el,o);
-window.UI={h2c,$,r2,cents,norm,fdate,ftime,money,ic,deb,rpc,fetchAll,lib,espera,modal,confirmar,pedirClave,pestanas,DOC_CSS,imprimir,descargarPdf,vistaDoc,excel,rango};
+function dlgEstado(txt){const d=document.createElement("dialog");d.style.cssText="border:0;border-radius:18px;padding:26px 30px;text-align:center;min-width:230px;max-width:86vw;background:#fff;color:#2a1a20;box-shadow:0 20px 60px #0006;font:inherit";
+ d.addEventListener("cancel",e=>e.preventDefault());document.body.appendChild(d);
+ const close=()=>{try{d.close()}catch(e){}d.remove()};
+ const set=(h,spin,btn)=>{d.innerHTML=(spin?'<div class="spin" style="margin:0 auto 12px;width:34px;height:34px"></div>':"")+'<div style="font-size:16px;font-weight:600">'+h+"</div>"+(btn?'<button class="btn" style="margin-top:16px" id="pgOk" type="button">Entendido</button>':"");const b=d.querySelector("#pgOk");if(b)b.onclick=close};
+ d.showModal();set(txt,true);return {set,close}}
+async function progreso(txt,fn,okTxt){const g=dlgEstado(txt);try{const r=await fn();g.set('<div style="font-size:38px;color:#2f7d4f;line-height:1">✓</div>'+okTxt);setTimeout(g.close,1100);return r}catch(e){g.set(String(e&&e.message||e).replace(/</g,"&lt;"),false,true);return null}}
+window.UI={progreso,h2c,$,r2,cents,norm,fdate,ftime,money,ic,deb,rpc,fetchAll,lib,espera,modal,confirmar,pedirClave,pestanas,DOC_CSS,imprimir,descargarPdf,vistaDoc,excel,rango};
 })();
