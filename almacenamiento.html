@@ -97,7 +97,8 @@
    <div><label for="fcFrom">Desde</label><input id="fcFrom" type="date"></div>
    <div><label for="fcTo">Hasta</label><input id="fcTo" type="date"></div>
   </div>
-  <div class="ctl"><span class="grow"></span><button class="btn g sm" id="fcCfg" type="button">Datos del negocio</button><button class="btn" id="fcNew" type="button">Nueva factura</button></div>
+  <div id="fcSelBar" class="ctl hidden" style="gap:6px;flex-wrap:wrap"><b data-n>0 seleccionadas</b><span class="grow"></span><button class="btn g sm" id="fcSelAll" type="button">Marcar todas las del filtro</button><button class="btn g sm" id="fcSelNone" type="button">Quitar marcas</button><button class="btn dg sm" id="fcSelDel" type="button">Eliminar marcadas</button><button class="btn dg sm" id="fcSelAllDel" type="button">Eliminar todas las del filtro</button></div>
+  <div class="ctl"><span class="grow"></span><button class="btn g sm hidden" id="fcSel" type="button">Seleccionar</button><button class="btn g sm" id="fcCfg" type="button">Datos del negocio</button><button class="btn" id="fcNew" type="button">Nueva factura</button></div>
   <div class="kp" id="fcKpi"></div>
   <div id="fcList"></div>
  </section>
@@ -110,5 +111,5 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="js/app.js?v=202610311459"></script>
-<script src="js/almacen.js?v=202610311640"></script>
+<script src="js/almacen.js?v=202610311720"></script>
 </body></html>
