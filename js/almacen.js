@@ -800,10 +800,11 @@ const T80_CSS=`.fx-t80.v2{padding:14px 14px 16px;font-size:11.5px;line-height:1.
 const IC_IG=`<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px" fill="none" stroke="#6B2D3E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="#6B2D3E" stroke="none"/></svg>`,IC_WA=`<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px" fill="#6B2D3E"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.900 11.900 0 0 0 4.600 4c1.700.7 2.400.8 3.200.7a2.700 2.700 0 0 0 1.800-1.300 2.200 2.200 0 0 0 .2-1.300c-.1-.1-.3-.2-.5-.3z"/></svg>`;
 function subN(f){return f.iva_modo==="incluido"?+f.subtotal-(+f.iva_monto||0):+f.subtotal}
 function venceF(f){const d=new Date((f.fecha||"")+"T12:00:00");if(isNaN(d))return "";d.setDate(d.getDate()+30);return d.toLocaleDateString("es-SV")}
-function facT80(f,c,its,qr){
+const WD_CSS=`.fx-t80.v2.wd{width:500px;padding:20px 22px;font-size:15px}.fx-t80.v2.wd h1{font-size:30px}.fx-t80.v2.wd .t8t{font-size:20px}.fx-t80.v2.wd .t8s{font-size:15px}.fx-t80.v2.wd th{font-size:13px}.fx-t80.v2.wd td{font-size:14.5px;padding:8px 3px}.fx-t80.v2.wd .t8g{font-size:25px}.fx-t80.v2.wd .t8q .qr{width:140px;height:140px}.fx-t80.v2.wd .t8k{font-size:9px}.fx-t80.v2.wd .t8p{font-size:17px}.fx-t80.v2.wd .t8i{font-size:13px!important}.fx-t80.v2.wd .t8l{font-size:11.5px}.fx-t80.v2.wd .t8n{font-size:11px}`;
+function facT80(f,c,its,qr,wd){
  const iv=f.iva_modo,r=s=>s?`<div>${esc(s)}</div>`:"",d=new Date(f.created_at||f.fecha),hora=f.created_at&&!isNaN(d)?", "+d.toLocaleTimeString("es-SV",{hour:"numeric",minute:"2-digit"}):"";
  const cod=[c.nombre||"DAYMARSV",fnum(f.numero),c.nit||"",f.fecha,(+f.total).toFixed(2),f.codigo].join("|");
- return `<div class="fx fx-t80 v2"><style>${DOC_CSS}${T80_CSS}</style>${f.estado==="anulada"?'<div class="an">ANULADA</div>':""}
+ return `<div class="fx fx-t80 v2${wd?" wd":""}"><style>${DOC_CSS}${T80_CSS}${wd?WD_CSS:""}</style>${f.estado==="anulada"?'<div class="an">ANULADA</div>':""}
  <div class="t8c"><h1>${esc(c.nombre||"DAYMARSV")}</h1>${c.eslogan?`<div class="t8e">${esc(c.eslogan)}</div>`:""}${c.razon_social?r(c.razon_social):""}${r(c.direccion)}${r(c.correo)}${r(c.telefono)}${c.nit?r("NIT: "+c.nit):""}${c.nrc?r("NRC: "+c.nrc):""}${c.giro?r("Giro: "+c.giro):""}</div>
  <hr class="t8d"><div class="t8t">FACTURA</div><hr class="t8d">
  <div>Serie-N°: <b>${fnum(f.numero)}</b></div><div>Fecha: ${fdate(f.fecha)}${hora}</div><div>Vence: ${venceF(f)}</div><div>Pago: ${esc(f.metodo_pago||"")}</div><div>Caja: 001</div><div>Cajero: ${esc(String(f.cajero||(DAY.me&&DAY.me.nombre)||"ADMIN").toUpperCase())}</div>
@@ -823,6 +824,7 @@ async function facHTML(f,fmt){
  const c=await ensureCfg(),its=f.factura_items||[],iv=f.iva_modo;
  const qr=await qrSvg(["FACTURA",fnum(f.numero),f.codigo,f.fecha,f.total].join("|"));
  if(fmt==="t80")return facT80(f,c,its,qr);
+ if(fmt==="a4")return `<div class="fx fx-a4" style="padding:30px 0;display:flex;justify-content:center">${facT80(f,c,its,qr,1)}</div>`;
  const fila=i=>fmt==="t80"?`<tr><td colspan="3">${esc(i.nombre)}</td></tr><tr><td>${i.cantidad} × ${money(i.precio_unit)}</td><td></td><td class="r">${money(i.total)}</td></tr>`
   :`<tr><td>${i.cantidad}</td><td>${esc(i.nombre)}${i.codigo?` <small>(${esc(i.codigo)})</small>`:""}</td><td class="r">${money(i.precio_unit)}</td><td class="r">${money(i.total)}</td></tr>`;
  const dato=(l,v)=>v?`<div><small>${l}</small> ${esc(v)}</div>`:"";
