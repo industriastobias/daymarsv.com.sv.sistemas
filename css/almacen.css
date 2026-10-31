@@ -199,3 +199,16 @@ html[data-h] #p-inv{display:none}html[data-h=hoy] #p-hoy,html[data-h=ven] #p-ven
 
 /* los botones de inventario (escanear, venta rápida, valor) solo van en Inventario */
 html[data-tab]:not([data-tab=inv]) .hact>.btn,html[data-tab]:not([data-tab=inv]) .hact>.tot,html[data-h] .hact>.btn,html[data-h] .hact>.tot{display:none!important}
+
+/* Ventas: filtros compactos en una sola fila */
+#p-ven .dfl{gap:6px 8px;margin-bottom:8px}
+#p-ven .dfl label{font-size:11px;margin:0 0 2px}
+#p-ven .dfl input,#p-ven .dfl select{height:34px;min-height:0;padding:4px 8px;font-size:13px}
+#vLimpWrap{margin:0 0 6px!important}
+@media(min-width:800px){
+ #p-ven .dfl{grid-template-columns:1fr 2fr 1fr 1fr 1fr 1fr}
+ #p-ven .dfl .full{grid-column:auto}
+}
+#p-ven .kp{gap:6px}
+#p-ven .kp>div{padding:8px 12px}
+#p-ven .kp b{font-size:18px}
