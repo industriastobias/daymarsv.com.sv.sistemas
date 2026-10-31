@@ -196,3 +196,6 @@ body:has(#bMulti.on) #invList tr[data-id],body:has(#bMulti.on) #invList .pc{curs
 
 /* evita que se vea el inventario un instante al abrir Hoy, Ventas o Facturas */
 html[data-h] #p-inv{display:none}html[data-h=hoy] #p-hoy,html[data-h=ven] #p-ven,html[data-h=fac] #p-fac{display:block!important}
+
+/* los botones de inventario (escanear, venta rápida, valor) solo van en Inventario */
+html[data-tab]:not([data-tab=inv]) .hact>.btn,html[data-tab]:not([data-tab=inv]) .hact>.tot,html[data-h] .hact>.btn,html[data-h] .hact>.tot{display:none!important}

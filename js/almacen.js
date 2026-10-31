@@ -753,7 +753,7 @@ if(SOLO){["bnav","bScan","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i
 $("bnav").innerHTML=TABS.map(t=>`<button type="button" data-p="${t[0]}">${ic(t[2])}<span>${t[1]}</span><span class="nb hidden">0</span></button>`).join("");
 $("bScan").innerHTML=ic(IC.scan)+"Escanear";
 async function tab(k){
- document.documentElement.removeAttribute("data-h");S.tab=k;
+ document.documentElement.removeAttribute("data-h");document.documentElement.setAttribute("data-tab",k);S.tab=k;
  if(!SOLO){const T={inv:["Almacenamiento","Inventario y punto de venta"],hoy:["Hoy","Ventas y movimientos del día"],ven:["Ventas","Historial de ventas del punto de venta"],fac:["Facturas","Emite y consulta tus facturas"]}[k];
   if(T){const h=document.querySelector(".head h1"),s=document.querySelector(".head h1+small");if(h)h.textContent=T[0];if(s)s.textContent=T[1];document.title="DAYMARSV – "+T[0]}}document.querySelectorAll("#bnav button").forEach(b=>b.classList.toggle("on",b.dataset.p===k));
  ALLT.forEach(t=>$("p-"+t[0]).classList.toggle("hidden",t[0]!==k));
