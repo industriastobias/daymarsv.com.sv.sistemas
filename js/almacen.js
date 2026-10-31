@@ -798,6 +798,7 @@ const T80_CSS=`.fx-t80.v2{padding:14px 14px 16px;font-size:11.5px;line-height:1.
 .fx-t80.v2 .t8l{text-align:center;font-size:9px;margin-top:8px;line-height:1.3}
 .fx-t80.v2 .t8n{text-align:center;color:#333;font-size:8.5px;margin-top:10px}`;
 const IC_IG=`<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px" fill="none" stroke="#6B2D3E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="#6B2D3E" stroke="none"/></svg>`,IC_WA=`<svg viewBox="0 0 24 24" width="13" height="13" style="vertical-align:-2px;margin-right:4px" fill="#6B2D3E"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.900 11.900 0 0 0 4.600 4c1.700.7 2.400.8 3.200.7a2.700 2.700 0 0 0 1.800-1.300 2.200 2.200 0 0 0 .2-1.300c-.1-.1-.3-.2-.5-.3z"/></svg>`;
+function subN(f){return f.iva_modo==="incluido"?+f.subtotal-(+f.iva_monto||0):+f.subtotal}
 function venceF(f){const d=new Date((f.fecha||"")+"T12:00:00");if(isNaN(d))return "";d.setDate(d.getDate()+30);return d.toLocaleDateString("es-SV")}
 function facT80(f,c,its,qr){
  const iv=f.iva_modo,r=s=>s?`<div>${esc(s)}</div>`:"",d=new Date(f.created_at||f.fecha),hora=f.created_at&&!isNaN(d)?", "+d.toLocaleTimeString("es-SV",{hour:"numeric",minute:"2-digit"}):"";
@@ -810,7 +811,7 @@ function facT80(f,c,its,qr){
  <hr class="t8d">
  <table><colgroup><col style="width:42%"><col style="width:12%"><col style="width:23%"><col style="width:23%"></colgroup><thead><tr><th>PRODUCTO</th><th class="t8m">CANT</th><th class="r">P.UNIT</th><th class="r">TOTAL</th></tr></thead>
  <tbody>${its.map(i=>`<tr><td>${esc(i.nombre)}</td><td class="t8m">${i.cantidad}</td><td class="r">${(+i.precio_unit).toFixed(2)}</td><td class="r">${(+i.total).toFixed(2)}</td></tr>`).join("")}</tbody></table>
- <hr class="t8d"><div class="t8x"><div><span>Subtotal:</span><span>${money(f.subtotal)}</span></div>
+ <hr class="t8d"><div class="t8x"><div><span>Subtotal:</span><span>${money(subN(f))}</span></div>
  ${+f.descuento_monto?`<div><span>Descuento:</span><span>-${money(f.descuento_monto)}</span></div>`:""}${+f.envio?`<div><span>Envío:</span><span>${money(f.envio)}</span></div>`:""}
  ${iv!=="ninguno"?`<div><span>IVA ${+f.iva_pct}%${iv==="incluido"?" (incluido)":""}:</span><span>${money(f.iva_monto)}</span></div>`:`<div><span>Base imponible:</span><span>${money(f.subtotal)}</span></div>`}
  ${f.efectivo!=null?`<div><span>Efectivo recibido:</span><span>${money(f.efectivo)}</span></div><div><span>Cambio:</span><span>${money(f.cambio)}</span></div>`:""}</div>
@@ -831,7 +832,7 @@ async function facHTML(f,fmt){
   <div class="no"><span class="sl">FACTURA</span><b>${fnum(f.numero)}</b><div>${fdate(f.fecha)}</div><small>Pago: ${esc(f.metodo_pago)}</small></div></div>
  <div class="cl"><b>${esc(f.cliente_nombre||"Consumidor final")}</b>${dato("NIT/DUI:",f.cliente_doc)}${dato("Dirección:",f.cliente_direccion)}${dato("Tel.:",f.cliente_telefono)}</div>
  <table>${fmt==="t80"?"":'<thead><tr><th style="width:52px">Cant.</th><th>Descripción</th><th class="r">P. unit.</th><th class="r">Total</th></tr></thead>'}<tbody>${its.map(fila).join("")}</tbody></table>
- <div class="tt"><div><span>Subtotal</span><span>${money(f.subtotal)}</span></div>
+ <div class="tt"><div><span>Subtotal</span><span>${money(subN(f))}</span></div>
   ${+f.descuento_monto?`<div><span>Descuento</span><span>-${money(f.descuento_monto)}</span></div>`:""}${+f.envio?`<div><span>Envío</span><span>${money(f.envio)}</span></div>`:""}
   ${iv!=="ninguno"?`<div><span>IVA ${+f.iva_pct}%${iv==="incluido"?" (incluido)":""}</span><span>${money(f.iva_monto)}</span></div>`:""}
   <div class="g"><span>TOTAL</span><span>${money(f.total)}</span></div>
