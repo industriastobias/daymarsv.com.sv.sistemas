@@ -316,7 +316,7 @@ const TK_SEL="*,profiles(nombre),venta_items(cantidad,precio_unit,nombre,product
 function ticketData(v,cf){const L=(v.venta_items||[]).map(i=>({q:i.cantidad,n:itName(i),p:+i.precio_unit}));
  const f=new Date(v.created_at),fh=f.toLocaleDateString("es-SV")+" "+f.toLocaleTimeString("es-SV",{hour:"2-digit",minute:"2-digit"});
  const tipo={cod:"Contra entrega",entrega_pendiente:"Pendiente de entrega",cobro_pendiente:"Pendiente de cobro"}[v.tipo]||"";
- return {L,fh,tipo,neg:cf.nombre||"DAYMAR-SHOP",pie:cf.pie||"¡Gracias por tu compra!",tel:cf.telefono||""}}
+ return {L,fh,tipo,neg:cf.nombre||"DAYMARSV",pie:cf.pie||"¡Gracias por tu compra!",tel:cf.telefono||""}}
 function ticketHTML(v,cf){const d=ticketData(v,cf);
  return `<div class="tkt" style="font-family:'Courier New',monospace;background:#fff;color:#111;width:300px;max-width:100%;margin:0 auto;padding:16px 14px;font-size:13px;line-height:1.4">
  <div style="text-align:center"><b style="font-size:16px">${esc(d.neg)}</b>${d.tel?`<br>${esc(d.tel)}`:""}<br>Ticket de venta #${v.numero}<br>${esc(d.fh)}</div>
@@ -342,7 +342,7 @@ async function abrirTicket(v,nuevo){
   const dig=t.replace(/\D/g,""),tel=dig.length===8?"503"+dig:dig;if(tel.length<10||tel.length>15){await DAY.say("Ese número no es válido.");return}
   const f=await espera(async()=>new File([await ticketPdfBlob(v,cf)],"ticket-"+v.numero+".pdf",{type:"application/pdf"}),"Preparando PDF…");
   if(!f)return;
-  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Ticket #"+v.numero,text:"Ticket de tu compra en "+(cf.nombre||"DAYMAR-SHOP")});return}catch(e){if(e&&e.name==="AbortError")return}}
+  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:"Ticket #"+v.numero,text:"Ticket de tu compra en "+(cf.nombre||"DAYMARSV")});return}catch(e){if(e&&e.name==="AbortError")return}}
   const a=document.createElement("a");a.download=f.name;a.href=URL.createObjectURL(f);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
   window.open("https://wa.me/"+tel+"?text="+encodeURIComponent("Hola, te comparto el ticket de tu compra en DAYMARSV (venta #"+v.numero+"). Adjunto el PDF."),"_blank");
   toast("PDF descargado: adjúntalo en el chat de WhatsApp")}}
@@ -757,7 +757,7 @@ let CFG=null;
 async function ensureCfg(){
  if(CFG)return CFG;
  const {data}=await db.from("config_negocio").select("*").eq("id",1).maybeSingle();
- CFG=data||{nombre:"DAYMAR-SHOP",eslogan:"A Family Company",iva_pct:13,pie:"¡Gracias por su compra!"};return CFG}
+ CFG=data||{nombre:"DAYMARSV",eslogan:"A Family Company",iva_pct:13,pie:"¡Gracias por su compra!"};return CFG}
 const fnum=n=>"F-"+String(n).padStart(6,"0");
 const DOC_CSS=`.fx{font-family:Arial,Helvetica,sans-serif;color:#222;background:#fff;box-sizing:border-box;position:relative;font-size:13px;line-height:1.35}
 .fx *{box-sizing:border-box}.fx-a4{width:794px;padding:44px 48px}.fx-t80{width:302px;padding:14px 12px;font-size:12px}
@@ -796,9 +796,9 @@ const T80_CSS=`.fx-t80.v2{padding:14px 12px 16px;font-size:11.5px;line-height:1.
 .fx-t80.v2 .t8p{text-align:center;margin-top:10px;font-weight:700;color:#6B2D3E}.fx-t80.v2 .t8n{text-align:center;color:#888;font-size:8.5px;margin-top:6px}`;
 function facT80(f,c,its,qr){
  const iv=f.iva_modo,r=s=>s?`<div>${esc(s)}</div>`:"",d=new Date(f.created_at||f.fecha),hora=f.created_at&&!isNaN(d)?", "+d.toLocaleTimeString("es-SV",{hour:"numeric",minute:"2-digit"}):"";
- const cod=[c.nombre||"DAYMAR-SHOP",fnum(f.numero),c.nit||"",f.fecha,(+f.total).toFixed(2),f.codigo].join("|");
+ const cod=[c.nombre||"DAYMARSV",fnum(f.numero),c.nit||"",f.fecha,(+f.total).toFixed(2),f.codigo].join("|");
  return `<div class="fx fx-t80 v2"><style>${DOC_CSS}${T80_CSS}</style>${f.estado==="anulada"?'<div class="an">ANULADA</div>':""}
- <div class="t8c"><h1>${esc(c.nombre||"DAYMAR-SHOP")}</h1>${c.eslogan?`<div class="t8e">${esc(c.eslogan)}</div>`:""}${c.razon_social?r(c.razon_social):""}${r(c.direccion)}${r(c.correo)}${r(c.telefono)}${c.nit?r("NIT: "+c.nit):""}${c.nrc?r("NRC: "+c.nrc):""}${c.giro?r("Giro: "+c.giro):""}</div>
+ <div class="t8c"><h1>${esc(c.nombre||"DAYMARSV")}</h1>${c.eslogan?`<div class="t8e">${esc(c.eslogan)}</div>`:""}${c.razon_social?r(c.razon_social):""}${r(c.direccion)}${r(c.correo)}${c.telefono?r("Tel.: "+c.telefono):""}${c.instagram?r("Instagram: "+(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram)):""}${c.nit?r("NIT: "+c.nit):""}${c.nrc?r("NRC: "+c.nrc):""}${c.giro?r("Giro: "+c.giro):""}</div>
  <hr class="t8d"><div class="t8t">FACTURA</div><hr class="t8d">
  <div>Serie-N°: <b>${fnum(f.numero)}</b></div><div>Fecha: ${fdate(f.fecha)}${hora}</div><div>Pago: ${esc(f.metodo_pago||"")}</div>
  <hr class="t8d"><div class="t8s">CLIENTE</div><div>${esc(f.cliente_nombre||"Consumidor Final")}</div>${f.cliente_doc?`<div>NIT/DUI: ${esc(f.cliente_doc)}</div>`:""}${f.cliente_direccion?`<div>${esc(f.cliente_direccion)}</div>`:""}${f.cliente_telefono?`<div>Tel.: ${esc(f.cliente_telefono)}</div>`:""}
@@ -812,7 +812,7 @@ function facT80(f,c,its,qr){
  <div class="t8g"><span>TOTAL :</span><span>${money(f.total)}</span></div>
  ${f.nota?`<div class="nt" style="margin-top:6px">${esc(f.nota)}</div>`:""}
  <div class="t8q">${qr?`<div class="qr">${qr}</div>`:""}<div style="font-size:9px">Escanea para verificar factura</div><div class="t8k">${esc(cod)}</div></div>
- <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div><div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMAR-SHOP")}</div></div>`}
+ <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div><div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMARSV")}</div></div>`}
 async function facHTML(f,fmt){
  const c=await ensureCfg(),its=f.factura_items||[],iv=f.iva_modo;
  const qr=await qrSvg(["FACTURA",fnum(f.numero),f.codigo,f.fecha,f.total].join("|"));
@@ -821,8 +821,8 @@ async function facHTML(f,fmt){
   :`<tr><td>${i.cantidad}</td><td>${esc(i.nombre)}${i.codigo?` <small>(${esc(i.codigo)})</small>`:""}</td><td class="r">${money(i.precio_unit)}</td><td class="r">${money(i.total)}</td></tr>`;
  const dato=(l,v)=>v?`<div><small>${l}</small> ${esc(v)}</div>`:"";
  return `<div class="fx fx-${fmt}"><style>${DOC_CSS}</style>${f.estado==="anulada"?'<div class="an">ANULADA</div>':""}
- <div class="top"><div><h1>${esc(c.nombre||"DAYMAR-SHOP")}</h1><div class="sl">${esc(c.eslogan||"")}</div>
-  ${c.razon_social?`<div>${esc(c.razon_social)}</div>`:""}${dato("NIT",c.nit)}${dato("NRC",c.nrc)}${c.giro?`<div>${esc(c.giro)}</div>`:""}${c.direccion?`<div>${esc(c.direccion)}</div>`:""}${dato("Tel.",c.telefono)}${c.correo?`<div>${esc(c.correo)}</div>`:""}</div>
+ <div class="top"><div><h1>${esc(c.nombre||"DAYMARSV")}</h1><div class="sl">${esc(c.eslogan||"")}</div>
+  ${c.razon_social?`<div>${esc(c.razon_social)}</div>`:""}${dato("NIT",c.nit)}${dato("NRC",c.nrc)}${c.giro?`<div>${esc(c.giro)}</div>`:""}${c.direccion?`<div>${esc(c.direccion)}</div>`:""}${dato("Tel.",c.telefono)}${dato("Instagram",c.instagram)}${c.correo?`<div>${esc(c.correo)}</div>`:""}</div>
   <div class="no"><span class="sl">FACTURA</span><b>${fnum(f.numero)}</b><div>${fdate(f.fecha)}</div><small>Pago: ${esc(f.metodo_pago)}</small></div></div>
  <div class="cl"><b>${esc(f.cliente_nombre||"Consumidor final")}</b>${dato("NIT/DUI:",f.cliente_doc)}${dato("Dirección:",f.cliente_direccion)}${dato("Tel.:",f.cliente_telefono)}</div>
  <table>${fmt==="t80"?"":'<thead><tr><th style="width:52px">Cant.</th><th>Descripción</th><th class="r">P. unit.</th><th class="r">Total</th></tr></thead>'}<tbody>${its.map(fila).join("")}</tbody></table>
@@ -839,7 +839,7 @@ async function cierreHTML(c,fmt){
  const rows=Object.keys(N).filter(k=>k!=="dev"||R.dev).map(k=>`<tr><td>${N[k]}</td><td class="r">${(R[k]||{}).n||0}</td><td class="r">${money((R[k]||{}).total||0)}</td></tr>`).join("");
  const util=+c.total_ventas-+c.costo_total;
  return `<div class="fx fx-${fmt}"><style>${DOC_CSS}</style>
- <div class="top"><div><h1>${esc(cf.nombre||"DAYMAR-SHOP")}</h1><div class="sl">Cierre de caja</div></div>
+ <div class="top"><div><h1>${esc(cf.nombre||"DAYMARSV")}</h1><div class="sl">Cierre de caja</div></div>
  <div class="no"><b>${rangoTxt(c.fecha,c.fecha_hasta)}</b><small>Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)}${c.profiles?" · "+esc(c.profiles.nombre):""}</small></div></div>
  <table><thead><tr><th>Concepto</th><th class="r">Ventas</th><th class="r">Total</th></tr></thead><tbody>${rows}</tbody></table>
  <div class="tt"><div class="g"><span>Total vendido</span><span>${money(c.total_ventas)}</span></div>
@@ -1027,12 +1027,12 @@ $("fcEst").onchange=()=>pintarFacturas();
 /* Datos del negocio (solo administrador) */
 if(!ADM)$("fcCfg").classList.add("hidden");
 $("fcCfg").onclick=async()=>{await ensureCfg();const c=CFG;const F=(n,l,v,x)=>`<div${x?` class="${x}"`:""}><label>${l}</label><input name="${n}" value="${esc(v||"")}" maxlength="160"></div>`;
- const m=modal("Datos del negocio",`<p class="pw" style="margin-top:0">Aparecen en el encabezado de las facturas y del cierre de caja.</p><div class="fg">${F("nombre","Nombre comercial",c.nombre)}${F("eslogan","Eslogan",c.eslogan)}${F("razon_social","Razón social",c.razon_social)}${F("giro","Giro",c.giro)}${F("nit","NIT",c.nit)}${F("nrc","NRC",c.nrc)}${F("direccion","Dirección",c.direccion,"full")}${F("telefono","Teléfono",c.telefono)}${F("correo","Correo",c.correo)}
+ const m=modal("Datos del negocio",`<p class="pw" style="margin-top:0">Aparecen en el encabezado de las facturas y del cierre de caja.</p><div class="fg">${F("nombre","Nombre comercial",c.nombre)}${F("eslogan","Eslogan",c.eslogan)}${F("razon_social","Razón social",c.razon_social)}${F("giro","Giro",c.giro)}${F("nit","NIT",c.nit)}${F("nrc","NRC",c.nrc)}${F("direccion","Dirección",c.direccion,"full")}${F("telefono","Teléfono",c.telefono)}${F("instagram","Instagram",c.instagram)}${F("correo","Correo",c.correo)}
   <div><label>IVA (%)</label><input name="iva" type="number" min="0" max="100" step="0.01" value="${+c.iva_pct}"></div>${F("pie","Mensaje al pie",c.pie)}</div><div class="err2" id="cgE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cgOk">Guardar</button>`});
  const g=n=>m.q(`[name=${n}]`).value.trim();
  m.q("#cgOk").onclick=async()=>{const iva=Number(g("iva"));if(!g("nombre")){m.q("#cgE").textContent="El nombre es obligatorio.";return}if(!(iva>=0&&iva<=100)){m.q("#cgE").textContent="IVA entre 0 y 100.";return}
-  const r=await espera(async()=>{const {error}=await db.from("config_negocio").update({nombre:g("nombre"),eslogan:g("eslogan")||null,razon_social:g("razon_social")||null,giro:g("giro")||null,nit:g("nit")||null,nrc:g("nrc")||null,direccion:g("direccion")||null,telefono:g("telefono")||null,correo:g("correo")||null,iva_pct:iva,pie:g("pie")||null,updated_at:new Date().toISOString()}).eq("id",1);if(error)throw new Error(error.message);return true});
+  const r=await espera(async()=>{const {error}=await db.from("config_negocio").update({nombre:g("nombre"),eslogan:g("eslogan")||null,razon_social:g("razon_social")||null,giro:g("giro")||null,nit:g("nit")||null,nrc:g("nrc")||null,direccion:g("direccion")||null,telefono:g("telefono")||null,instagram:g("instagram")||null,correo:g("correo")||null,iva_pct:iva,pie:g("pie")||null,updated_at:new Date().toISOString()}).eq("id",1);if(error)throw new Error(error.message);return true});
   if(r){CFG=null;m.close();toast("Datos guardados")}}};
 
 /* ---------- CIERRE DE CAJA (guarda un registro; no borra ventas) ---------- */
