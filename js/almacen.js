@@ -818,7 +818,7 @@ function facT80(f,c,its,qr){
  <div class="t8g"><span>TOTAL :</span><span>${money(f.total)}</span></div>
  ${f.nota?`<div class="nt" style="margin-top:6px">${esc(f.nota)}</div>`:""}
  <div class="t8q">${qr?`<div class="qr">${qr}</div>`:""}<div style="font-size:9px">Escanea para verificar factura</div><div class="t8k">${esc(cod)}</div></div>
- <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div>${c.instagram?`<div class="t8i">${IC_IG}${esc(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram)}</div>`:""}${c.telefono?`<div class="t8i">${IC_WA}${esc(c.telefono)}</div>`:""}${c.condiciones?`<div class="t8l">${esc(c.condiciones)}</div>`:""}<div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMARSV")} - Facturación POS</div></div>`}
+ <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div>${(c.instagram||c.telefono)?`<div class="t8i" style="display:flex;justify-content:center;gap:10px;white-space:nowrap;font-size:10.5px">${c.instagram?`<span>${IC_IG}${esc(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram)}</span>`:""}${c.telefono?`<span>${IC_WA}${esc(/^\+/.test(c.telefono)?c.telefono:"+503 "+c.telefono)}</span>`:""}</div>`:""}${c.condiciones?`<div class="t8l">${esc(c.condiciones)}</div>`:""}<div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMARSV")} - Facturación POS</div></div>`}
 async function facHTML(f,fmt){
  const c=await ensureCfg(),its=f.factura_items||[],iv=f.iva_modo;
  const qr=await qrSvg(["FACTURA",fnum(f.numero),f.codigo,f.fecha,f.total].join("|"));
