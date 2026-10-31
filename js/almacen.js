@@ -277,11 +277,11 @@ function optForm(root,getSub,onChange){
    cfgVis();calc()}
   if(pm){st.pm=pm.dataset.pm;root.querySelectorAll("[data-pm]").forEach(b=>b.classList.toggle("on",b===pm));cfgVis();calc()}
   if(wh){st.who=wh.dataset.who;wh.parentNode.querySelectorAll("[data-who]").forEach(b=>b.classList.toggle("on",b===wh));calc()}});
- const chip=()=>{const c=q("[data-clichip]"),B=q("[data-addcli]");if(!c)return;B.classList.toggle("hidden",!!st.cli);c.innerHTML=st.cli?`<span class="cchip">👤 ${esc(st.cli.nombre)}<button type="button" data-delcli aria-label="Quitar cliente">×</button></span>`:"";cfgVis()};
+ const chip=()=>{const c=q("[data-clichip]"),B=q("[data-addcli]");if(!c)return;B.classList.toggle("hidden",!!st.cli);c.innerHTML=st.cli?`<span class="cchip">👤 ${esc(st.cli.nombre)}<button type="button" data-delcli aria-label="Quitar cliente">×</button></span>`+(st.cli.correo?`<label class="autof" style="display:block;font-size:13px;margin-top:6px"><input type="checkbox" data-autofac checked> Emitir factura y enviarla a <b>${esc(st.cli.correo)}</b></label>`:`<small style="display:block;margin-top:4px;color:var(--mut,#777)">Este cliente no tiene correo guardado: no se enviará factura.</small>`):"";cfgVis()};
  root.addEventListener("click",async e=>{if(e.target.closest("[data-delcli]")){st.cli=null;chip();calc();return}
   if(e.target.closest("[data-addcli]")){const c=await elegirCliente();if(c){st.cli=c;chip();calc()}}});
  root.addEventListener("input",calc);root.addEventListener("change",calc);
- cfgVis();calc();return {read,check,calc,st}}
+ cfgVis();calc();return {read,check,calc,st,autoFac:()=>{const k=q("[data-autofac]");return !!(st.cli&&st.cli.correo&&k&&k.checked&&st.ty==="inmediata")?st.cli:null}}}
 const MSG=(o,t,extra)=>o.tipo==="cod"?"Pedido contra entrega guardado. Total a cobrar: "+$$(t.total/100):
  o.tipo==="entrega_pendiente"?"Venta pendiente de entrega registrada. Total: "+$$(t.total/100):
  o.tipo==="cobro_pendiente"?`Venta pendiente de cobro registrada. Cliente: ${o.cliente}. Abonado: ${$$(t.paid/100)}. Debe: ${$$(t.pend/100)}`:
@@ -354,6 +354,16 @@ async function tras(o,t,lines){ /* refresco local tras una venta */
  if(o.tipo!=="inmediata")cargarPend().catch(()=>{});else badges().catch(()=>{});
  ticketUltima()}
 
+/* factura automática al vender a un cliente registrado con correo */
+async function autoFactura(ventaId,cli){
+ if(!ventaId||!cli||!cli.correo)return;
+ try{const CL=await rpc("config_correo_estado");if(!CL||!CL.listo){toast("Venta lista. Configura el correo para enviar facturas automáticas.");return}
+  const {data:v,error}=await db.from("ventas").select("*,venta_items(*,productos(nombre))").eq("id",ventaId).single();if(error)throw new Error(error.message);
+  const x=fromVentas([v]);
+  const id=await rpc("crear_factura",{p_items:x.items,p_opts:{cliente_nombre:cli.nombre||"",cliente_doc:cli.documento||"",cliente_direccion:cli.direccion||"",cliente_telefono:cli.telefono||"",metodo:v.metodo_pago||"Efectivo",iva_modo:LS("dms_iva")||"ninguno",descuento_tipo:"pct",descuento_valor:0,envio:0,efectivo:null,nota:"",venta_ids:[ventaId]}});
+  const f=await cargarFactura(id);if(S.tab==="fac")pintarFacturas();
+  const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,cli.correo),"Factura enviada a "+cli.correo);if(ok)snd("ok")
+ }catch(e){toast("Venta registrada, pero no se pudo emitir/enviar la factura: "+e.message);snd("err")}}
 /* ---------- venta de un producto ---------- */
 function elegirColor(p,cb){
  const m=modal("Elige el color",`<p style="margin:0 0 8px"><b>${esc(p.nombre)}</b></p><div id="clL">${p.vars.map((v,i)=>`<button type="button" class="sv" data-c="${i}" ${v.stock<1?"disabled":""} style="width:100%;text-align:left;cursor:pointer;${v.stock<1?"opacity:.5":""}"><div class="ti"><b>${DAY.colorDot(v.vnom)}${esc(v.vnom)}</b><small>${v.stock<1?"Agotado":"Disponibles: "+v.stock}</small></div></button>`).join("")}</div>`,{foot:`<button class="btn g" data-x>Cancelar</button>`});
@@ -394,11 +404,11 @@ function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
   const q=qty(),pr=price();let r;
   try{if(!Number.isInteger(q)||q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");if(isNaN(pr)||pr<0)throw new Error("Precio inválido.");
    if(q>stockEf())throw new Error("Stock insuficiente");r=of.check()}catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
-  const ok=await espera(async()=>{
+  const ac=of.autoFac();const ok=await espera(async()=>{
    if(unl)await aplicarCambios();
    const it={producto_id:p.real||p.id,cantidad:q};if(p.vid)it.variante_id=p.vid;if(unl)it.precio=pr;
-   await rpc("registrar_pedido",{p_items:[it],p_opts:r.o});return true},"Registrando venta…");
-  if(ok){m.close();await tras(r.o,r.t,[{id:p.id,q}])}else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})};
+   return await rpc("registrar_pedido",{p_items:[it],p_opts:r.o})},"Registrando venta…");
+  if(ok){m.close();await tras(r.o,r.t,[{id:p.id,q}]);autoFactura(ok,ac)}else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})};
  m.q("#sGo").onclick=vender;m.q("#sGo2").onclick=vender;
  m.el.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.id==="sQty"&&!unl)vender()})}
 
@@ -420,8 +430,8 @@ function ventaRapida(){
   const n=m.q("#fqN").value.trim(),pr=parseFloat(m.q("#fqP").value),q=parseInt(m.q("#fqQ").value,10);let r;
   try{if(!n)throw new Error("El nombre del producto es obligatorio.");if(!(pr>0))throw new Error("El precio debe ser mayor a cero.");if(!Number.isInteger(q)||q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");r=of.check()}
   catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
-  const ok=await espera(async()=>{await rpc("registrar_pedido",{p_items:[{libre:true,nombre:n,precio:pr,cantidad:q,categoria:m.q("#fqC").value,descripcion:m.q("#fqD").value,codigo_barras:m.q("#fqB").value}],p_opts:r.o});return true},"Registrando venta…");
-  if(ok){m.close();await tras(r.o,r.t,[])}}}
+  const ac=of.autoFac();const ok=await espera(async()=>{return await rpc("registrar_pedido",{p_items:[{libre:true,nombre:n,precio:pr,cantidad:q,categoria:m.q("#fqC").value,descripcion:m.q("#fqD").value,codigo_barras:m.q("#fqB").value}],p_opts:r.o})},"Registrando venta…");
+  if(ok){m.close();await tras(r.o,r.t,[]);autoFactura(ok,ac)}}}
 
 /* ---------- venta múltiple ---------- */
 function addSel(id,n){const p=S.byId.get(id);if(!p)return;if(p.vars){elegirColor(p,e=>addSel(e.id,n));return}if(p.stock<1){toast("Sin stock: "+p.nombre);snd("err");return}
@@ -470,8 +480,8 @@ function abrirMulti(){
   try{if(!L.length)throw new Error("Selecciona al menos un producto.");
    L.forEach(l=>{if(!Number.isInteger(l.q)||l.q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");if(l.q>l.p.stock)throw new Error("Stock insuficiente: "+l.p.nombre)});r=of.check()}
   catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
-  const ok=await espera(async()=>{await rpc("registrar_pedido",{p_items:L.map(l=>{const it={producto_id:l.p.real||l.p.id,cantidad:l.q};if(l.p.vid)it.variante_id=l.p.vid;return it}),p_opts:r.o});return true},"Registrando venta…");
-  if(ok){S.sel.clear();m.close();await tras(r.o,r.t,L.map(l=>({id:l.p.id,q:l.q})));toast("Venta múltiple registrada: "+L.length+" productos en un solo pedido.")}
+  const ac=of.autoFac();const ok=await espera(async()=>{return await rpc("registrar_pedido",{p_items:L.map(l=>{const it={producto_id:l.p.real||l.p.id,cantidad:l.q};if(l.p.vid)it.variante_id=l.p.vid;return it}),p_opts:r.o})},"Registrando venta…");
+  if(ok){S.sel.clear();m.close();await tras(r.o,r.t,L.map(l=>({id:l.p.id,q:l.q})));autoFactura(ok,ac);toast("Venta múltiple registrada: "+L.length+" productos en un solo pedido.")}
   else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})}}
 
 /* ---------- líneas de un pedido (se usan en pendientes, hoy e historial) ---------- */
