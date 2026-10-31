@@ -884,14 +884,14 @@ async function descargarPdf(html,fmt,nombre,modo){
  await espera(async()=>{const b=await pdfBlob(html,fmt);await entregarPdf(b,nombre,modo||"descargar");toast("PDF generado")},"Generando PDF…")}
 /* Vista previa con botones de impresión y PDF */
 async function vistaDoc(titulo,build,nombre,extra){
- const fmtSaved=LS("dms_fmt")||"t80";let fmt=fmtSaved;
+ const fmtSaved=LS("dms_fmt2")||"t80";let fmt=fmtSaved;
  const m=modal(esc(titulo),`<div class="tp" id="dfF"><button type="button" data-f="a4">Carta / A4</button><button type="button" data-f="t80">Ticket 80 mm</button></div><div class="docv" id="dvB"></div>`,
   {big:true,foot:`${extra||""}<button class="btn g" data-x>Cerrar</button><button class="btn g" id="dvP">Imprimir</button><button class="btn" id="dvD">Descargar PDF</button>`});
  let html="";
  const draw=async()=>{m.el.querySelectorAll("#dfF button").forEach(b=>b.classList.toggle("on",b.dataset.f===fmt));
   html=await build(fmt);const box=m.q("#dvB");box.innerHTML=`<div class="dvz">${html}</div>`;
   const w=fmt==="t80"?302:794,z=Math.min(1,(box.clientWidth-8)/w);box.firstElementChild.style.zoom=z>0?z:1};
- m.q("#dfF").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;fmt=b.dataset.f;LS("dms_fmt",fmt);draw()});
+ m.q("#dfF").addEventListener("click",e=>{const b=e.target.closest("[data-f]");if(!b)return;fmt=b.dataset.f;LS("dms_fmt2",fmt);draw()});
  m.q("#dvP").onclick=()=>fmt==="t80"?descargarPdf(html,fmt,nombre+"-ticket.pdf","imprimir"):imprimir(html,fmt);m.q("#dvD").onclick=()=>descargarPdf(html,fmt,nombre+(fmt==="t80"?"-ticket":"")+".pdf");
  await draw();return m}
 
@@ -922,8 +922,8 @@ $("fcList").addEventListener("click",async e=>{
  const b=e.target.closest("[data-fa]"),r=e.target.closest("[data-fid]");if(!r)return;const id=r.dataset.fid;
  try{
   if(!b||b.dataset.fa==="ver"){const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f)}
-  else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"t80",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
-  else if(b.dataset.fa==="pdf"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt")||"t80";descargarPdf(await facHTML(f,fm),fm,fnum(f.numero)+(fm==="t80"?"-ticket":"")+".pdf")}}
+  else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt2")||"t80",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
+  else if(b.dataset.fa==="pdf"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt2")||"t80";descargarPdf(await facHTML(f,fm),fm,fnum(f.numero)+(fm==="t80"?"-ticket":"")+".pdf")}}
  }catch(err){toast(err.message)}});
 async function abrirFactura(f){
  const anu=ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"";
