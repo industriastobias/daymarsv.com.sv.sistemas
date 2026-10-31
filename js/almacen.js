@@ -668,9 +668,11 @@ async function pintarHoy(){
  const d=$("hDate").value||ymd(new Date());$("hDate").value=d;
  const L=await espera(()=>ventasRango(d,d));if(!L)return;S.ventas=L;
  const g={ef:[0,0],tr:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
- L.forEach(v=>{const k=v.tipo==="entrega_pendiente"?"ent":v.tipo==="cod"?"cod":v.tipo==="cobro_pendiente"?"cob":v.metodo_pago==="Transferencia"?"tr":"ef";g[k][0]+=+v.total;g[k][1]++});
- const pc={ef:[0,0],tr:[0,0,],};L.forEach(v=>{if(v.tipo==="cod"||v.tipo==="entrega_pendiente"){const k=v.metodo_pago==="Transferencia"?"tr":"ef";pc[k][0]+=+v.total;pc[k][1]++}});
- const kp=(n,k)=>`<div><span>${n}</span><b>${$$(g[k][0])}</b><small>${g[k][1]} ventas</small>${pc[k]&&pc[k][1]?`<small style="display:block;color:var(--wa,#b7791f)">+ ${$$(pc[k][0])} por cobrar (${pc[k][1]} en entrega)</small>`:""}</div>`;
+ L.forEach(v=>{const m=v.metodo_pago==="Transferencia"?"tr":"ef";
+  if(v.tipo==="cobro_pendiente"){g.cob[0]+=+v.total;g.cob[1]++;return}
+  g[m][0]+=+v.total;g[m][1]++;
+  if(v.tipo==="entrega_pendiente"){g.ent[0]+=+v.total;g.ent[1]++}else if(v.tipo==="cod"){g.cod[0]+=+v.total;g.cod[1]++}});
+ const kp=(n,k)=>`<div><span>${n}</span><b>${$$(g[k][0])}</b><small>${g[k][1]} ventas</small>${(k==="ent"||k==="cod")&&g[k][1]?`<small style="display:block;color:var(--mut,#777)">ya incluido en Efectivo/Transferencia</small>`:""}</div>`;
  $("hKpi").innerHTML=kp("Efectivo","ef")+kp("Transferencia","tr")+kp("Pend. entrega","ent")+kp("Contra entrega","cod")+kp("Pend. cobro","cob");
  $("hList").innerHTML=L.length?L.map(filaVenta).join(""):`<div class="empty card">No hay ventas para esta fecha</div>`;
  navBadge("hoy",d===ymd(new Date())?L.length:+document.querySelector('#bnav [data-p="hoy"] .nb').textContent||0)}
