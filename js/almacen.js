@@ -1055,7 +1055,7 @@ async function enviarFacturaCorreo(f,para){
  await Promise.all([
   (async()=>{if(f.venta_ids&&f.venta_ids.length){const {data}=await db.from("ventas").select("tipo,estado,empresa_envio,entregado_en,pendiente_monto,abonado,subtotal").in("id",f.venta_ids);x.ventas=data||[]}})(),
   (async()=>{if(c.codigo_correo){const {data}=await db.from("promo_codigos").select("codigo,pct").eq("codigo",String(c.codigo_correo).trim().toUpperCase()).eq("activo",true).maybeSingle();x.promo=data||null}})(),
-  (async()=>{if(c.correo_novedades!==false){const {data}=await db.from("productos").select("nombre,precio_venta,descuento_pct,foto_url").gt("stock",0).not("foto_url","is",null).order("created_at",{ascending:false}).limit(3);x.nuevos=data||[]}})()
+  (async()=>{if(c.correo_novedades!==false){const {data}=await db.from("productos").select("nombre,precio_venta,descuento_pct,foto_url").gt("stock",0).not("foto_url","is",null).order("created_at",{ascending:false}).limit(30);const ya=new Set((f.factura_items||[]).map(i=>String(i.nombre||"").trim().toLowerCase()));const L=(data||[]).filter(p=>!ya.has(String(p.nombre||"").trim().toLowerCase()));for(let i=L.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[L[i],L[j]]=[L[j],L[i]]}x.nuevos=L.slice(0,3)}})()
  ].map(pr=>pr.catch(()=>{})));
  const cuerpo=cuerpoFacturaEmail(f,c,x);
  const req=await rpc("enviar_factura_correo",{p_factura:f.id,p_para:para,p_asunto:asunto,p_html:cuerpo,p_pdf_b64:pdf,p_nombre:fnum(f.numero)+".pdf"});
