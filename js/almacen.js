@@ -361,8 +361,11 @@ async function autoFactura(ventaId,cli,opt){opt=opt||{};
   const {data:v,error}=await db.from("ventas").select("*,venta_items(*,productos(nombre))").eq("id",ventaId).single();if(error)throw new Error(error.message);
   if(!cli&&v.cliente_id){const r=await db.from("clientes").select("id,nombre,telefono,correo,documento,direccion").eq("id",v.cliente_id).maybeSingle();cli=r.data||null}
   if(!cli&&v.cliente_nombre)cli={nombre:v.cliente_nombre};
-  if(!cli||(opt.soloConCorreo&&!cli.correo))return;
   const ya=await db.from("facturas").select("id").contains("venta_ids",[ventaId]).eq("estado","emitida").limit(1);if(ya.data&&ya.data.length)return;
+  if(opt.preguntar&&(!cli||!cli.correo)){
+   const mail=await pedirCorreo("Emitir y enviar la factura","Esta venta no tiene un cliente con correo guardado. Escribe el correo para emitir la factura y enviársela ahora (o cancela para no emitirla).","","Emitir y enviar");
+   if(!mail)return;cli=Object.assign({nombre:v.cliente_nombre||"Consumidor final"},cli||{},{correo:mail})}
+  if(!cli||(opt.soloConCorreo&&!cli.correo))return;
   let CL=null;try{CL=await rpc("config_correo_estado")}catch(e){}
   const x=fromVentas([v]);
   const id=await rpc("crear_factura",{p_items:x.items,p_opts:{cliente_nombre:cli.nombre||"",cliente_doc:cli.documento||"",cliente_direccion:cli.direccion||"",cliente_telefono:cli.telefono||"",metodo:v.metodo_pago||"Efectivo",iva_modo:LS("dms_iva")||"ninguno",descuento_tipo:"pct",descuento_valor:0,envio:+x.envio||0,efectivo:null,nota:"",venta_ids:[ventaId]}});
@@ -547,7 +550,7 @@ async function accionPend(a,id){
   const monto=v.tipo==="cobro_pendiente"?`<div class="am"><div><span>Saldo pendiente</span><b>${$$(v.pendiente_monto)}</b></div><div class="k"><span>Total de la venta</span><b>${$$(v.subtotal)}</b></div></div>`:`<div class="am"><div class="k"><span>Total a cobrar</span><b>${$$(v.total)}</b></div></div>`;
   if(!await confirmar(lineas(v)+monto+`<p>${txt[1]}</p>`,{titulo:txt[0],ok:txt[0]}))return;
   const ok=await espera(async()=>{await rpc("completar_pedido",{p_venta:id});return true});
-  if(ok){snd("ok");toast(v.tipo==="cod"?"Pedido cobrado: "+$$(v.total):v.tipo==="entrega_pendiente"?"Entrega confirmada y venta registrada":"Pago completado. Cliente: "+(v.cliente_nombre||"")+". Total: "+$$(v.subtotal));await cargarPend();pintarPend();autoFactura(id)}
+  if(ok){snd("ok");toast(v.tipo==="cod"?"Pedido cobrado: "+$$(v.total):v.tipo==="entrega_pendiente"?"Entrega confirmada y venta registrada":"Pago completado. Cliente: "+(v.cliente_nombre||"")+". Total: "+$$(v.subtotal));await cargarPend();pintarPend();autoFactura(id,null,{preguntar:true})}
   return}
  if(a==="del"){
   if(!soloAdmin())return;if(!await pedirClave("Vas a eliminar este pedido pendiente."))return;
