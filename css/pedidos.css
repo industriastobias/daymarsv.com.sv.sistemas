@@ -40,21 +40,3 @@ dialog.pl-m{width:min(680px,calc(100vw - 20px))}
 .pl-pc small{color:var(--mute);font-size:12px}
 .pl-vacio{grid-column:1/-1;text-align:center;color:var(--mute);padding:24px 0}
 @media(max-width:560px){.pl-g,.pl-res{grid-template-columns:1fr}.pl-top{flex-wrap:wrap}.pl-tt{text-align:left;width:100%}}
-/* computadora: ventana más ancha y menos alta */
-@media(min-width:900px){
-dialog.pl-m{width:min(1040px,calc(100vw - 48px))}
-.pl-g{grid-template-columns:repeat(3,1fr)}
-.pl-items{grid-template-columns:1fr 1fr}
-.pl-g .full:has([name=tipo]){grid-column:span 2}
-.pl-it{padding:8px}
-.pl-hint{margin-top:8px}
-}
-.pl-hay{color:var(--ok)!important;font-weight:600}
-/* pantallas grandes: datos a la izquierda, productos a la derecha */
-@media(min-width:1100px){
-dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
-.pl-cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:0 22px;align-items:start}
-.pl-cols .pl-g{grid-template-columns:1fr 1fr}
-.pl-cols .pl-items{grid-template-columns:1fr}
-.pl-cols .pl-sec:first-child{margin-top:0}
-}

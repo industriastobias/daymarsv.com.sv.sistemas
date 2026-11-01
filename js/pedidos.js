@@ -40,7 +40,7 @@ const lineasEst=p=>`<div class="pl-items">`+(p.items||[]).map(i=>{const x=buscar
  const est=x?(falta?`<span class="pl-st warn">⚠ Stock insuficiente</span>`:`<span class="pl-st ok">✓ En el sistema</span>`):`<span class="pl-st bad">✗ No registrado</span>`;
  return `<div class="pl-it${x?"":" bad"}">${imgH(foto)}<div class="pl-b"><div class="pl-n">${esc(i.nombre||i.codigo)}</div>
   <div class="pl-m1"><span class="pl-c">Cant. ${esc(i.cantidad)}</span><span class="pl-c">${$$(+i.precio)}</span><span class="pl-c">Cód. ${esc(i.codigo)}</span></div>
-  ${est}${x?`<span class="pl-sn">${esc(x.nombre)} · quedan ${x.stock}</span><div class="pl-acts"><label class="chk pl-hay"><input type="checkbox" data-hay="${esc(i.codigo)}"> Confirmo que lo tengo en físico</label><label class="chk"><input type="checkbox" data-omit="${esc(i.codigo)}"> No hay en físico · omitir</label></div>`:`<div class="pl-acts"><button type="button" class="btn g sm" data-emp="${esc(i.codigo)}">Emparejar con el sistema</button><label class="chk"><input type="checkbox" data-omit="${esc(i.codigo)}"> Omitir esta línea</label></div>`}</div></div>`}).join("")+`</div>`;
+  ${est}${x?`<span class="pl-sn">${esc(x.nombre)} · quedan ${x.stock}</span><div class="pl-acts"><label class="chk"><input type="checkbox" data-omit="${esc(i.codigo)}"> No hay en físico · omitir</label></div>`:`<div class="pl-acts"><button type="button" class="btn g sm" data-emp="${esc(i.codigo)}">Emparejar con el sistema</button><label class="chk"><input type="checkbox" data-omit="${esc(i.codigo)}"> Omitir esta línea</label></div>`}</div></div>`}).join("")+`</div>`;
 function elegirProducto(i,hecho){
  const m=modal("Emparejar con un producto del sistema",`<div class="pl-cmp">${imgH(fotosT(i))}<div><b>${esc(i.nombre||i.codigo)}</b><small>En la tienda · código ${esc(i.codigo)} · ${$$(+i.precio)}</small><small>Busca abajo el mismo producto en el sistema y compara las fotos. Quedará guardado para los próximos pedidos.</small></div></div>
   <div class="pl-q"><input id="epQ" type="search" placeholder="Buscar por nombre o código" autocomplete="off"></div><div class="pl-res" id="epL"></div>`,{foot:'<button class="btn g" data-x>Cancelar</button>'});
@@ -89,12 +89,9 @@ async function abrir(p){await catalogo();
    [["nombre",c.nombre],["telefono",c.telefono],["correo",c.correo]].forEach(([n,v])=>{if(v)m.q("[name="+n+"]").value=v});
    mm.close();pintReg()})};
  pintReg();
- m.el.addEventListener("change",e=>{const t=e.target;if(!t.matches||!t.matches("[data-hay],[data-omit]"))return;if(!t.checked)return;const c=t.dataset.hay!==undefined?t.dataset.hay:t.dataset.omit,o=m.el.querySelector(t.dataset.hay!==undefined?'[data-omit="'+c+'"]':'[data-hay="'+c+'"]');if(o)o.checked=false});
  m.q("#pSv").onclick=async()=>{if(await guardar()){m.close();toast("Datos guardados");await cargar()}};
  m.q("#pOk").onclick=async()=>{if(!await guardar())return;
   const marcadas=[...m.el.querySelectorAll("[data-omit]:checked")].map(x=>x.dataset.omit);
-  const sinConf=(p.items||[]).filter(i=>buscar(i)&&!marcadas.includes(String(i.codigo))&&!m.el.querySelector('[data-hay="'+String(i.codigo).replace(/"/g,'\\"')+'"]:checked'));
-  if(sinConf.length){await DAY.say("Confirma que tienes en físico cada producto (marca la casilla), o marca «No hay en físico» para quitarlo del pedido. Falta: "+sinConf.map(i=>i.nombre||i.codigo).join(", ")+".",{titulo:"Confirma los productos"});return}
   const sinReg=(p.items||[]).filter(i=>!buscar(i)&&!marcadas.includes(String(i.codigo)));
   const reg=(p.items||[]).filter(i=>buscar(i)&&!marcadas.includes(String(i.codigo)));
   if(sinReg.length&&!reg.length){await DAY.say("Ningún producto de este pedido está registrado en el sistema. Usa Emparejar en cada línea, o rechaza el pedido y atiéndelo por WhatsApp.",{titulo:"No se puede aceptar"});return}
