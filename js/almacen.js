@@ -355,6 +355,14 @@ async function tras(o,t,lines){ /* refresco local tras una venta */
  ticketUltima()}
 
 /* factura automática al vender a un cliente registrado con correo */
+/* Busca el correo del cliente de una venta en todos los lugares donde pudo quedar guardado */
+async function correoDeVenta(v,cli,ef){
+ if(ef&&ef.cliente_correo)return ef.cliente_correo;
+ if(cli&&cli.correo)return cli.correo;
+ try{const r=await db.from("pedidos_linea").select("cliente_correo").eq("venta_id",v.id).not("cliente_correo","is",null).limit(1);if(r.data&&r.data[0]&&r.data[0].cliente_correo)return r.data[0].cliente_correo}catch(e){}
+ let nom=v.cliente_nombre,tel=cli&&cli.telefono;
+ if(ef&&ef.id){try{const r=await db.from("facturas").select("cliente_nombre,cliente_telefono,cliente_correo").eq("id",ef.id).maybeSingle();if(r.data){if(r.data.cliente_correo)return r.data.cliente_correo;nom=nom||r.data.cliente_nombre;tel=tel||r.data.cliente_telefono}}catch(e){}}
+ return (await correoDeCliente(v.cliente_id,nom,tel))||""}
 async function autoFactura(ventaId,cli,opt){opt=opt||{};
  if(!ventaId)return;
  try{
@@ -364,13 +372,15 @@ async function autoFactura(ventaId,cli,opt){opt=opt||{};
   const ya=await db.from("facturas").select("id,cliente_correo,correo_enviado_en").contains("venta_ids",[ventaId]).eq("estado","emitida").limit(1);
   if(ya.data&&ya.data.length){ /* ya está facturada: si todavía no se envió por correo, se envía ahora */
    const ef=ya.data[0];if(ef.correo_enviado_en)return;
-   let mail=ef.cliente_correo||(cli&&cli.correo)||"";
+   let mail=await correoDeVenta(v,cli,ef);
    if(!mail&&opt.preguntar)mail=await pedirCorreo("Enviar la factura","La factura de esta venta aún no se ha enviado por correo. Escribe el correo del cliente para enviársela ahora (o cancela).","","Enviar factura");
    if(!mail)return;
    const CL0=await correoListo();if(!CL0)return;
    const f0=await cargarFactura(ef.id);
    const ok0=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f0,mail),"Factura enviada a "+mail);if(ok0){snd("ok");try{await rpc("factura_guardar_correo",{p_id:ef.id,p_correo:mail})}catch(e){}if(S.tab==="fac")pintarFacturas()}
    return}
+  if(cli&&!cli.correo){const m0=await correoDeVenta(v,cli,null);if(m0)cli.correo=m0}
+  else if(!cli){const m0=await correoDeVenta(v,null,null);if(m0)cli={nombre:v.cliente_nombre||"Consumidor final",correo:m0}}
   if(opt.preguntar&&(!cli||!cli.correo)){
    const mail=await pedirCorreo("Emitir y enviar la factura","Esta venta no tiene un cliente con correo guardado. Escribe el correo para emitir la factura y enviársela ahora (o cancela para no emitirla).","","Emitir y enviar");
    if(!mail)return;cli=Object.assign({nombre:v.cliente_nombre||"Consumidor final"},cli||{},{correo:mail})}
