@@ -1315,7 +1315,7 @@ async function liberarFotos(){
   if(!files.length)return;
   if(!await confirmar(`Hay <b>${Object.keys(by).length}</b> productos agotados con fotos. Se borrarán <b>${files.length}</b> archivos y a cada producto le quedará <b>una miniatura</b> para reconocerlo. Las ventas y cierres no se tocan.<p class="pw">Si vuelves a surtirlos, puedes subir una foto nueva en Compra.</p>`,{titulo:"Liberar espacio de fotos",ok:"Liberar espacio"}))return;
   const ok=await espera(async()=>{
-   for(let i=0;i<files.length;i+=50){const {error}=await db.storage.from("productos").remove(files.slice(i,i+50));if(error)throw new Error(error.message)}
+   for(let i=0;i<files.length;i+=50)await DAY.fotosAlm.quitar(files.slice(i,i+50));
    for(const k of keep){const {error}=await db.from("producto_imagenes").update({path:null,url:k.thumb_url||k.url}).eq("id",k.id);if(error)throw new Error(error.message)}
    for(let i=0;i<drop.length;i+=100){const {error}=await db.from("producto_imagenes").delete().in("id",drop.slice(i,i+100).map(x=>x.id));if(error)throw new Error(error.message)}
    return true},"Liberando espacio…");

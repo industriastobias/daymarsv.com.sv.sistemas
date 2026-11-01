@@ -70,9 +70,9 @@ async function comprimir(file,max=600,q=.6){
  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);
  return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
 async function subirFoto(blob){const path="cotizaciones/"+crypto.randomUUID()+".jpg";
- const {error}=await db.storage.from(BUCKET).upload(path,blob,{contentType:"image/jpeg"});if(error)throw new Error(error.message);
- return {path,url:db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl}}
-const quitarFoto=async p=>{if(p)try{await db.storage.from(BUCKET).remove([p])}catch(e){}};
+ const url=await DAY.fotosAlm.subir(path,blob);
+ return {path,url}}
+const quitarFoto=async p=>{if(p)try{await DAY.fotosAlm.quitar([p])}catch(e){}};
 /* ---------- lote ---------- */
 function formLote(l,dup){
  const nuevo=!l;l=l||{};

@@ -17,7 +17,7 @@ const busy=(on,t)=>{$("ov").classList.toggle("on",on);if(t)$("ovText").textConte
 const beep=()=>{try{const c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.12)}catch(e){}};
 const num=v=>Number(v)||0;
 const catName=id=>(cats.find(c=>c.id===id)||{}).nombre||"";
-const pub=path=>db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+const pub=path=>DAY.fotosAlm.url(path);
 async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length){const k=i++;await fn(items[k],k)}}))}
 async function fetchAll(mk){const out=[];for(let f=0;;f+=1000){const r=await mk().range(f,f+999);if(r.error){toast(r.error.message);throw r.error}out.push(...r.data);if(r.data.length<1000)break}return out}
 function openDlg(id){const d=$(id);if(!d.open)d.showModal()}
@@ -131,10 +131,10 @@ document.addEventListener("paste",async e=>{
 /* subir imágenes de un producto a Storage */
 async function subirImagenes(id,list,reemplazar){
  if(reemplazar){const old=await ok(db.from("producto_imagenes").select("id,path,thumb_path").eq("producto_id",id));
-  const paths=old.flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await db.storage.from(BUCKET).remove(paths);
+  const paths=old.flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await DAY.fotosAlm.quitar(paths);
   if(old.length)await ok(db.from("producto_imagenes").delete().eq("producto_id",id))}
  const rows=await Promise.all(list.map(async(im,i)=>{const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",una=!im.thumb||im.thumb===im.main,p2=una?p1:base+"_t.jpg";
-  await Promise.all([ok(db.storage.from(BUCKET).upload(p1,im.main,{contentType:"image/jpeg"})),...(una?[]:[ok(db.storage.from(BUCKET).upload(p2,im.thumb,{contentType:"image/jpeg"}))])]);
+  await Promise.all([DAY.fotosAlm.subir(p1,im.main),...(una?[]:[DAY.fotosAlm.subir(p2,im.thumb)])]);
   return {producto_id:id,url:pub(p1),thumb_url:pub(p2),path:p1,thumb_path:p2,orden:i}}));
  if(rows.length){await ok(db.from("producto_imagenes").insert(rows));await ok(db.from("productos").update({foto_url:rows[0].thumb_url}).eq("id",id))}}
 
@@ -217,7 +217,7 @@ function renderTrash(){$("trashCount").textContent=trash.length+" items";
  $("trashBody").innerHTML=trash.length?trash.map(p=>{const d=Math.ceil(DIAS-(Date.now()-new Date(p.eliminado_en))/864e5);
   return`<div class="tr">${pic(p,"ph")}<div class="ti"><b>${esc(p.nombre)}</b><small>${esc(p.codigo)} · ${esc(catName(p.categoria_id)||"Sin categoría")} · ${$$(p.precio_venta)}</small><br><small class="${d<=5?"al":""}">Se elimina en ${Math.max(d,0)} días</small></div><div class="ta"><button class="btn sm" data-a="r" data-i="${p.id}">Restaurar</button><button class="btn dg sm" data-a="x" data-i="${p.id}" aria-label="Eliminar para siempre">Eliminar</button></div></div>`}).join(""):`<div class="empty">La papelera está vacía.</div>`}
 async function borrarDef(p){const r=await ok(db.rpc("eliminar_producto_definitivo",{p_id:p.id}));
- if(r==="borrado"){const im=await db.from("producto_imagenes").select("path,thumb_path").eq("producto_id",p.id);const paths=(im.data||[]).flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await db.storage.from(BUCKET).remove(paths)}return r}
+ if(r==="borrado"){const im=await db.from("producto_imagenes").select("path,thumb_path").eq("producto_id",p.id);const paths=(im.data||[]).flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await DAY.fotosAlm.quitar(paths)}return r}
 $("trashBody").onclick=async e=>{const b=e.target.closest("button");if(!b)return;const p=trash.find(x=>x.id===b.dataset.i);if(!p)return;
  try{if(b.dataset.a==="r"){await ok(db.from("productos").update({activo:true,eliminado_en:null}).eq("id",p.id));await refresh();renderTrash();toast("Producto restaurado")}
   else if(await DAY.ask("¿Eliminar para siempre?")){const r=await borrarDef(p);await refresh();renderTrash();toast(r==="oculto"?"Tiene ventas registradas: se oculta para conservar el historial":"Eliminado para siempre")}}catch(x){}};

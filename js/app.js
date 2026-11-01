@@ -2,6 +2,45 @@
 (function(){
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 const db=supabase.createClient(CFG.url,CFG.key);
+/* Fotos en Cloudflare R2 (opcional). Vacío = se siguen guardando en Supabase. Ver cloudflare/LEEME.md */
+const R2={worker:"",publico:""};
+const sesionToken=async()=>{const s=(await db.auth.getSession()).data.session;if(!s)throw new Error("Tu sesión expiró. Vuelve a entrar.");return s.access_token};
+const fotosAlm={
+ r2:()=>!!R2.worker,
+ url:path=>R2.worker?R2.publico.replace(/\/$/,"")+"/"+path:db.storage.from("productos").getPublicUrl(path).data.publicUrl,
+ async subir(path,blob){
+  if(!R2.worker){const {error}=await db.storage.from("productos").upload(path,blob,{contentType:"image/jpeg"});if(error)throw new Error(error.message);return fotosAlm.url(path)}
+  const r=await fetch(R2.worker.replace(/\/$/,"")+"/subir?path="+encodeURIComponent(path),{method:"POST",headers:{Authorization:"Bearer "+await sesionToken(),"Content-Type":blob.type||"image/jpeg"},body:blob});
+  if(!r.ok){let m="";try{m=(await r.json()).error}catch(e){}throw new Error(m||"No se pudo subir la foto ("+r.status+")")}
+  return fotosAlm.url(path)},
+ async quitar(paths){paths=(paths||[]).filter(Boolean);if(!paths.length)return;
+  /* se borra en los dos lugares: lo que no exista allí simplemente se ignora */
+  try{await db.storage.from("productos").remove(paths)}catch(e){}
+  if(R2.worker)try{await fetch(R2.worker.replace(/\/$/,"")+"/borrar",{method:"POST",headers:{Authorization:"Bearer "+await sesionToken(),"Content-Type":"application/json"},body:JSON.stringify({paths})})}catch(e){}}
+};
+/* Pasa a R2 las fotos que hoy están en Supabase y actualiza sus enlaces. No borra nada de Supabase. */
+async function pasarFotosR2(btn){
+ if(!R2.worker){await say("Cloudflare R2 todavía no está conectado. Sigue la guía cloudflare/LEEME.md y pide a Claude que lo conecte.");return}
+ if(!await ask("Se copiarán a Cloudflare R2 las fotos que están en Supabase y los productos pasarán a usar las nuevas direcciones. Las fotos originales NO se borran de Supabase todavía (puedes liberarlas después). Puede tardar unos minutos; no cierres la página.",{titulo:"Pasar fotos a Cloudflare",ok:"Empezar"}))return;
+ const t0=btn.textContent;btn.disabled=true;
+ const marca="/object/public/productos/",rutaDe=u=>{const i=(u||"").indexOf(marca);return i<0?null:decodeURIComponent(u.slice(i+marca.length).split("?")[0])};
+ try{
+  const R=[];for(let f=0;;f+=1000){const {data,error}=await db.from("producto_imagenes").select("id,producto_id,url,thumb_url").range(f,f+999);if(error)throw new Error(error.message);R.push(...data);if(data.length<1000)break}
+  const rutas=new Set();R.forEach(r=>{[r.url,r.thumb_url].forEach(u=>{const p=rutaDe(u);if(p)rutas.add(p)})});
+  const L=[...rutas];let hechas=0,fallas=0;
+  const pool=async(n)=>{let i=0;await Promise.all(Array.from({length:n},async()=>{while(i<L.length){const p=L[i++];
+    try{const r=await fetch(db.storage.from("productos").getPublicUrl(p).data.publicUrl);if(!r.ok)throw new Error("origen "+r.status);const b=await r.blob();await fotosAlm.subir(p,b.type?b:new Blob([b],{type:"image/jpeg"}))}catch(e){fallas++;rutas.delete(p)}
+    hechas++;btn.textContent="Copiando… "+hechas+"/"+L.length}}))};
+  await pool(4);
+  let act=0;
+  for(const r of R){const pu=rutaDe(r.url),pt=rutaDe(r.thumb_url),ok=(p)=>!p||rutas.has(p);if(!ok(pu)||!ok(pt)||(!pu&&!pt))continue;
+   const nu=pu?fotosAlm.url(pu):r.url,nt=pt?fotosAlm.url(pt):r.thumb_url;
+   const e1=await db.from("producto_imagenes").update({url:nu,thumb_url:nt}).eq("id",r.id);if(e1.error)throw new Error(e1.error.message);
+   if(r.thumb_url&&nt!==r.thumb_url){const e2=await db.from("productos").update({foto_url:nt}).eq("id",r.producto_id).eq("foto_url",r.thumb_url);if(e2.error)throw new Error(e2.error.message)}
+   act++}
+  await say("Listo: "+(L.length-fallas)+" de "+L.length+" archivos copiados a Cloudflare y "+act+" fotos actualizadas."+(fallas?" "+fallas+" no se pudieron copiar y siguen en Supabase.":"")+" Revisa que las fotos se vean bien en el sistema y en la tienda; después podrás borrar las originales de Supabase.",{titulo:"Fotos pasadas"})
+ }catch(e){await say("Se detuvo: "+e.message+". Lo que ya se copió no se pierde; puedes volver a intentarlo.")}
+ finally{btn.disabled=false;btn.textContent=t0}}
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $$=n=>"$"+Number(n||0).toLocaleString("es-SV",{minimumFractionDigits:2,maximumFractionDigits:2});
 const ymd=d=>d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
@@ -201,7 +240,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
   e.innerHTML=barra("Base de datos",d.db_bytes,500*MB)+barra("Fotos",d.storage_bytes,1024*MB)+`<p class="cf-m" style="margin:0">${d.productos} productos · ${d.fotos} archivos de foto · ${d.ventas} ventas${d.ventas_completadas==null?"":` (${d.ventas_completadas} completadas · ${d.ventas_anuladas} anuladas · ${d.ventas_pendientes} pendientes)`} · ${d.clientes} clientes. Límites del plan gratis de Supabase.</p>`});
  const bk=q("#cfBk");if(bk){const t=()=>{let u=null;try{u=localStorage.getItem("dms_backup")}catch(e){}q("#cfBkT").textContent=u?"Último respaldo en este dispositivo: "+new Date(u).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"}):"Aún no has descargado un respaldo desde este dispositivo."};t();
   bk.onclick=async()=>{bk.disabled=true;try{await respaldo();t()}finally{bk.disabled=false}}}
- db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3>Fotos</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 10px">Borra las fotos que ya no pertenecen a ningún producto (por ejemplo, de importaciones que se cortaron). Las fotos de tus productos no se tocan.</p><button type="button" class="btn g s" id="cfFo">Liberar espacio de fotos</button></div><h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()};q("#cfFo").onclick=()=>liberarFotos(q("#cfFo"))}},()=>{});
+ db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3>Fotos</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 10px">Borra las fotos que ya no pertenecen a ningún producto (por ejemplo, de importaciones que se cortaron). Las fotos de tus productos no se tocan.</p><button type="button" class="btn g s" id="cfFo">Liberar espacio de fotos</button>${R2.worker?`<p class="cf-m" style="margin:12px 0 8px">Cloudflare R2 está conectado: las fotos nuevas se guardan allí. Las anteriores siguen en Supabase hasta que las pases.</p><button type="button" class="btn g s" id="cfR2">Pasar fotos a Cloudflare</button>`:""}</div><h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()};q("#cfFo").onclick=()=>liberarFotos(q("#cfFo"));if(q("#cfR2"))q("#cfR2").onclick=()=>pasarFotosR2(q("#cfR2"))}},()=>{});
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
@@ -291,7 +330,7 @@ function listaBonita(inp){
 function autoSelects(r){(r||document).querySelectorAll("select:not([multiple]):not([data-sb]):not([data-nosb])").forEach(x=>{if(!(x.size>1)&&!x.closest(".sbd"))selectBonito(x)});(r||document).querySelectorAll("input[list]:not([data-lb])").forEach(listaBonita)}
 const iniSB=()=>{autoSelects();new MutationObserver(m=>{if(m.some(r=>r.addedNodes.length))autoSelects()}).observe(document.body,{childList:true,subtree:true})};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniSB);else iniSB();
-window.DAY={refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+window.DAY={fotosAlm,refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
 try{if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}catch(e){}
