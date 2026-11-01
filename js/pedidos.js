@@ -16,7 +16,7 @@ const con=async(fn,txt)=>{const o=$("ov");if(o){$("ovT").textContent=txt||"Proce
 const EST={nuevo:["wa","Nuevo"],aceptado:["ok","Aceptado"],rechazado:["or","Rechazado"]};
 let L=[];
 async function cargar(){const d=await espera(async()=>{const {data,error}=await db.from("pedidos_linea").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw new Error(error.message);return data},"Cargando pedidos…");if(d){L=d;pintar();DAY.refrescarBadges()}}
-const lineas=p=>`<div class="pl-items">`+(p.items||[]).map(i=>`<div class="pl-it">${imgH(fotoT(i))}<div class="pl-b"><div class="pl-n">${esc(i.nombre||i.codigo)}</div><div class="pl-m1"><span class="pl-c">Cant. ${esc(i.cantidad)}</span><span class="pl-c">${$$(+i.precio)}</span><span class="pl-c">Cód. ${esc(i.codigo)}</span></div></div></div>`).join("")+`</div>`;
+const lineas=p=>`<div class="pl-items">`+(p.items||[]).map(i=>`<div class="pl-it">${imgH(fotosT(i))}<div class="pl-b"><div class="pl-n">${esc(i.nombre||i.codigo)}</div><div class="pl-m1"><span class="pl-c">Cant. ${esc(i.cantidad)}</span><span class="pl-c">${$$(+i.precio)}</span><span class="pl-c">Cód. ${esc(i.codigo)}</span></div></div></div>`).join("")+`</div>`;
 function pintar(){
  const nu=L.filter(x=>x.estado==="nuevo").length;
  $("kK").innerHTML=`<div><span>Por atender</span><b>${nu}</b></div><div><span>Aceptados</span><b>${L.filter(x=>x.estado==="aceptado").length}</b></div><div><span>Rechazados</span><b>${L.filter(x=>x.estado==="rechazado").length}</b></div>`;
@@ -31,15 +31,18 @@ const buscar=i=>{const c=String(EQ[i.codigo]||i.sys||i.codigo).toLowerCase();
  const p=CAT.find(x=>String(x.codigo_barras||"").toLowerCase()===c||String(x.codigo||"").toLowerCase()===c);if(p)return {nombre:p.nombre,stock:p.stock,foto:p.foto_url};
  const v=VAR.find(x=>String(x.codigo_barras||"").toLowerCase()===c);if(v){const b=CAT.find(x=>x.id===v.producto_id);return {nombre:(b?b.nombre+" – ":"")+v.nombre,stock:v.stock,foto:b&&b.foto_url}}return null};
 const TIENDA="https://industriastobias.github.io/klohesvtiendaonline/";
-const fotoT=i=>i.imagen||TIENDA+"generalimg/"+encodeURIComponent(i.codigo)+".jpg";
-const imgH=(src,cls)=>src?`<img ${cls?`class="${cls}" `:""}src="${esc(src)}" alt="" loading="lazy" onerror="this.style.opacity='0'">`:`<div class="pl-ph"></div>`;
-const lineasEst=p=>`<div class="pl-items">`+(p.items||[]).map(i=>{const x=buscar(i),falta=x&&x.stock<+i.cantidad,foto=i.imagen||(x&&x.foto)||fotoT(i);
+const fotosT=i=>[i.imagen,TIENDA+"prodimg/"+encodeURIComponent(i.codigo)+".1.jpg",TIENDA+"generalimg/"+encodeURIComponent(i.codigo)+".jpg"].filter(Boolean);
+window.__pe=img=>{const l=(img.dataset.f||"").split("|").filter(Boolean),n=l.shift();img.dataset.f=l.join("|");if(n)img.src=n;else img.style.opacity="0"};
+/* imgH acepta una foto o una lista: si una no carga, prueba la siguiente */
+const imgH=(src,cls)=>{const L=[].concat(src||[]).filter(Boolean);if(!L.length)return `<div class="pl-ph"></div>`;
+ return `<img ${cls?`class="${cls}" `:""}src="${esc(L[0])}" data-f="${esc(L.slice(1).join("|"))}" alt="" onerror="window.__pe(this)">`};
+const lineasEst=p=>`<div class="pl-items">`+(p.items||[]).map(i=>{const x=buscar(i),falta=x&&x.stock<+i.cantidad,foto=[x&&x.foto].concat(fotosT(i));
  const est=x?(falta?`<span class="pl-st warn">⚠ Stock insuficiente</span>`:`<span class="pl-st ok">✓ En el sistema</span>`):`<span class="pl-st bad">✗ No registrado</span>`;
  return `<div class="pl-it${x?"":" bad"}">${imgH(foto)}<div class="pl-b"><div class="pl-n">${esc(i.nombre||i.codigo)}</div>
   <div class="pl-m1"><span class="pl-c">Cant. ${esc(i.cantidad)}</span><span class="pl-c">${$$(+i.precio)}</span><span class="pl-c">Cód. ${esc(i.codigo)}</span></div>
   ${est}${x?`<span class="pl-sn">${esc(x.nombre)} · quedan ${x.stock}</span>`:`<div class="pl-acts"><button type="button" class="btn g sm" data-emp="${esc(i.codigo)}">Emparejar con el sistema</button><label class="chk"><input type="checkbox" data-omit="${esc(i.codigo)}"> Omitir esta línea</label></div>`}</div></div>`}).join("")+`</div>`;
 function elegirProducto(i,hecho){
- const m=modal("Emparejar con un producto del sistema",`<div class="pl-cmp">${imgH(fotoT(i))}<div><b>${esc(i.nombre||i.codigo)}</b><small>En la tienda · código ${esc(i.codigo)} · ${$$(+i.precio)}</small><small>Busca abajo el mismo producto en el sistema y compara las fotos. Quedará guardado para los próximos pedidos.</small></div></div>
+ const m=modal("Emparejar con un producto del sistema",`<div class="pl-cmp">${imgH(fotosT(i))}<div><b>${esc(i.nombre||i.codigo)}</b><small>En la tienda · código ${esc(i.codigo)} · ${$$(+i.precio)}</small><small>Busca abajo el mismo producto en el sistema y compara las fotos. Quedará guardado para los próximos pedidos.</small></div></div>
   <div class="pl-q"><input id="epQ" type="search" placeholder="Buscar por nombre o código" autocomplete="off"></div><div class="pl-res" id="epL"></div>`,{foot:'<button class="btn g" data-x>Cancelar</button>'});
  m.el.classList.add("pl-m");
  const pint=()=>{const q=m.q("#epQ").value.toLowerCase().trim();const F=CAT.filter(x=>!q||(x.nombre+" "+(x.codigo_barras||"")+" "+(x.codigo||"")).toLowerCase().includes(q)).slice(0,40);
