@@ -5,7 +5,7 @@ const {db,esc,$$,ymd,toast,mountSide,requireSession}=DAY;
 const {$,r2,fdate,deb,fetchAll,espera,modal,confirmar,norm}=UI;
 const me=await requireSession();if(!me)return;
 const ADM=me.rol==="admin",BUCKET="productos";
-mountSide($("side"),"reservas",me.rol);$("app").classList.remove("hidden");$("bnav").remove();
+mountSide($("side"),"cotizacion",me.rol);$("app").classList.remove("hidden");$("bnav").remove();
 document.querySelector("main").style.paddingBottom="30px";
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 let R=[],AB={},estado="activas",priv=LS("dms_res_priv")==="1",lim=30;
