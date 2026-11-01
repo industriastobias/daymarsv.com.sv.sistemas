@@ -547,7 +547,7 @@ async function accionPend(a,id){
   const monto=v.tipo==="cobro_pendiente"?`<div class="am"><div><span>Saldo pendiente</span><b>${$$(v.pendiente_monto)}</b></div><div class="k"><span>Total de la venta</span><b>${$$(v.subtotal)}</b></div></div>`:`<div class="am"><div class="k"><span>Total a cobrar</span><b>${$$(v.total)}</b></div></div>`;
   if(!await confirmar(lineas(v)+monto+`<p>${txt[1]}</p>`,{titulo:txt[0],ok:txt[0]}))return;
   const ok=await espera(async()=>{await rpc("completar_pedido",{p_venta:id});return true});
-  if(ok){snd("ok");toast(v.tipo==="cod"?"Pedido cobrado: "+$$(v.total):v.tipo==="entrega_pendiente"?"Entrega confirmada y venta registrada":"Pago completado. Cliente: "+(v.cliente_nombre||"")+". Total: "+$$(v.subtotal));await cargarPend();pintarPend();if(v.tipo==="entrega_pendiente")autoFactura(id)}
+  if(ok){snd("ok");toast(v.tipo==="cod"?"Pedido cobrado: "+$$(v.total):v.tipo==="entrega_pendiente"?"Entrega confirmada y venta registrada":"Pago completado. Cliente: "+(v.cliente_nombre||"")+". Total: "+$$(v.subtotal));await cargarPend();pintarPend();autoFactura(id)}
   return}
  if(a==="del"){
   if(!soloAdmin())return;if(!await pedirClave("Vas a eliminar este pedido pendiente."))return;
