@@ -36,7 +36,7 @@ const GRUPOS=[
  {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"usuarios",n:"Usuarios",i:"users",h:"usuarios.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"clock",h:"actividad.html",ok:1,adm:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 const visibles=(g,rol)=>g.m.filter(m=>(!m.adm||rol==="admin")&&(!m.pri||DAY.principal));
-const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}" ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span>${m.k==="pedidos"?'<em class="nbd hidden" data-nbd="pedidos"></em>':""}</a>`;
+const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}" ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span>${m.k==="pedidos"||m.k==="pendientes"?`<em class="nbd hidden" data-nbd="${m.k}"></em>`:""}</a>`;
 /* Ventanas propias (reemplazan los avisos feos del navegador) */
 function dlgCss(){if(document.getElementById("dayDlgCss"))return;const st=document.createElement("style");st.id="dayDlgCss";
  st.textContent='dialog.dday{border:0;border-radius:16px;padding:0;margin:auto;max-height:calc(100dvh - 24px);overflow-y:auto;width:min(420px,92vw);background:var(--card,#fff);color:var(--ink,#2a1a1f);box-shadow:0 20px 60px rgba(0,0,0,.35)}dialog.dday::backdrop{background:rgba(0,0,0,.55)}dialog.dday .dd-h{padding:18px 20px 2px;font:700 18px "Bricolage Grotesque",system-ui,sans-serif;margin:0}dialog.dday .dd-b{padding:6px 20px 12px;font:15px/1.5 "DM Sans",system-ui,sans-serif;white-space:pre-line}dialog.dday input{width:100%;box-sizing:border-box;margin-top:10px;padding:10px 12px;border:1px solid var(--line,#ddd);border-radius:10px;font:inherit;background:var(--card,#fff);color:inherit}dialog.dday .dd-f{display:flex;gap:8px;justify-content:flex-end;padding:8px 20px 18px;flex-wrap:wrap}dialog.dday button{min-height:42px;padding:8px 18px;border-radius:10px;font:700 14px "DM Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line,#ddd);background:none;color:var(--wine,#6B2D3E)}dialog.dday button.pr{background:var(--wine,#6B2D3E);border-color:var(--wine,#6B2D3E);color:#fff}dialog.dday button.dg{background:#B3261E;border-color:#B3261E;color:#fff}';
@@ -90,9 +90,11 @@ function pintarUsr(){const b=document.getElementById("cfg1");if(!b||!DAY.me)retu
 /* Menú lateral de escritorio (en el celular se oculta y se navega desde el menú principal) */
 
 /* Número de pedidos en línea por atender (menú lateral y tarjetas del menú) */
-async function refrescarBadges(){try{const els=document.querySelectorAll("[data-nbd=pedidos]");if(!els.length)return;
- const {count,error}=await db.from("pedidos_linea").select("id",{count:"exact",head:true}).eq("estado","nuevo");if(error)return;
- els.forEach(e=>{e.textContent=count>99?"99+":count;e.classList.toggle("hidden",!count)})}catch(e){}}
+async function refrescarBadges(){try{
+ const poner=(k,n)=>document.querySelectorAll(`[data-nbd=${k}]`).forEach(e=>{e.textContent=n>99?"99+":n;e.classList.toggle("hidden",!n)});
+ if(document.querySelector("[data-nbd=pedidos]")){const {count,error}=await db.from("pedidos_linea").select("id",{count:"exact",head:true}).eq("estado","nuevo");if(!error)poner("pedidos",count||0)}
+ if(document.querySelector("[data-nbd=pendientes]")){const {count,error}=await db.from("ventas").select("id",{count:"exact",head:true}).eq("estado","pendiente");if(!error)poner("pendientes",count||0)}
+ }catch(e){}}
 if(!window.__nbT){window.__nbT=setInterval(refrescarBadges,60000)}
 function mountSide(el,activo,rol){
  el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>SV</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+

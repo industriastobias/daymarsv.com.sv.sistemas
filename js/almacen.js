@@ -81,7 +81,7 @@ const SEL_ITEMS="id,cantidad,precio_unit,precio_original,descuento_pct,nombre,co
 async function cargarPend(){
  S.pend=await fetchAll(()=>db.from("ventas").select(`*,profiles(nombre),venta_items(${SEL_ITEMS})`)
   .or("estado.eq.pendiente,and(estado.eq.completada,tipo.in.(entrega_pendiente,cobro_pendiente),oculto_pendientes.eq.false)").order("created_at",{ascending:false}));
- badges()}
+ badges();if(DAY.refrescarBadges)DAY.refrescarBadges()}
 async function badges(){
  const pe=S.pend.filter(v=>v.estado==="pendiente");
  const n=t=>pe.filter(v=>v.tipo===t).length;
