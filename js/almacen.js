@@ -718,12 +718,12 @@ function aplicarQuick(){
 
 function limpiarVentas(){
  const m=modal("Limpiar ventas (liberar espacio)",`<p class="pw" style="margin-top:0">Borra ventas ya cerradas (completadas o anuladas) para liberar espacio. <b>Las facturas se conservan tal cual y NO se anulan.</b> Las ventas pendientes de entrega o cobro no se tocan. No se puede deshacer.</p>
-  <div class="ctl" style="flex-direction:column;align-items:stretch;gap:8px"><button class="btn g" data-d="90" type="button">Borrar las de hace más de 90 días</button><button class="btn g" data-d="30" type="button">Borrar las de hace más de 30 días</button><button class="btn g" data-d="all" type="button" style="color:var(--bad)">Borrar todas las ventas cerradas</button></div>
+  <div class="ctl" style="flex-direction:column;align-items:stretch;gap:8px"><button class="btn g" data-d="90" type="button">Borrar las de hace más de 90 días</button><button class="btn g" data-d="30" type="button">Borrar las de hace más de 30 días</button><button class="btn g" data-d="anu" type="button">Borrar solo las anuladas (conserva las completadas)</button><button class="btn g" data-d="all" type="button" style="color:var(--bad)">Borrar todas las ventas cerradas</button></div>
   <label class="cf-c" style="margin-top:8px"><input type="checkbox" id="lvDev"> Devolver los productos al stock</label>`,{foot:'<button class="btn g" data-x>Cancelar</button>'});
- m.el.addEventListener("click",async e=>{const b=e.target.closest("[data-d]");if(!b)return;const dias=b.dataset.d==="all"?null:+b.dataset.d,dev=m.q("#lvDev").checked;m.close();
+ m.el.addEventListener("click",async e=>{const b=e.target.closest("[data-d]");if(!b)return;const anu=b.dataset.d==="anu",dias=b.dataset.d==="all"||anu?null:+b.dataset.d,dev=m.q("#lvDev").checked;m.close();
   if(!await pedirClave("Vas a borrar ventas en bloque."))return;
-  if(!await confirmar((dias===null?"Se borrarán <b>todas</b> las ventas cerradas":"Se borrarán las ventas cerradas de hace más de <b>"+dias+" días</b>")+". Las facturas se conservan."+(dev?" El stock se devolverá.":" El stock no se toca."),{titulo:"Limpiar ventas",ok:"Borrar",peligro:true}))return;
-  const n=await espera(()=>rpc("limpiar_ventas",{p_dias:dias,p_devolver:dev}),"Borrando ventas…");
+  if(!await confirmar((anu?"Se borrarán <b>solo las ventas anuladas</b> (las completadas se quedan)":dias===null?"Se borrarán <b>todas</b> las ventas cerradas":"Se borrarán las ventas cerradas de hace más de <b>"+dias+" días</b>")+". Las facturas se conservan."+(dev?" El stock se devolverá.":" El stock no se toca."),{titulo:"Limpiar ventas",ok:"Borrar",peligro:true}))return;
+  const n=await espera(()=>rpc("limpiar_ventas",{p_dias:dias,p_devolver:dev,p_solo_anuladas:anu}),"Borrando ventas…");
   if(n!==undefined&&n!==null){toast(n+" venta"+(n===1?"":"s")+" borrada"+(n===1?"":"s")+" · facturas conservadas");snd("ok");await cargarProductos().catch(()=>{});filtrar(true);if(S.tab==="ven")pintarVentas();else if(S.tab==="hoy")pintarHoy();if(S.tab==="fac")pintarFacturas()}})}
 async function pintarVentas(){
  aplicarQuick();const a=$("vFrom").value,b=$("vTo").value,all=$("vQuick").value==="all"&&!a&&!b;
