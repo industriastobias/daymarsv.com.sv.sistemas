@@ -10,6 +10,7 @@ try{const th=localStorage.getItem("dms_th");if(th)document.documentElement.datas
 const toggleTheme=()=>{const r=document.documentElement,dk=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme:dark)").matches;r.dataset.theme=dk?"light":"dark";try{localStorage.setItem("dms_th",r.dataset.theme)}catch(e){}};
 /* Iconos (líneas finas) y grupos del menú. ok = ya conectado a la base de datos · adm = solo administrador */
 const ICON={
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 3.9 5.7 3.9 9s-1.3 6.3-3.9 9c-2.6-2.7-3.9-5.7-3.9-9S9.4 5.7 12 3z"/>',
  hourglass:'<path d="M6 3h12M6 21h12M7 3v3.5a5 5 0 002 4 5 5 0 01-2 4V21M17 3v3.5a5 5 0 01-2 4 5 5 0 012 4V21"/>',
  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
  cart:'<circle cx="9" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/><path d="M2 3h3l2.7 12.4a1 1 0 001 .8h9.7a1 1 0 001-.8L21 7H6"/>',
@@ -30,12 +31,12 @@ const ICON={
  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 const GRUPOS=[
- {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"cart",h:"pedidos.html",ok:1,adm:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"reservas",n:"Reservas",i:"cal",h:"reservas.html",ok:1}]},
+ {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"globe",h:"pedidos.html",ok:1,adm:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"reservas",n:"Reservas",i:"cal",h:"reservas.html",ok:1}]},
  {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"store",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"store",h:"catalogo.html",ok:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"correos",n:"Correos enviados",i:"mail",h:"correos.html",ok:1,adm:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
  {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"usuarios",n:"Usuarios",i:"users",h:"usuarios.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"clock",h:"actividad.html",ok:1,adm:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 const visibles=(g,rol)=>g.m.filter(m=>(!m.adm||rol==="admin")&&(!m.pri||DAY.principal));
-const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}" ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span></a>`;
+const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}" ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span>${m.k==="pedidos"?'<em class="nbd hidden" data-nbd="pedidos"></em>':""}</a>`;
 /* Ventanas propias (reemplazan los avisos feos del navegador) */
 function dlgCss(){if(document.getElementById("dayDlgCss"))return;const st=document.createElement("style");st.id="dayDlgCss";
  st.textContent='dialog.dday{border:0;border-radius:16px;padding:0;margin:auto;max-height:calc(100dvh - 24px);overflow-y:auto;width:min(420px,92vw);background:var(--card,#fff);color:var(--ink,#2a1a1f);box-shadow:0 20px 60px rgba(0,0,0,.35)}dialog.dday::backdrop{background:rgba(0,0,0,.55)}dialog.dday .dd-h{padding:18px 20px 2px;font:700 18px "Bricolage Grotesque",system-ui,sans-serif;margin:0}dialog.dday .dd-b{padding:6px 20px 12px;font:15px/1.5 "DM Sans",system-ui,sans-serif;white-space:pre-line}dialog.dday input{width:100%;box-sizing:border-box;margin-top:10px;padding:10px 12px;border:1px solid var(--line,#ddd);border-radius:10px;font:inherit;background:var(--card,#fff);color:inherit}dialog.dday .dd-f{display:flex;gap:8px;justify-content:flex-end;padding:8px 20px 18px;flex-wrap:wrap}dialog.dday button{min-height:42px;padding:8px 18px;border-radius:10px;font:700 14px "DM Sans",system-ui,sans-serif;cursor:pointer;border:1px solid var(--line,#ddd);background:none;color:var(--wine,#6B2D3E)}dialog.dday button.pr{background:var(--wine,#6B2D3E);border-color:var(--wine,#6B2D3E);color:#fff}dialog.dday button.dg{background:#B3261E;border-color:#B3261E;color:#fff}';
@@ -87,6 +88,12 @@ function aplicarPrefs(){
  else if(o)o.remove()}
 function pintarUsr(){const b=document.getElementById("cfg1");if(!b||!DAY.me)return;b.innerHTML=avatarHTML(DAY.me)+`<span class="un"><b>${esc(DAY.me.nombre)}</b><small>Configuración</small></span>`}
 /* Menú lateral de escritorio (en el celular se oculta y se navega desde el menú principal) */
+
+/* Número de pedidos en línea por atender (menú lateral y tarjetas del menú) */
+async function refrescarBadges(){try{const els=document.querySelectorAll("[data-nbd=pedidos]");if(!els.length)return;
+ const {count,error}=await db.from("pedidos_linea").select("id",{count:"exact",head:true}).eq("estado","nuevo");if(error)return;
+ els.forEach(e=>{e.textContent=count>99?"99+":count;e.classList.toggle("hidden",!count)})}catch(e){}}
+if(!window.__nbT){window.__nbT=setInterval(refrescarBadges,60000)}
 function mountSide(el,activo,rol){
  el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>SV</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
   GRUPOS.filter(g=>visibles(g,rol).length).map(g=>`<div class="sg">${g.t}</div>`+visibles(g,rol).map(m=>enlace(m,"",activo)).join("")).join("")+`</nav><div class="usr"><button type="button" class="ub" id="cfg1" aria-label="Configuración"></button></div><button class="lo" id="lo1">Cerrar sesión</button>`;
@@ -94,7 +101,7 @@ function mountSide(el,activo,rol){
  el.querySelector("#cfg1").onclick=abrirConfig;
  el.querySelector("#hb1").onclick=()=>{PREF("dms_nosd","1");aplicarPrefs()};
  el.addEventListener("click",e=>{const a=e.target.closest("[data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
- pintarUsr();aplicarPrefs()}
+ pintarUsr();aplicarPrefs();setTimeout(refrescarBadges,50)}
 /* Ventana de configuración: nombre, foto, tema y opciones del menú */
 const TABLAS_RESPALDO=["productos","categorias","producto_imagenes","producto_variantes","reservas","reserva_abonos","cot_lotes","cot_items","proveedores","clientes","ventas","venta_items","movimientos_stock","facturas","factura_items","devoluciones","devolucion_items","fin_movimientos","fin_cuentas","fin_banco","capital_movs","cierres_caja","promo_codigos","descuentos_programados","config_negocio","profiles","invitaciones","bitacora","accesos"];
 async function respaldo(){
@@ -282,7 +289,7 @@ function listaBonita(inp){
 function autoSelects(r){(r||document).querySelectorAll("select:not([multiple]):not([data-sb]):not([data-nosb])").forEach(x=>{if(!(x.size>1)&&!x.closest(".sbd"))selectBonito(x)});(r||document).querySelectorAll("input[list]:not([data-lb])").forEach(listaBonita)}
 const iniSB=()=>{autoSelects();new MutationObserver(m=>{if(m.some(r=>r.addedNodes.length))autoSelects()}).observe(document.body,{childList:true,subtree:true})};
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniSB);else iniSB();
-window.DAY={selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+window.DAY={refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
 try{if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}catch(e){}

@@ -138,3 +138,9 @@ img,canvas,video,svg{max-width:100%}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .cf-n button.on{color:#f0c9d3;background:rgba(240,201,211,.14)}}
 :root[data-theme="dark"] .cf-n button.on{color:#f0c9d3;background:rgba(240,201,211,.14)}
 }
+
+/* Contador de pedidos en línea */
+.nbd{font-style:normal;background:#b3261e;color:#fff;border-radius:999px;font:700 12px/1 "DM Sans",sans-serif;min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;margin-left:auto}
+.nbd.hidden{display:none}
+a.tile{position:relative}
+a.tile .nbd{position:absolute;top:10px;right:10px;margin:0}

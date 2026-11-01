@@ -8,7 +8,7 @@ if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"pedidos",me.rol);$("app").classList.remove("hidden");
 const EST={nuevo:["wa","Nuevo"],aceptado:["ok","Aceptado"],rechazado:["or","Rechazado"]};
 let L=[];
-async function cargar(){const d=await espera(async()=>{const {data,error}=await db.from("pedidos_linea").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw new Error(error.message);return data},"Cargando pedidos…");if(d){L=d;pintar()}}
+async function cargar(){const d=await espera(async()=>{const {data,error}=await db.from("pedidos_linea").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw new Error(error.message);return data},"Cargando pedidos…");if(d){L=d;pintar();DAY.refrescarBadges()}}
 const lineas=p=>(p.items||[]).map(i=>`<div>${esc(i.cantidad)}× ${esc(i.nombre||i.codigo)} <small>(${esc(i.codigo)})</small> · ${$$(+i.precio)}</div>`).join("");
 function pintar(){
  const nu=L.filter(x=>x.estado==="nuevo").length;
