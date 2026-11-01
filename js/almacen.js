@@ -355,15 +355,21 @@ async function tras(o,t,lines){ /* refresco local tras una venta */
  ticketUltima()}
 
 /* factura automática al vender a un cliente registrado con correo */
-async function autoFactura(ventaId,cli){
- if(!ventaId||!cli||!cli.correo)return;
- try{const CL=await rpc("config_correo_estado");if(!CL||!CL.listo){toast("Venta lista. Configura el correo para enviar facturas automáticas.");return}
+async function autoFactura(ventaId,cli,opt){opt=opt||{};
+ if(!ventaId)return;
+ try{
   const {data:v,error}=await db.from("ventas").select("*,venta_items(*,productos(nombre))").eq("id",ventaId).single();if(error)throw new Error(error.message);
+  if(!cli&&v.cliente_id){const r=await db.from("clientes").select("id,nombre,telefono,correo,documento,direccion").eq("id",v.cliente_id).maybeSingle();cli=r.data||null}
+  if(!cli&&v.cliente_nombre)cli={nombre:v.cliente_nombre};
+  if(!cli||(opt.soloConCorreo&&!cli.correo))return;
+  const ya=await db.from("facturas").select("id").contains("venta_ids",[ventaId]).eq("estado","emitida").limit(1);if(ya.data&&ya.data.length)return;
+  let CL=null;try{CL=await rpc("config_correo_estado")}catch(e){}
   const x=fromVentas([v]);
-  const id=await rpc("crear_factura",{p_items:x.items,p_opts:{cliente_nombre:cli.nombre||"",cliente_doc:cli.documento||"",cliente_direccion:cli.direccion||"",cliente_telefono:cli.telefono||"",metodo:v.metodo_pago||"Efectivo",iva_modo:LS("dms_iva")||"ninguno",descuento_tipo:"pct",descuento_valor:0,envio:0,efectivo:null,nota:"",venta_ids:[ventaId]}});
+  const id=await rpc("crear_factura",{p_items:x.items,p_opts:{cliente_nombre:cli.nombre||"",cliente_doc:cli.documento||"",cliente_direccion:cli.direccion||"",cliente_telefono:cli.telefono||"",metodo:v.metodo_pago||"Efectivo",iva_modo:LS("dms_iva")||"ninguno",descuento_tipo:"pct",descuento_valor:0,envio:+x.envio||0,efectivo:null,nota:"",venta_ids:[ventaId]}});
   const f=await cargarFactura(id);if(S.tab==="fac")pintarFacturas();
-  const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,cli.correo),"Factura enviada a "+cli.correo);if(ok)snd("ok")
- }catch(e){toast("Venta registrada, pero no se pudo emitir/enviar la factura: "+e.message);snd("err")}}
+  if(cli.correo&&CL&&CL.listo){const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,cli.correo),"Factura enviada a "+cli.correo);if(ok)snd("ok")}
+  else toast("Factura "+fnum(f.numero)+" emitida"+(cli.correo?"":" (el cliente no tiene correo)"))
+ }catch(e){toast("No se pudo emitir/enviar la factura: "+e.message);snd("err")}}
 /* ---------- venta de un producto ---------- */
 function elegirColor(p,cb){
  const m=modal("Elige el color",`<p style="margin:0 0 8px"><b>${esc(p.nombre)}</b></p><div id="clL">${p.vars.map((v,i)=>`<button type="button" class="sv" data-c="${i}" ${v.stock<1?"disabled":""} style="width:100%;text-align:left;cursor:pointer;${v.stock<1?"opacity:.5":""}"><div class="ti"><b>${DAY.colorDot(v.vnom)}${esc(v.vnom)}</b><small>${v.stock<1?"Agotado":"Disponibles: "+v.stock}</small></div></button>`).join("")}</div>`,{foot:`<button class="btn g" data-x>Cancelar</button>`});
@@ -408,7 +414,7 @@ function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
    if(unl)await aplicarCambios();
    const it={producto_id:p.real||p.id,cantidad:q};if(p.vid)it.variante_id=p.vid;if(unl)it.precio=pr;
    return await rpc("registrar_pedido",{p_items:[it],p_opts:r.o})},"Registrando venta…");
-  if(ok){m.close();await tras(r.o,r.t,[{id:p.id,q}]);autoFactura(ok,ac)}else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})};
+  if(ok){m.close();await tras(r.o,r.t,[{id:p.id,q}]);autoFactura(ok,ac,{soloConCorreo:true})}else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})};
  m.q("#sGo").onclick=vender;m.q("#sGo2").onclick=vender;
  m.el.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.id==="sQty"&&!unl)vender()})}
 
@@ -431,7 +437,7 @@ function ventaRapida(){
   try{if(!n)throw new Error("El nombre del producto es obligatorio.");if(!(pr>0))throw new Error("El precio debe ser mayor a cero.");if(!Number.isInteger(q)||q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");r=of.check()}
   catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
   const ac=of.autoFac();const ok=await espera(async()=>{return await rpc("registrar_pedido",{p_items:[{libre:true,nombre:n,precio:pr,cantidad:q,categoria:m.q("#fqC").value,descripcion:m.q("#fqD").value,codigo_barras:m.q("#fqB").value}],p_opts:r.o})},"Registrando venta…");
-  if(ok){m.close();await tras(r.o,r.t,[]);autoFactura(ok,ac)}}}
+  if(ok){m.close();await tras(r.o,r.t,[]);autoFactura(ok,ac,{soloConCorreo:true})}}}
 
 /* ---------- venta múltiple ---------- */
 function addSel(id,n){const p=S.byId.get(id);if(!p)return;if(p.vars){elegirColor(p,e=>addSel(e.id,n));return}if(p.stock<1){toast("Sin stock: "+p.nombre);snd("err");return}
@@ -454,7 +460,7 @@ function abrirMulti(){
  const m=modal("Venta múltiple",`<div class="mlt" id="mlT"></div><div class="mladd"><input id="mlS" type="search" autocomplete="off" placeholder="Agregar otro producto: nombre, código o barras"><div id="mlR" class="mlr hidden"></div></div><div class="ml" id="mlL"></div><div style="text-align:right;margin-top:6px"><button class="btn g sm" id="mlClr" type="button">Vaciar</button></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
  const sub=()=>lineasMulti().reduce((s,l)=>s+(Number.isInteger(l.q)&&l.q>0?cents(l.p.fin)*l.q:0),0);
  const of=optForm(m.q("#mlO"),sub,null);
- if(S.pedidoPV){if(S.pedidoPV.cli)of.setCli(S.pedidoPV.cli);of.setTy("cod");if(S.pedidoPV.metodo==="Transferencia"){const b=m.q('[data-pm="Transferencia"]');if(b)b.click()}const ev=m.q("[name=envio]");if(ev&&S.pedidoPV.envio)ev.value=S.pedidoPV.envio.toFixed(2);of.calc()}
+ if(S.pedidoPV){if(S.pedidoPV.cli)of.setCli(S.pedidoPV.cli);of.setTy(S.pedidoPV.tipo==="entrega_pendiente"?"entrega_pendiente":"cod");if(S.pedidoPV.metodo==="Transferencia"){const b=m.q('[data-pm="Transferencia"]');if(b)b.click()}const ev=m.q("[name=envio]");if(ev&&S.pedidoPV.envio)ev.value=S.pedidoPV.envio.toFixed(2);of.calc()}
  const draw=()=>{const L=lineasMulti();
   m.q("#mlL").innerHTML=L.length?L.map(l=>`<div class="mi" data-id="${l.p.id}">${l.p.foto_url?`<img src="${esc(l.p.foto_url)}" alt="">`:`<div class="ph">${inicial(l.p.nombre)}</div>`}
    <div><b>${esc(l.p.nombre)}</b><br><small>${$$(l.p.fin)} / unidad · Stock: ${l.p.stock} · ${esc(l.p.codigo_barras||l.p.codigo||"")}</small></div>
@@ -483,7 +489,7 @@ function abrirMulti(){
   catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
   const ac=of.autoFac();const ok=await espera(async()=>{return await rpc("registrar_pedido",{p_items:L.map(l=>{const it={producto_id:l.p.real||l.p.id,cantidad:l.q};if(l.p.vid)it.variante_id=l.p.vid;return it}),p_opts:r.o})},"Registrando venta…");
   if(ok&&S.pedidoPV){const pv=S.pedidoPV;S.pedidoPV=null;try{await rpc("vincular_pedido_linea",{p_id:pv.id,p_venta:ok})}catch(e){toast("Venta lista, pero no se pudo marcar el pedido en línea: "+e.message)}}
-  if(ok){S.sel.clear();m.close();await tras(r.o,r.t,L.map(l=>({id:l.p.id,q:l.q})));autoFactura(ok,ac);toast("Venta múltiple registrada: "+L.length+" productos en un solo pedido.")}
+  if(ok){S.sel.clear();m.close();await tras(r.o,r.t,L.map(l=>({id:l.p.id,q:l.q})));autoFactura(ok,ac,{soloConCorreo:true});toast("Venta múltiple registrada: "+L.length+" productos en un solo pedido.")}
   else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})}}
 
 /* ---------- líneas de un pedido (se usan en pendientes, hoy e historial) ---------- */
@@ -533,7 +539,7 @@ async function accionPend(a,id){
  if(a==="rem")return recordatorio(v);
  if(a==="edit")return editarPedido(v);
  if(a==="ent"){const emp=await DAY.input("¿Qué empresa de envíos lo entregó? (opcional)",v.empresa_envio||"",{titulo:"Marcar como entregado"});if(emp===null)return;
-  const ok=await espera(async()=>{await rpc("marcar_entregado",{p_venta:id,p_empresa:emp});return true});if(ok){snd("ok");toast("Marcado como entregado. Queda por liquidar.");await cargarPend();pintarPend()}return}
+  const ok=await espera(async()=>{await rpc("marcar_entregado",{p_venta:id,p_empresa:emp});return true});if(ok){snd("ok");toast("Marcado como entregado. Queda por liquidar.");await cargarPend();pintarPend();autoFactura(id)}return}
  if(a==="noent"){if(!await confirmar("El pedido volverá a «Por entregar».",{titulo:"Deshacer entrega",ok:"Deshacer"}))return;
   const ok=await espera(async()=>{await rpc("deshacer_entrega",{p_venta:id});return true});if(ok){toast("Entrega deshecha");await cargarPend();pintarPend()}return}
  if(a==="ok"){
@@ -541,7 +547,7 @@ async function accionPend(a,id){
   const monto=v.tipo==="cobro_pendiente"?`<div class="am"><div><span>Saldo pendiente</span><b>${$$(v.pendiente_monto)}</b></div><div class="k"><span>Total de la venta</span><b>${$$(v.subtotal)}</b></div></div>`:`<div class="am"><div class="k"><span>Total a cobrar</span><b>${$$(v.total)}</b></div></div>`;
   if(!await confirmar(lineas(v)+monto+`<p>${txt[1]}</p>`,{titulo:txt[0],ok:txt[0]}))return;
   const ok=await espera(async()=>{await rpc("completar_pedido",{p_venta:id});return true});
-  if(ok){snd("ok");toast(v.tipo==="cod"?"Pedido cobrado: "+$$(v.total):v.tipo==="entrega_pendiente"?"Entrega confirmada y venta registrada":"Pago completado. Cliente: "+(v.cliente_nombre||"")+". Total: "+$$(v.subtotal));await cargarPend();pintarPend()}
+  if(ok){snd("ok");toast(v.tipo==="cod"?"Pedido cobrado: "+$$(v.total):v.tipo==="entrega_pendiente"?"Entrega confirmada y venta registrada":"Pago completado. Cliente: "+(v.cliente_nombre||"")+". Total: "+$$(v.subtotal));await cargarPend();pintarPend();if(v.tipo==="entrega_pendiente")autoFactura(id)}
   return}
  if(a==="del"){
   if(!soloAdmin())return;if(!await pedirClave("Vas a eliminar este pedido pendiente."))return;
@@ -1428,7 +1434,7 @@ await (async()=>{let pv=null;try{pv=JSON.parse(sessionStorage.getItem("dms_pedid
   if(!q&&c.telefono){const r=await db.from("clientes").select("id,nombre,telefono,correo,documento,direccion").eq("telefono",c.telefono).limit(1);q=r.data&&r.data[0]}
   if(!q&&c.nombre){const r=await db.from("clientes").insert({nombre:c.nombre,telefono:c.telefono||null,correo:c.correo||null,direccion:c.direccion||null,notas:"Creado desde un pedido en línea"}).select("id,nombre,telefono,correo,documento,direccion").single();q=r.data}
   cli=q||null}catch(e){}
- S.sel=sel;S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");S.pedidoPV={id:pv.id,cli,envio:pv.envio,metodo:pv.metodo};
+ S.sel=sel;S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");S.pedidoPV={id:pv.id,cli,envio:pv.envio,metodo:pv.metodo,tipo:pv.tipo};
  if(aviso.length)toast("No se encontraron o están agotados: "+aviso.join(", "));
  setTimeout(abrirMulti,200)})();
 addEventListener("hashchange",()=>{const h=(location.hash||"").slice(1);if(!SOLO&&h==="pend"){location.replace("pendientes.html");return}if(!SOLO&&["inv","hoy","ven","fac"].includes(h))tab(h)});
