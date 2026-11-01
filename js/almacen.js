@@ -281,7 +281,7 @@ function optForm(root,getSub,onChange){
  root.addEventListener("click",async e=>{if(e.target.closest("[data-delcli]")){st.cli=null;chip();calc();return}
   if(e.target.closest("[data-addcli]")){const c=await elegirCliente();if(c){st.cli=c;chip();calc()}}});
  root.addEventListener("input",calc);root.addEventListener("change",calc);
- cfgVis();calc();return {read,check,calc,st,autoFac:()=>{const k=q("[data-autofac]");return !!(st.cli&&st.cli.correo&&k&&k.checked&&st.ty==="inmediata")?st.cli:null}}}
+ cfgVis();calc();return {read,check,calc,st,setCli:c=>{st.cli=c;chip();calc()},setTy:t=>{const b=root.querySelector(`[data-ty="${t}"]`);if(b)b.click()},autoFac:()=>{const k=q("[data-autofac]");return !!(st.cli&&st.cli.correo&&k&&k.checked&&st.ty==="inmediata")?st.cli:null}}}
 const MSG=(o,t,extra)=>o.tipo==="cod"?"Pedido contra entrega guardado. Total a cobrar: "+$$(t.total/100):
  o.tipo==="entrega_pendiente"?"Venta pendiente de entrega registrada. Total: "+$$(t.total/100):
  o.tipo==="cobro_pendiente"?`Venta pendiente de cobro registrada. Cliente: ${o.cliente}. Abonado: ${$$(t.paid/100)}. Debe: ${$$(t.pend/100)}`:
@@ -454,6 +454,7 @@ function abrirMulti(){
  const m=modal("Venta múltiple",`<div class="mlt" id="mlT"></div><div class="mladd"><input id="mlS" type="search" autocomplete="off" placeholder="Agregar otro producto: nombre, código o barras"><div id="mlR" class="mlr hidden"></div></div><div class="ml" id="mlL"></div><div style="text-align:right;margin-top:6px"><button class="btn g sm" id="mlClr" type="button">Vaciar</button></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
  const sub=()=>lineasMulti().reduce((s,l)=>s+(Number.isInteger(l.q)&&l.q>0?cents(l.p.fin)*l.q:0),0);
  const of=optForm(m.q("#mlO"),sub,null);
+ if(S.pedidoPV){if(S.pedidoPV.cli)of.setCli(S.pedidoPV.cli);of.setTy("cod");if(S.pedidoPV.metodo==="Transferencia"){const b=m.q('[data-pm="Transferencia"]');if(b)b.click()}const ev=m.q("[name=envio]");if(ev&&S.pedidoPV.envio)ev.value=S.pedidoPV.envio.toFixed(2);of.calc()}
  const draw=()=>{const L=lineasMulti();
   m.q("#mlL").innerHTML=L.length?L.map(l=>`<div class="mi" data-id="${l.p.id}">${l.p.foto_url?`<img src="${esc(l.p.foto_url)}" alt="">`:`<div class="ph">${inicial(l.p.nombre)}</div>`}
    <div><b>${esc(l.p.nombre)}</b><br><small>${$$(l.p.fin)} / unidad · Stock: ${l.p.stock} · ${esc(l.p.codigo_barras||l.p.codigo||"")}</small></div>
@@ -475,12 +476,13 @@ function abrirMulti(){
  br.addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(b)addP(b.dataset.add)});
  bs.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=bs.value.trim(),x=S.all.find(p=>p.codigo_barras&&p.codigo_barras===q)||(br.querySelector("[data-add]")&&S.byId.get(br.querySelector("[data-add]").dataset.add));if(x)addP(x.id)}});
  m.q("#mlClr").onclick=async()=>{if(!S.sel.size)return;if(await confirmar("Se quitarán todos los productos de esta venta.",{titulo:"Vaciar venta",ok:"Vaciar",peligro:true})){S.sel.clear();draw()}};
- draw();S.mlDraw=draw;const _mc=m.close;m.close=()=>{S.mlDraw=null;_mc()};if(matchMedia("(pointer:fine)").matches)setTimeout(()=>bs.focus(),50);
+ draw();S.mlDraw=draw;const _mc=m.close;m.close=()=>{S.mlDraw=null;S.pedidoPV=null;_mc()};if(matchMedia("(pointer:fine)").matches)setTimeout(()=>bs.focus(),50);
  m.q("#mlGo").onclick=async()=>{let r;const L=lineasMulti();
   try{if(!L.length)throw new Error("Selecciona al menos un producto.");
    L.forEach(l=>{if(!Number.isInteger(l.q)||l.q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");if(l.q>l.p.stock)throw new Error("Stock insuficiente: "+l.p.nombre)});r=of.check()}
   catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
   const ac=of.autoFac();const ok=await espera(async()=>{return await rpc("registrar_pedido",{p_items:L.map(l=>{const it={producto_id:l.p.real||l.p.id,cantidad:l.q};if(l.p.vid)it.variante_id=l.p.vid;return it}),p_opts:r.o})},"Registrando venta…");
+  if(ok&&S.pedidoPV){const pv=S.pedidoPV;S.pedidoPV=null;try{await rpc("vincular_pedido_linea",{p_id:pv.id,p_venta:ok})}catch(e){toast("Venta lista, pero no se pudo marcar el pedido en línea: "+e.message)}}
   if(ok){S.sel.clear();m.close();await tras(r.o,r.t,L.map(l=>({id:l.p.id,q:l.q})));autoFactura(ok,ac);toast("Venta múltiple registrada: "+L.length+" productos en un solo pedido.")}
   else await cargarProductos().then(()=>filtrar(true)).catch(()=>{})}}
 
@@ -1415,6 +1417,20 @@ await db.rpc("aplicar_programados");
 await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()])},"Cargando inventario…");
 try{const c=JSON.parse(sessionStorage.getItem("dms_cart")||"[]"),ok=c.filter(([id,q])=>S.byId.has(id)&&q>0&&q<=S.byId.get(id).stock);if(ok.length){S.sel=new Map(ok);S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");toast("Recuperé tu venta múltiple en curso")}}catch(e){}
 {const h0=(location.hash||"").slice(1);if(!SOLO&&h0==="pend")location.replace("pendientes.html");else tab(SOLO?"pend":["hoy","ven","fac"].includes(h0)?h0:"inv")}filtrar();
+await (async()=>{let pv=null;try{pv=JSON.parse(sessionStorage.getItem("dms_pedido_pv")||"null");sessionStorage.removeItem("dms_pedido_pv")}catch(e){}
+ if(!pv||SOLO||!pv.items||!pv.items.length)return;
+ const sel=new Map(),aviso=[];
+ pv.items.forEach(i=>{const c=String(i.codigo).toLowerCase();const p=S.all.find(x=>!x.vars&&(String(x.codigo_barras||"").toLowerCase()===c||String(x.codigo||"").toLowerCase()===c));
+  if(!p||p.stock<1){aviso.push(i.codigo);return}sel.set(p.id,Math.min(p.stock,Math.max(1,+i.cantidad||1)))});
+ if(!sel.size){toast("Ningún producto del pedido está disponible en el inventario");return}
+ let cli=null;try{const c=pv.cliente||{};let q=null;
+  if(c.correo){const r=await db.from("clientes").select("id,nombre,telefono,correo,documento,direccion").ilike("correo",c.correo).limit(1);q=r.data&&r.data[0]}
+  if(!q&&c.telefono){const r=await db.from("clientes").select("id,nombre,telefono,correo,documento,direccion").eq("telefono",c.telefono).limit(1);q=r.data&&r.data[0]}
+  if(!q&&c.nombre){const r=await db.from("clientes").insert({nombre:c.nombre,telefono:c.telefono||null,correo:c.correo||null,direccion:c.direccion||null,notas:"Creado desde un pedido en línea"}).select("id,nombre,telefono,correo,documento,direccion").single();q=r.data}
+  cli=q||null}catch(e){}
+ S.sel=sel;S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");S.pedidoPV={id:pv.id,cli,envio:pv.envio,metodo:pv.metodo};
+ if(aviso.length)toast("No se encontraron o están agotados: "+aviso.join(", "));
+ setTimeout(abrirMulti,200)})();
 addEventListener("hashchange",()=>{const h=(location.hash||"").slice(1);if(!SOLO&&h==="pend"){location.replace("pendientes.html");return}if(!SOLO&&["inv","hoy","ven","fac"].includes(h))tab(h)});
 /* precarga las librerías de PDF en segundo plano para que el primer ticket no tarde */
 setTimeout(()=>{lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js").catch(()=>{});setTimeout(()=>lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js").catch(()=>{}),1500)},2500);
