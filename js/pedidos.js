@@ -6,6 +6,13 @@ const {$,fdate,ftime,rpc,espera,modal,confirmar}=UI;
 const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"pedidos",me.rol);$("app").classList.remove("hidden");
+const bonito=m=>{m=String(m||"Ocurrió un error");
+ let r=m.match(/Producto no registrado en el sistema: (.*) \((.*)\)/);if(r)return `${r[1]||"Un producto"} (código ${r[2]}) no está registrado en el sistema, así que no se puede crear la venta. Regístralo en el inventario con ese mismo código y vuelve a aceptar, o atiende este pedido por WhatsApp y recházalo aquí.`;
+ r=m.match(/Stock insuficiente de (.*): quedan (\d+)/);if(r)return `No hay stock suficiente de ${r[1]}: quedan ${r[2]}. Puedes rechazar el pedido o ajustar el inventario y volver a aceptar.`;
+ return m};
+/* igual que espera, pero los errores salen en una ventana visible (el aviso normal queda detrás de este modal) */
+const con=async(fn,txt)=>{const o=$("ov");if(o){$("ovT").textContent=txt||"Procesando…";o.classList.add("on")}
+ try{return await fn()}catch(e){console.error(e);if(o)o.classList.remove("on");await DAY.say(bonito(e&&e.message),{titulo:"No se pudo completar"});return undefined}finally{if(o)o.classList.remove("on")}};
 const EST={nuevo:["wa","Nuevo"],aceptado:["ok","Aceptado"],rechazado:["or","Rechazado"]};
 let L=[];
 async function cargar(){const d=await espera(async()=>{const {data,error}=await db.from("pedidos_linea").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw new Error(error.message);return data},"Cargando pedidos…");if(d){L=d;pintar();DAY.refrescarBadges()}}
@@ -21,16 +28,16 @@ $("kL").addEventListener("click",ev=>{const r=ev.target.closest("[data-k]");if(!
   :`<div class="ti" style="line-height:1.7"><div><b>Cliente:</b> ${esc(p.cliente_nombre||"—")}</div><div><b>Teléfono:</b> ${esc(p.cliente_telefono||"—")}</div><div><b>Correo:</b> ${esc(p.cliente_correo||"—")}</div><div><b>Dirección:</b> ${esc(p.cliente_direccion||"—")}</div>${p.nota?`<div><b>Nota:</b> ${esc(p.nota)}</div>`:""}<div><b>Pago:</b> ${esc(p.metodo)}</div><div><b>Envío:</b> ${$$(+p.envio)}</div></div>`;
  const m=modal("Pedido en línea",`${ficha}<div class="ti" style="line-height:1.7;margin-top:8px"><hr style="border:0;border-top:1px solid var(--line)">${lineas(p)}<div style="margin-top:6px"><b>Total: ${$$(+p.total)}</b>${nuevo?" <small>(se recalcula si cambias el envío)</small>":""}</div>${nuevo?`<p class="hint">Puedes completar o corregir los datos del cliente. Al aceptar se crea una venta contra entrega y se descuenta el stock. Los precios se toman del sistema.</p>`:""}</div>`,
   {foot:nuevo?'<button class="btn g" data-x>Cerrar</button><button class="btn g" id="pSv">Guardar datos</button><button class="btn dg" id="pRe">Rechazar</button><button class="btn" id="pOk">Aceptar</button>':'<button class="btn g" data-x>Cerrar</button><button class="btn dg" id="pDel">Eliminar del historial</button>'});
- if(!nuevo){m.q("#pDel").onclick=async()=>{if(!await confirmar("Se borrará este pedido del historial. La venta (si se aceptó) no se toca.",{titulo:"Eliminar pedido",ok:"Eliminar",peligro:true}))return;const v=await espera(()=>rpc("borrar_pedidos_linea",{p_ids:[p.id]}));if(v!==undefined&&v!==null){m.close();toast("Pedido eliminado");await cargar()}};return}
+ if(!nuevo){m.q("#pDel").onclick=async()=>{if(!await confirmar("Se borrará este pedido del historial. La venta (si se aceptó) no se toca.",{titulo:"Eliminar pedido",ok:"Eliminar",peligro:true}))return;const v=await con(()=>rpc("borrar_pedidos_linea",{p_ids:[p.id]}));if(v!==undefined&&v!==null){m.close();toast("Pedido eliminado");await cargar()}};return}
  const datos=()=>{const g=n=>m.q("[name="+n+"]").value;return {nombre:g("nombre"),telefono:g("telefono"),correo:g("correo"),direccion:g("direccion"),nota:g("nota"),metodo:g("metodo"),envio:g("envio")}};
  const guardar=()=>espera(async()=>{await rpc("editar_pedido_linea",{p_id:p.id,p_datos:datos()});return true},"Guardando…");
  m.q("#pSv").onclick=async()=>{if(await guardar()){m.close();toast("Datos guardados");await cargar()}};
- m.q("#pOk").onclick=async()=>{if(!await guardar())return;const v=await espera(()=>rpc("aceptar_pedido_linea",{p_id:p.id}),"Creando la venta…");if(v){m.close();toast("Pedido aceptado: venta creada en Pendientes");await cargar()}};
- m.q("#pRe").onclick=async()=>{if(!await confirmar("Se rechazará este pedido. El inventario no cambia.",{titulo:"Rechazar pedido",ok:"Rechazar",peligro:true}))return;const v=await espera(async()=>{await rpc("rechazar_pedido_linea",{p_id:p.id});return true});if(v){m.close();toast("Pedido rechazado");await cargar()}}});
+ m.q("#pOk").onclick=async()=>{if(!await guardar())return;const v=await con(()=>rpc("aceptar_pedido_linea",{p_id:p.id}),"Creando la venta…");if(v){m.close();toast("Pedido aceptado: venta creada en Pendientes");await cargar()}};
+ m.q("#pRe").onclick=async()=>{if(!await confirmar("Se rechazará este pedido. El inventario no cambia.",{titulo:"Rechazar pedido",ok:"Rechazar",peligro:true}))return;const v=await con(async()=>{await rpc("rechazar_pedido_linea",{p_id:p.id});return true});if(v){m.close();toast("Pedido rechazado");await cargar()}}});
 const ha=document.querySelector(".hact");if(ha){ha.innerHTML='<button class="btn g" id="pLimp" type="button">Limpiar historial</button>';
  $("pLimp").onclick=()=>{const m=modal("Limpiar historial de pedidos",`<p class="pw" style="margin-top:0">Borra los pedidos <b>ya atendidos</b> (aceptados o rechazados) para ahorrar espacio. Los pedidos nuevos no se tocan y las ventas que se crearon al aceptar tampoco.</p><div class="ctl" style="flex-direction:column;align-items:stretch;gap:8px"><button class="btn g" data-d="30" type="button">Borrar los atendidos de hace más de 30 días</button><button class="btn g" data-d="7" type="button">Borrar los atendidos de hace más de 7 días</button><button class="btn g" data-d="all" type="button" style="color:var(--bad)">Borrar todo el historial atendido</button></div>`,{foot:'<button class="btn g" data-x>Cancelar</button>'});
   m.el.addEventListener("click",async e=>{const b=e.target.closest("[data-d]");if(!b)return;const dias=b.dataset.d==="all"?null:+b.dataset.d;m.close();
    if(!await confirmar(dias===null?"Se borrarán <b>todos</b> los pedidos atendidos.":"Se borrarán los pedidos atendidos de hace más de <b>"+dias+" días</b>.",{titulo:"Limpiar historial",ok:"Borrar",peligro:true}))return;
-   const n=await espera(()=>rpc("borrar_pedidos_linea",{p_dias:dias}),"Limpiando…");if(n!==undefined&&n!==null){toast(n+" pedido"+(n===1?"":"s")+" borrado"+(n===1?"":"s"));await cargar()}})}}
+   const n=await con(()=>rpc("borrar_pedidos_linea",{p_dias:dias}),"Limpiando…");if(n!==undefined&&n!==null){toast(n+" pedido"+(n===1?"":"s")+" borrado"+(n===1?"":"s"));await cargar()}})}}
 await cargar();
 })();
