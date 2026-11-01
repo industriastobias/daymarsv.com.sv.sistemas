@@ -373,7 +373,7 @@ async function autoFactura(ventaId,cli,opt){opt=opt||{};
   if(ya.data&&ya.data.length){ /* ya está facturada: si todavía no se envió por correo, se envía ahora */
    const ef=ya.data[0];if(ef.correo_enviado_en)return;
    let mail=await correoDeVenta(v,cli,ef);
-   if(!mail&&opt.preguntar)mail=await pedirCorreo("Enviar la factura","La factura de esta venta aún no se ha enviado por correo. Escribe el correo del cliente para enviársela ahora (o cancela).","","Enviar factura");
+   if(!mail&&opt.preguntar)mail=await pedirCorreo("Enviar la factura","La factura de esta venta aún no se ha enviado por correo y no encontré un correo guardado"+(v.cliente_nombre?" para "+esc(v.cliente_nombre):"")+" (busqué en la factura, el cliente de la venta, el pedido en línea y la lista de Clientes). Escribe el correo para enviársela ahora, o cancela.","","Enviar factura");
    if(!mail)return;
    const CL0=await correoListo();if(!CL0)return;
    const f0=await cargarFactura(ef.id);
@@ -382,7 +382,7 @@ async function autoFactura(ventaId,cli,opt){opt=opt||{};
   if(cli&&!cli.correo){const m0=await correoDeVenta(v,cli,null);if(m0)cli.correo=m0}
   else if(!cli){const m0=await correoDeVenta(v,null,null);if(m0)cli={nombre:v.cliente_nombre||"Consumidor final",correo:m0}}
   if(opt.preguntar&&(!cli||!cli.correo)){
-   const mail=await pedirCorreo("Emitir y enviar la factura","Esta venta no tiene un cliente con correo guardado. Escribe el correo para emitir la factura y enviársela ahora (o cancela para no emitirla).","","Emitir y enviar");
+   const mail=await pedirCorreo("Emitir y enviar la factura","No encontré un correo guardado"+(v.cliente_nombre?" para "+esc(v.cliente_nombre):" (la venta no tiene cliente)")+" (busqué en el cliente de la venta, el pedido en línea y la lista de Clientes). Escribe el correo para emitir la factura y enviársela ahora, o cancela para no emitirla.","","Emitir y enviar");
    if(!mail)return;cli=Object.assign({nombre:v.cliente_nombre||"Consumidor final"},cli||{},{correo:mail})}
   if(!cli||(opt.soloConCorreo&&!cli.correo))return;
   let CL=null;try{CL=await rpc("config_correo_estado")}catch(e){}
