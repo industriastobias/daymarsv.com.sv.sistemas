@@ -49,3 +49,12 @@ dialog.pl-m{width:min(1040px,calc(100vw - 48px))}
 .pl-it{padding:8px}
 .pl-hint{margin-top:8px}
 }
+.pl-hay{color:var(--ok)!important;font-weight:600}
+/* pantallas grandes: datos a la izquierda, productos a la derecha */
+@media(min-width:1100px){
+dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
+.pl-cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:0 22px;align-items:start}
+.pl-cols .pl-g{grid-template-columns:1fr 1fr}
+.pl-cols .pl-items{grid-template-columns:1fr}
+.pl-cols .pl-sec:first-child{margin-top:0}
+}
