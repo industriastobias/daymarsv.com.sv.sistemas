@@ -361,7 +361,16 @@ async function autoFactura(ventaId,cli,opt){opt=opt||{};
   const {data:v,error}=await db.from("ventas").select("*,venta_items(*,productos(nombre))").eq("id",ventaId).single();if(error)throw new Error(error.message);
   if(!cli&&v.cliente_id){const r=await db.from("clientes").select("id,nombre,telefono,correo,documento,direccion").eq("id",v.cliente_id).maybeSingle();cli=r.data||null}
   if(!cli&&v.cliente_nombre)cli={nombre:v.cliente_nombre};
-  const ya=await db.from("facturas").select("id").contains("venta_ids",[ventaId]).eq("estado","emitida").limit(1);if(ya.data&&ya.data.length)return;
+  const ya=await db.from("facturas").select("id,cliente_correo,correo_enviado_en").contains("venta_ids",[ventaId]).eq("estado","emitida").limit(1);
+  if(ya.data&&ya.data.length){ /* ya está facturada: si todavía no se envió por correo, se envía ahora */
+   const ef=ya.data[0];if(ef.correo_enviado_en)return;
+   let mail=ef.cliente_correo||(cli&&cli.correo)||"";
+   if(!mail&&opt.preguntar)mail=await pedirCorreo("Enviar la factura","La factura de esta venta aún no se ha enviado por correo. Escribe el correo del cliente para enviársela ahora (o cancela).","","Enviar factura");
+   if(!mail)return;
+   const CL0=await correoListo();if(!CL0)return;
+   const f0=await cargarFactura(ef.id);
+   const ok0=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f0,mail),"Factura enviada a "+mail);if(ok0){snd("ok");try{await rpc("factura_guardar_correo",{p_id:ef.id,p_correo:mail})}catch(e){}if(S.tab==="fac")pintarFacturas()}
+   return}
   if(opt.preguntar&&(!cli||!cli.correo)){
    const mail=await pedirCorreo("Emitir y enviar la factura","Esta venta no tiene un cliente con correo guardado. Escribe el correo para emitir la factura y enviársela ahora (o cancela para no emitirla).","","Emitir y enviar");
    if(!mail)return;cli=Object.assign({nombre:v.cliente_nombre||"Consumidor final"},cli||{},{correo:mail})}
@@ -369,6 +378,7 @@ async function autoFactura(ventaId,cli,opt){opt=opt||{};
   let CL=null;try{CL=await rpc("config_correo_estado")}catch(e){}
   const x=fromVentas([v]);
   const id=await rpc("crear_factura",{p_items:x.items,p_opts:{cliente_nombre:cli.nombre||"",cliente_doc:cli.documento||"",cliente_direccion:cli.direccion||"",cliente_telefono:cli.telefono||"",metodo:v.metodo_pago||"Efectivo",iva_modo:LS("dms_iva")||"ninguno",descuento_tipo:"pct",descuento_valor:0,envio:+x.envio||0,efectivo:null,nota:"",venta_ids:[ventaId]}});
+  if(cli.correo){try{await rpc("factura_guardar_correo",{p_id:id,p_correo:cli.correo})}catch(e){}}
   const f=await cargarFactura(id);if(S.tab==="fac")pintarFacturas();
   if(cli.correo&&CL&&CL.listo){const ok=await conProgreso("Enviando factura…",()=>enviarFacturaCorreo(f,cli.correo),"Factura enviada a "+cli.correo);if(ok)snd("ok")}
   else toast("Factura "+fnum(f.numero)+" emitida"+(cli.correo?"":" (el cliente no tiene correo)"))
@@ -1202,6 +1212,7 @@ async function nuevaFactura(pre){
    descuento_tipo:q("dt").value,descuento_valor:dv,envio:num("env"),efectivo:q("met").value==="Efectivo"&&ef!==""?Number(ef):null,nota:q("nota").value,venta_ids:F.ventas};
   let mail=q("cc")?q("cc").value.trim():"";const nomCli=q("cn").value,telCli=q("ct").value;
   const id=await espera(()=>rpc("crear_factura",{p_items:its,p_opts:o}),"Emitiendo factura…");if(!id)return;
+  if(mail){try{await rpc("factura_guardar_correo",{p_id:id,p_correo:mail})}catch(e){}}
   LS("dms_iva",o.iva_modo);m.close();toast("Factura emitida");snd("ok");
   if(S.tab==="fac")pintarFacturas();
   const f=await espera(()=>cargarFactura(id));if(f)await abrirFactura(f);
