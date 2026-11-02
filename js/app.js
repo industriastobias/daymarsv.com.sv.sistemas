@@ -1,5 +1,6 @@
 /* DAYMAR-SHOP · funciones compartidas (conexión, sesión y utilidades) */
 (function(){
+try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611020949";document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 const db=supabase.createClient(CFG.url,CFG.key);
 /* Fotos en Cloudflare R2 (opcional). Vacío = se siguen guardando en Supabase. Ver cloudflare/LEEME.md */
@@ -284,7 +285,7 @@ function abrirConfig(){
  <div class="cf-b">
   <section class="cf-s" data-s="perfil"><h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Acercar</label><input type="range" id="cfZ" min="1" max="4" step="0.02" value="1"><small class="cf-m">La foto llena todo el círculo. Arrastra para encuadrar tu cara y usa el control para acercar.</small></div>
   <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small></section>
-  <section class="cf-s hidden" data-s="ap"><h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select><small class="cf-m">Se guarda solo en este dispositivo.</small></section>
+  <section class="cf-s hidden" data-s="ap"><h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select><label for="cfL" style="margin-top:14px">Idioma</label><select id="cfL"><option value="es">Español</option><option value="en">English</option></select><small class="cf-m">Se guarda solo en este dispositivo. English traduce los menús y botones principales; lo demás sigue en español.</small></section>
   <section class="cf-s hidden" data-s="pa"><h3>Pantalla</h3>
    ${sw("cfK","Modo kiosco","Pone el sistema en pantalla completa y, para salir, pide tu contraseña. No cambia el diseño de las páginas.")}
    ${sw("cfS","Ocultar el menú lateral","Solo en computadora; el menú sigue en la página de inicio.")}</section>
@@ -300,7 +301,7 @@ function abrirConfig(){
 let im=null,z=1,ox=0,oy=0;const cv=document.createElement("canvas");cv.width=cv.height=240;cv.className="cfcv";cv.title="Arrastra para mover";
  const dibujar=()=>{const x=cv.getContext("2d"),sc=240/Math.min(im.width,im.height)*z,w=im.width*sc,h=im.height*sc,mx=(w-240)/2,my=(h-240)/2;ox=Math.max(-mx,Math.min(mx,ox));oy=Math.max(-my,Math.min(my,oy));x.fillStyle="#efe7e4";x.fillRect(0,0,240,240);x.drawImage(im,120-w/2+ox,120-h/2+oy,w,h)};
  const pAv=()=>{const a=q("#cfAv");if(im){if(cv.parentNode!==a){a.innerHTML="";a.appendChild(cv)}q("#cfZw").classList.remove("hidden")}else{a.innerHTML=avatarHTML({nombre:q("#cfN").value||me.nombre,avatar:foto},"big");q("#cfZw").classList.add("hidden")}};
- q("#cfT").value=PREF("dms_th")||"auto";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfK").checked=PREF("dms_kiosco")==="1";pAv();
+ q("#cfT").value=PREF("dms_th")||"auto";q("#cfL").value=PREF("dms_lang")==="en"?"en":"es";q("#cfS").checked=PREF("dms_nosd")==="1";q("#cfK").checked=PREF("dms_kiosco")==="1";pAv();
  q("#cfN").addEventListener("input",pAv);
  d.addEventListener("click",e=>{if(e.target.closest("[data-x]"))cerrar()});d.addEventListener("cancel",e=>{e.preventDefault();cerrar()});
  q("#cfFoto").onclick=()=>q("#cfFile").click();
@@ -322,6 +323,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
+  const lg=q("#cfL").value,lgCambio=lg!==(PREF("dms_lang")==="en"?"en":"es");try{if(lg==="en")localStorage.setItem("dms_lang","en");else localStorage.removeItem("dms_lang")}catch(e){}
   const t=q("#cfT").value;try{if(t==="auto")localStorage.removeItem("dms_th");else localStorage.setItem("dms_th",t)}catch(e){}
   if(t==="auto")delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;
   PREF("dms_nosd",q("#cfS").checked?"1":"0");aplicarPrefs();if(q("#cfK").checked&&PREF("dms_kiosco")!=="1")setTimeout(()=>kiosco(true),0);
@@ -329,7 +331,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
    const {error}=await db.rpc("actualizar_mi_perfil",{p_nombre:nom,p_avatar:nueva?foto:null,p_quitar_avatar:quitar});q("#cfOk").disabled=false;
    if(error){q("#cfE").textContent=/function|actualizar_mi_perfil/i.test(error.message)?"Falta correr migracion_perfil.sql en Supabase para guardar nombre y foto.":error.message;return}
    DAY.me.nombre=nom;DAY.me.avatar=quitar?null:nueva?foto:DAY.me.avatar;pintarUsr();window.dispatchEvent(new CustomEvent("day:perfil"))}
-  cerrar();toast("Configuración guardada")};
+  cerrar();if(lgCambio){location.reload();return}toast("Configuración guardada")};
  d.showModal()}
 async function logout(){await db.auth.signOut();location.replace("index.html")}
 /* Si no hay sesión, manda al login. Devuelve el perfil del usuario. */

@@ -60,3 +60,9 @@ dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
 }
 
 .pl-vc{display:block;font-size:12px;font-weight:700;color:var(--mute);margin-top:2px}.pl-vc.mal{color:var(--bad)}
+
+/* Botones del pedido en línea: Cerrar | Guardar, luego Llevar al punto de venta, luego Rechazar | Aceptar */
+.df:has(#pPv){display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.df:has(#pPv) .btn{width:100%;margin:0;justify-content:center;text-align:center}
+.df:has(#pPv) #pPv{grid-column:1/-1}
+@media(min-width:760px){.df:has(#pPv){grid-template-columns:repeat(5,auto);justify-content:end}.df:has(#pPv) #pPv{grid-column:auto}.df:has(#pPv) .btn{width:auto}}
