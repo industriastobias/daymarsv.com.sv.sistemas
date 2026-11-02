@@ -50,9 +50,9 @@ function donut(items){
 function pintar(){
  const c=calc();
  $("vEnt").textContent="+"+$$(c.entro);$("vSal").textContent="−"+$$(c.salV);
- const q=$("vQue");q.textContent=$n(c.queda);q.className=c.queda>=0?"pos":"neg";
- const bn=$("vRes");bn.className="banner "+(c.puse<=0?"":c.res>=0?"ok":"mal");
- bn.innerHTML=c.puse<=0?`<span class="bi">i</span><p>Sin inversión propia en este periodo.</p>`:c.res>=0?`<span class="bi">✓</span><p>Ya recuperaste tu inversión. Ganancia: <b>${$$(c.res)}</b></p>`:`<span class="bi">!</span><p>Te faltan <b>${$$(-c.res)}</b> para recuperar tu inversión</p>`;
+ const q=$("vQue");q.textContent=$n(c.queda);q.classList.toggle("neg",c.queda<0);
+ const bn=$("vRes");bn.className="fzb "+(c.puse<=0?"":c.res>=0?"ok":"mal");
+ bn.innerHTML=c.puse<=0?`<span class="fzi">i</span><p>Sin inversión propia en este periodo.</p>`:c.res>=0?`<span class="fzi">✓</span><p>Ya recuperaste tu inversión. Ganancia: <b>${$$(c.res)}</b></p>`:`<span class="fzi">!</span><p>Te faltan <b>${$$(-c.res)}</b> para recuperar tu inversión</p>`;
  $("vDeu").innerHTML=`<div><span>Inversión</span><b>${$$(c.puse)}</b></div><a href="#cue"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="#cue"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
  deudas();
  const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});
