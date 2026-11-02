@@ -41,6 +41,29 @@ function fotosTienda(p){
   if(i===0&&x.toLowerCase()===String(p.barcode).toLowerCase()+".jpg")x=p.barcode+".1.jpg";
   return TIENDA_BASE+"prodimg/"+encodeURIComponent(x)});
  return [...new Set(out)]}
+/* ---------- Avisos de pedidos en línea (notificaciones) ---------- */
+const PUSH={pub:"BGZA-VjRlPkG10Mby0694GzuiI_nz2qEEB0bYxpuRD8sr2ucHdJCSzY_1ecYXyVCTjvJk_S_9vpCVwjwZwxS5Xw",worker:"https://daymar-push.daymarsv.workers.dev"};
+const u8=b=>{b=b.replace(/-/g,"+").replace(/_/g,"/");b+="=".repeat((4-b.length%4)%4);const r=atob(b),u=new Uint8Array(r.length);for(let i=0;i<r.length;i++)u[i]=r.charCodeAt(i);return u};
+const esIOS=()=>/iPhone|iPad/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+const instalada=()=>matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone===true;
+async function suscripcionActual(){try{const reg=await navigator.serviceWorker.ready;return await reg.pushManager.getSubscription()}catch(e){return null}}
+async function pintarAvisos(q){
+ const box=q("#cfAv");if(!box)return;
+ if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){box.innerHTML='<p class="cf-m" style="margin:0">Este navegador no permite avisos.'+(esIOS()?" En iPhone hay que instalar la app primero: Compartir → Agregar a pantalla de inicio, y abrirla desde el ícono.":"")+"</p>";return}
+ if(esIOS()&&!instalada()){box.innerHTML='<p class="cf-m" style="margin:0">En iPhone los avisos solo funcionan con la app instalada: toca Compartir → <b>Agregar a pantalla de inicio</b>, abre el sistema desde ese ícono y vuelve aquí.</p>';return}
+ const sub=await suscripcionActual(),perm=Notification.permission;
+ if(perm==="denied"){box.innerHTML='<p class="cf-m" style="margin:0">Los avisos están bloqueados en este navegador. Actívalos en los permisos del sitio (candado junto a la dirección) y vuelve aquí.</p>';return}
+ const n=await db.rpc("mis_dispositivos_push").then(r=>r.data||0,()=>0);
+ box.innerHTML=`<p class="cf-m" style="margin:0 0 10px">${sub?"Los avisos están <b>activados</b> en este dispositivo.":"Recibe una notificación en este dispositivo cada vez que llegue un pedido en línea."} Dispositivos con avisos: ${n}.</p>`+
+  (sub?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn g s" id="cfAvT">Probar aviso</button><button type="button" class="btn g s" id="cfAvOff">Desactivar aquí</button></div>':'<button type="button" class="btn s" id="cfAvOn">Activar avisos en este dispositivo</button>');
+ const on=q("#cfAvOn"),off=q("#cfAvOff"),pr=q("#cfAvT");
+ if(on)on.onclick=async()=>{on.disabled=true;try{
+  const p=await Notification.requestPermission();if(p!=="granted"){toast("No se dieron permisos para los avisos");return pintarAvisos(q)}
+  const reg=await navigator.serviceWorker.ready;const s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)});const j=s.toJSON();
+  const r=await db.rpc("guardar_suscripcion_push",{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_dispositivo:(esIOS()?"iPhone":/Android/.test(navigator.userAgent)?"Android":"Computadora")});
+  if(r.error)throw new Error(r.error.message);toast("Avisos activados");pintarAvisos(q)}catch(e){toast("No se pudo activar: "+(e.message||e));on.disabled=false}};
+ if(off)off.onclick=async()=>{try{const s=await suscripcionActual();if(s){await db.rpc("quitar_suscripcion_push",{p_endpoint:s.endpoint});await s.unsubscribe()}toast("Avisos desactivados");pintarAvisos(q)}catch(e){toast("No se pudo desactivar")}};
+ if(pr)pr.onclick=async()=>{pr.disabled=true;try{const j=sub.toJSON();const r=await fetch(PUSH.worker+"/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({titulo:"Aviso de prueba",cuerpo:"Así te avisaremos de los pedidos en línea.",url:"pedidos.html",subs:[{endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth}]})});const d=await r.json();toast(d.enviados?"Aviso enviado: míralo en tus notificaciones":"No se pudo enviar el aviso")}catch(e){toast("No se pudo enviar el aviso")}pr.disabled=false}}
 async function importarTienda(btn){
  const t0=btn.textContent;btn.disabled=true;btn.textContent="Leyendo la tienda…";
  try{
@@ -262,7 +285,7 @@ function abrirConfig(){
   <section class="cf-s hidden" data-s="pa"><h3>Pantalla</h3>
    ${sw("cfK","Modo kiosco","Pone el sistema en pantalla completa y, para salir, pide tu contraseña. No cambia el diseño de las páginas.")}
    ${sw("cfS","Ocultar el menú lateral","Solo en computadora; el menú sigue en la página de inicio.")}</section>
-  ${me.rol==="admin"?`<section class="cf-s hidden" data-s="dt"><h3>Espacio usado</h3><div class="cf-card" id="cfEsp"><p class="cf-m" style="margin:0">Calculando…</p></div><h3>Respaldo</h3><div class="cf-card"><p class="cf-m" id="cfBkT" style="margin:0 0 10px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button></div>
+  ${me.rol==="admin"?`<section class="cf-s hidden" data-s="dt"><h3>Avisos de pedidos</h3><div class="cf-card" id="cfAv"><p class="cf-m" style="margin:0">Revisando…</p></div><h3>Espacio usado</h3><div class="cf-card" id="cfEsp"><p class="cf-m" style="margin:0">Calculando…</p></div><h3>Respaldo</h3><div class="cf-card"><p class="cf-m" id="cfBkT" style="margin:0 0 10px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button></div>
    <div id="cfDz"></div></section>`:""}
   <section class="cf-s hidden" data-s="cu"><h3>Cuenta</h3><div class="cf-card"><small class="cf-m" style="margin:0">Sesión iniciada como</small><b style="word-break:break-all">${esc(DAY.email||"")}</b><small class="cf-m">${me.rol==="admin"?"Administrador":"Vendedor"}</small></div>
    <button type="button" class="btn g" id="cfOut" style="margin-top:12px">Cerrar sesión</button></section>
@@ -286,6 +309,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  let dr=null;cv.addEventListener("pointerdown",e=>{dr=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
  cv.addEventListener("pointermove",e=>{if(!dr||!im)return;const k=240/cv.clientWidth;ox+=(e.clientX-dr[0])*k;oy+=(e.clientY-dr[1])*k;dr=[e.clientX,e.clientY];dibujar()});
  ["pointerup","pointercancel"].forEach(n=>cv.addEventListener(n,()=>{dr=null}));
+ if(q("#cfAv"))pintarAvisos(q);
  if(q("#cfEsp"))db.rpc("uso_espacio").then(r=>{const e=q("#cfEsp");if(!e)return;if(r.error||!r.data){e.innerHTML='<p class="cf-m" style="margin:0">No se pudo calcular el espacio (falta aplicar la migración 016).</p>';return}
   const d=r.data,MB=1048576,fm=b=>b>=1073741824?(b/1073741824).toFixed(2)+" GB":(b/MB).toFixed(b<10*MB?1:0)+" MB",barra=(t,u,lim)=>{const p=Math.min(100,u/lim*100);return `<div style="margin:0 0 12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px"><b>${t}</b><span>${fm(u)} de ${fm(lim)} · ${p<1?"menos de 1":Math.round(p)}%</span></div><div style="height:8px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin-top:4px"><i style="display:block;height:100%;width:${Math.max(p,1)}%;background:${p>85?"var(--bad)":p>60?"var(--warn)":"linear-gradient(90deg,var(--wine),var(--gold))"}"></i></div></div>`};
   e.innerHTML=barra("Base de datos",d.db_bytes,500*MB)+barra("Fotos",d.storage_bytes,1024*MB)+`<p class="cf-m" style="margin:0">${d.productos} productos · ${d.fotos} archivos de foto · ${d.ventas} ventas${d.ventas_completadas==null?"":` (${d.ventas_completadas} completadas · ${d.ventas_anuladas} anuladas · ${d.ventas_pendientes} pendientes)`} · ${d.clientes} clientes. Límites del plan gratis de Supabase.</p>`});
