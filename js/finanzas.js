@@ -77,7 +77,17 @@ function grafico(){
    s+=`<rect x="${x0+i*bw+1}" y="${y}" width="${bw-2}" height="${Math.max(h,1)}" rx="3" style="fill:${c}"><title>${k==="todo"?"Total":k.length===4?k:mes(k)} · ${n} ${money(v)}</title></rect>`});
   s+=`<text x="${cx}" y="${H-8}" text-anchor="middle">${k==="todo"?"Total":k.length===4?k:mes(k)}</text>`});
  return lg+s+"</svg>"}
+/* Dinero que tengo (estimado, de todo el tiempo): lo que entró en efectivo menos lo que salió */
+function pintarDin(){
+ const el=$("rDin");if(!el)return;
+ const m=t=>S.MA.filter(x=>x.tipo===t).reduce((a,x)=>a+ +x.monto,0),k=sumK,ven=S.VA.reduce((a,x)=>a+ +x.ventas,0);
+ const ent=[["Ventas cobradas",ven],["Otros ingresos y cobros de cuentas",m("ingreso")],["Inversión tuya",k("inversion")],["Préstamos recibidos",k("prestamo")]];
+ const sal=[["Gastos",m("gasto")],["Costos directos",m("costo")],["Compras de mercadería",m("compra")],["Retiros",k("retiro")],["Pagos de préstamos",k("pago_prestamo")]];
+ const E=ent.reduce((a,x)=>a+x[1],0),Sa=sal.reduce((a,x)=>a+x[1],0),T=E-Sa,b=S.B&&S.B[0];
+ const fila=(n,v,c)=>`<li><span>${n}</span><b class="${c}">${c==="neg"?"−":"+"}${$$(v)}</b></li>`;
+ el.innerHTML=`<div class="pan din"><h3>Dinero que tengo</h3><div class="dt ${T>=0?"pos":"neg"}">${$n(T)}</div><small class="cf-m">Estimado con todo lo registrado: lo que ha entrado menos lo que ha salido, de todo el tiempo.</small><div class="dc"><ul>${ent.filter(x=>x[1]).map(x=>fila(x[0],x[1],"pos")).join("")}</ul><ul>${sal.filter(x=>x[1]).map(x=>fila(x[0],x[1],"neg")).join("")}</ul></div>${b?`<p class="hint">Saldo que anotaste en Banco: <b>${$$(+b.saldo_banco)}</b> (${fdate(b.fecha)}). Si no coincide, falta registrar algo o actualizar el saldo.</p>`:""}</div>`}
 function pintarRes(){
+ pintarDin();
  const c=calc();
  $("rK").innerHTML=`<div><span>Ingresos</span><b>${$$(c.ingresos)}</b><small>ventas ${$$(c.ventas)}</small></div><div><span>Egresos</span><b>${$$(c.egresos)}</b><small>costo de ventas + costos + gastos</small></div><div><span>Utilidad neta</span><b class="${c.util>=0?"pos":"neg"}">${$$(c.util)}</b><small>${c.ingresos?(c.util/c.ingresos*100).toFixed(1):"0.0"}% de margen</small></div><div><span>Compras de mercadería</span><b>${$$(c.cm)}</b><small>inventario: no baja la utilidad</small></div><div><span>Por cobrar</span><b>${$$(pend("cobrar"))}</b></div><div><span>Por pagar</span><b>${$$(pend("pagar"))}</b></div>`;
  $("rG").innerHTML=grafico();
