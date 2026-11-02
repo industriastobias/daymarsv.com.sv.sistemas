@@ -42,17 +42,30 @@ const pcTot=()=>S.PC.reduce((s,v)=>s+(+v.pendiente_monto||0),0);
 const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+(c.monto-c.abonado),0)+(t==="cobrar"?pcTot():0);
 
 /* ---------- Resumen ---------- */
+/* Gráfica: 4 series por mes (todas visibles al abrir; toca una leyenda para ocultarla o mostrarla) */
+const SER=[["ing","Ingreso neto","var(--wine)"],["ope","Gastos operativos","var(--gold)"],["dir","Gastos directos","#d9822b"],["bal","Balance","var(--ok)"]];
+const serOn=new Set(SER.map(x=>x[0]));
+document.addEventListener("click",e=>{const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
 function grafico(){
- const mp={};S.V.forEach(x=>{const k=mkey(x.mes);mp[k]=mp[k]||{i:0,e:0};mp[k].i+=+x.ventas;mp[k].e+=+x.costo});
- S.M.forEach(m=>{const k=mkey(m.fecha);mp[k]=mp[k]||{i:0,e:0};if(m.tipo==="ingreso")mp[k].i+=+m.monto;else mp[k].e+=+m.monto});
- const ks=Object.keys(mp).sort();if(!ks.length)return `<div class="empty">Sin movimientos en este periodo.</div>`;
- const W=640,H=230,pl=44,pb=26,pt=10,mx=Math.max(1,...ks.map(k=>Math.max(mp[k].i,mp[k].e))),ih=H-pb-pt,bw=Math.min(34,(W-pl)/ks.length/2.6),gp=(W-pl)/ks.length;
- const nice=v=>{const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p},top=nice(mx);
- let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos y egresos por mes">`;
- for(let i=0;i<=4;i++){const y=pt+ih-ih*i/4;s+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${top*i/4>=1000?(top*i/4/1000)+"k":Math.round(top*i/4)}</text>`}
- ks.forEach((k,j)=>{const cx=pl+gp*j+gp/2,hi=mp[k].i/top*ih,he=mp[k].e/top*ih;
-  s+=`<rect x="${cx-bw-1}" y="${pt+ih-hi}" width="${bw}" height="${hi}" rx="3" style="fill:var(--wine)"><title>${mes(k)} · Ingresos ${money(mp[k].i)}</title></rect><rect x="${cx+1}" y="${pt+ih-he}" width="${bw}" height="${he}" rx="3" style="fill:var(--gold)"><title>${mes(k)} · Egresos ${money(mp[k].e)}</title></rect><text x="${cx}" y="${H-8}" text-anchor="middle">${mes(k)}</text>`});
- return s+"</svg>"}
+ const mp={};const mk=k=>mp[k]=mp[k]||{ing:0,ope:0,dir:0,bal:0};
+ S.V.forEach(x=>{const o=mk(mkey(x.mes));o.ing+=+x.ventas;o.dir+=+x.costo});
+ S.M.forEach(m=>{const o=mk(mkey(m.fecha));if(m.tipo==="ingreso")o.ing+=+m.monto;else if(m.tipo==="gasto")o.ope+=+m.monto;else if(m.tipo==="costo")o.dir+=+m.monto});
+ const ks=Object.keys(mp).sort();ks.forEach(k=>{const o=mp[k];o.bal=o.ing-o.ope-o.dir});
+ const lg=`<div class="lg">`+SER.map(([k,n,c])=>`<button type="button" class="lgb${serOn.has(k)?"":" off"}" data-sr="${k}" aria-pressed="${serOn.has(k)}"><i style="background:${c}"></i>${n}</button>`).join("")+`</div>`;
+ if(!ks.length)return lg+`<div class="empty">Sin movimientos en este periodo.</div>`;
+ const act=SER.filter(x=>serOn.has(x[0]));if(!act.length)return lg+`<div class="empty">Toca una leyenda para mostrar datos.</div>`;
+ const vals=ks.flatMap(k=>act.map(x=>mp[k][x[0]]));
+ const W=640,H=240,pl=48,pb=26,pt=10,ih=H-pb-pt,gp=(W-pl)/ks.length,bw=Math.min(24,gp/(act.length+1));
+ const nice=v=>{if(v<=0)return 0;const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p};
+ const top=nice(Math.max(1,...vals)),bot=-nice(Math.max(0,-Math.min(0,...vals))),rg=top-bot,Y=v=>pt+ih*(1-(v-bot)/rg);
+ const fm=v=>Math.abs(v)>=1000?(v/1000)+"k":Math.round(v);
+ let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingreso neto, gastos y balance por mes">`;
+ for(let i=0;i<=4;i++){const v=bot+rg*i/4,y=Y(v);s+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="${Math.abs(v)<1e-9?"var(--mute)":"var(--line)"}"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${fm(v)}</text>`}
+ ks.forEach((k,j)=>{const cx=pl+gp*j+gp/2,x0=cx-bw*act.length/2;
+  act.forEach(([id,n,c],i)=>{const v=mp[k][id],y=Y(Math.max(v,0)),h=Math.abs(Y(v)-Y(0));
+   s+=`<rect x="${x0+i*bw+1}" y="${y}" width="${bw-2}" height="${Math.max(h,1)}" rx="3" style="fill:${c}"><title>${mes(k)} · ${n} ${money(v)}</title></rect>`});
+  s+=`<text x="${cx}" y="${H-8}" text-anchor="middle">${mes(k)}</text>`});
+ return lg+s+"</svg>"}
 function pintarRes(){
  const c=calc();
  $("rK").innerHTML=`<div><span>Ingresos</span><b>${$$(c.ingresos)}</b><small>ventas ${$$(c.ventas)}</small></div><div><span>Egresos</span><b>${$$(c.egresos)}</b><small>costo de ventas + costos + gastos</small></div><div><span>Utilidad neta</span><b class="${c.util>=0?"pos":"neg"}">${$$(c.util)}</b><small>${c.ingresos?(c.util/c.ingresos*100).toFixed(1):"0.0"}% de margen</small></div><div><span>Compras de mercadería</span><b>${$$(c.cm)}</b><small>inventario: no baja la utilidad</small></div><div><span>Por cobrar</span><b>${$$(pend("cobrar"))}</b></div><div><span>Por pagar</span><b>${$$(pend("pagar"))}</b></div>`;
