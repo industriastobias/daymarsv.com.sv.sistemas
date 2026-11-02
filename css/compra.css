@@ -102,10 +102,6 @@ kbd{background:var(--chip);border:1px solid var(--line);border-radius:5px;paddin
 .ov div{background:var(--card);border-radius:14px;padding:18px 24px;font-weight:700;display:flex;gap:12px;align-items:center}
 .spin{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--wine);border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.spin{animation-duration:3s}.autosave{transition:none}}
-#labelPrintArea{display:none}
-#labelPrintArea .label{border:1px solid #ddd;padding:12px;margin:8px;text-align:center;width:200px;display:inline-block;border-radius:8px;break-inside:avoid;color:#000;background:#fff}
-#labelPrintArea .price{font-size:18px;font-weight:bold;margin:8px 0}#labelPrintArea .code{font-size:11px;color:#555;word-break:break-all;margin-top:4px}
-@media print{body.print-labels>*:not(#labelPrintArea){display:none!important}body.print-labels #labelPrintArea{display:block!important;background:#fff;padding:8px}}
 
 .more2{border:1px dashed var(--line);border-radius:12px;padding:10px 12px}.more2>summary{cursor:pointer;font-weight:700;color:var(--wine);list-style:none}.more2>summary::-webkit-details-marker{display:none}.more2>summary::before{content:"＋ ";}.more2[open]>summary::before{content:"－ "}
 .more2 small{color:var(--mute);font-weight:400}
