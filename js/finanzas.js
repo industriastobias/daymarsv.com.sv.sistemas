@@ -17,15 +17,18 @@ const COL=["#6B2D3E","#C9973F","#d9822b","#2f7d4f","#4a6fa5","#9b5de5","#8d8d8d"
 async function cargar(){
  if(S.q!=="custom"){[S.desde,S.hasta]=rango(S.q)}
  const d0=new Date(S.desde+"T00:00:00-06:00"),d1=new Date(S.hasta+"T00:00:00-06:00");d1.setDate(d1.getDate()+1);
- const [v,m,k,c,pc,vd]=await Promise.all([
+ const [v,m,k,c,pc,vd,tv,tm,tk]=await Promise.all([
   db.rpc("fin_ventas_mensuales",{p_desde:S.desde,p_hasta:S.hasta}),
   fetchAll(()=>db.from("fin_movimientos").select("*").gte("fecha",S.desde).lte("fecha",S.hasta).order("fecha",{ascending:false}).order("created_at",{ascending:false})),
   fetchAll(()=>db.from("capital_movs").select("tipo,monto,fecha").gte("fecha",S.desde).lte("fecha",S.hasta)).catch(()=>[]),
   fetchAll(()=>db.from("fin_cuentas").select("id,tipo,tercero,concepto,monto,abonado,estado,vence,fecha").order("vence",{ascending:true,nullsFirst:false})).catch(()=>[]),
   fetchAll(()=>db.from("ventas").select("numero,cliente_nombre,pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente")).catch(()=>[]),
-  fetchAll(()=>db.from("ventas").select("id,numero,created_at,total,cliente_nombre,metodo_pago").eq("estado","completada").gte("created_at",d0.toISOString()).lt("created_at",d1.toISOString()).order("created_at",{ascending:false})).catch(()=>[])]);
+  fetchAll(()=>db.from("ventas").select("id,numero,created_at,total,cliente_nombre,metodo_pago").eq("estado","completada").gte("created_at",d0.toISOString()).lt("created_at",d1.toISOString()).order("created_at",{ascending:false})).catch(()=>[]),
+  db.rpc("fin_ventas_mensuales",{p_desde:"2000-01-01",p_hasta:hoy()}),
+  fetchAll(()=>db.from("fin_movimientos").select("tipo,monto,origen")),
+  fetchAll(()=>db.from("capital_movs").select("tipo,monto")).catch(()=>[])]);
  if(v.error)throw new Error(v.error.message);
- S.V=v.data||[];S.M=m;S.K=k;S.C=c;S.PC=pc;S.VD=vd}
+ S.V=v.data||[];S.M=m;S.K=k;S.C=c;S.PC=pc;S.VD=vd;S.T={V:tv.data||[],M:tm,K:tk}}
 
 const sum=a=>a.reduce((t,x)=>t+(+x.monto||0),0);
 const esSal=m=>m.tipo!=="ingreso";
@@ -33,10 +36,13 @@ function calc(){
  const ventas=S.V.reduce((t,x)=>t+ +x.ventas,0),otros=sum(S.M.filter(m=>m.tipo==="ingreso"));
  const salV=sum(S.M.filter(m=>esSal(m)&&m.origen!=="propio")),salP=sum(S.M.filter(m=>esSal(m)&&m.origen==="propio"));
  const inv=sum(S.K.filter(k=>k.tipo==="inversion"));
- const entro=ventas+otros,queda=entro-salV,puse=salP+inv;
+ const entro=ventas+otros;
+ const T=S.T,tIn=T.V.reduce((t,x)=>t+ +x.ventas,0)+sum(T.M.filter(m=>m.tipo==="ingreso")),tSal=sum(T.M.filter(m=>esSal(m)&&m.origen!=="propio"));
+ const tPuse=sum(T.M.filter(m=>esSal(m)&&m.origen==="propio"))+sum(T.K.filter(k=>k.tipo==="inversion"));
+ const queda=tIn-tSal,puse=S.q==="all"?tPuse:salP+inv,res=queda-tPuse;
  const debo=S.C.filter(c=>c.tipo==="pagar"&&c.estado==="pendiente").reduce((t,c)=>t+c.monto-c.abonado,0);
  const deben=S.C.filter(c=>c.tipo==="cobrar"&&c.estado==="pendiente").reduce((t,c)=>t+c.monto-c.abonado,0)+S.PC.reduce((t,v)=>t+(+v.pendiente_monto||0),0);
- return {entro,salV,queda,puse,res:queda-puse,debo,deben}}
+ return {entro,salV,queda,puse,res,debo,deben}}
 
 function donut(items){
  const tot=items.reduce((t,x)=>t+x[1],0);if(!tot)return `<div class="empty">Todavía no hay salidas en este periodo.</div>`;
