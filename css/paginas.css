@@ -145,3 +145,12 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 @media(min-width:960px){.fs .pie{flex-direction:row;align-items:center}.fs .pie svg{margin:0}.fs .pie ul{flex:1}}
 .fzb p{flex:1}.fs .pan{padding:14px 16px}.fs .rg-r{height:100%}
 @media(max-width:600px){.fzh{padding:18px}.fs .head h1{font-size:24px}}
+
+/* Movimientos en tarjetas */
+#mL{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+#mL>.hint,#mL>.empty{grid-column:1/-1}
+.fs #mL .rw.mv{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"i a" "t t";align-items:center;gap:10px 8px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.05);margin:0;align-content:start}
+.fs #mL .rw.mv:hover{border-color:var(--wine)}
+.fs #mL .rw.mv .mi{grid-area:i}.fs #mL .rw.mv .am2{grid-area:a;margin:0;text-align:right}.fs #mL .rw.mv .am2 b{font-size:20px}
+.fs #mL .rw.mv .ti{grid-area:t}.fs #mL .rw.mv .ti small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px;overflow-wrap:anywhere}
+@media(max-width:520px){#mL{grid-template-columns:1fr 1fr;gap:10px}.fs #mL .rw.mv{padding:12px}.fs #mL .rw.mv .am2 b{font-size:17px}}
