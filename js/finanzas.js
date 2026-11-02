@@ -74,8 +74,8 @@ function lista(){
  R.sort((a,b)=>b.ts-a.ts);
  $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.f));
  $("mL").innerHTML=R.length?R.slice(0,100).map(r=>{
-  if(r.k==="v"){const v=r.v;return `<div class="rw mv"><span class="mi in">↑</span><div class="ti"><b>Venta #${v.numero}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</b><small>${fdate(v.created_at)}${v.metodo_pago?" · "+esc(v.metodo_pago):""} · del sistema de ventas</small></div><div class="am2"><b class="pos">+${$$(+v.total)}</b></div></div>`}
-  const m=r.m,ent=m.tipo==="ingreso";return `<div class="rw mv" data-id="${m.id}"><span class="mi ${ent?"in":"out"}">${ent?"↑":"↓"}</span><div class="ti"><b>${esc(m.categoria||"")}</b><small>${esc(m.descripcion||"")}</small><small>${fdate(m.fecha)}${ent?"":" · "+(m.origen==="propio"?"mi bolsillo / tarjeta":"de las ventas")}</small></div><div class="am2"><b class="${ent?"pos":"neg"}">${ent?"+":"−"}${$$(+m.monto)}</b></div></div>`}).join("")+(R.length>100?`<p class="hint">Mostrando 100 de ${R.length}. Usa el buscador o acorta el periodo.</p>`:""):`<div class="empty card">No hay movimientos.</div>`}
+  if(r.k==="v"){const v=r.v;return `<div class="rw mv"><div class="ti"><b>Venta #${v.numero}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</b><small>${fdate(v.created_at)}${v.metodo_pago?" · "+esc(v.metodo_pago):""} · del sistema de ventas</small></div><div class="am2"><b class="pos">+${$$(+v.total)}</b></div></div>`}
+  const m=r.m,ent=m.tipo==="ingreso";return `<div class="rw mv" data-id="${m.id}"><div class="ti"><b>${esc(m.categoria||"")}</b><small>${esc(m.descripcion||"")}</small><small>${fdate(m.fecha)}${ent?"":" · "+(m.origen==="propio"?"mi bolsillo / tarjeta":"de las ventas")}</small></div><div class="am2"><b class="${ent?"pos":"neg"}">${ent?"+":"−"}${$$(+m.monto)}</b></div></div>`}).join("")+(R.length>100?`<p class="hint">Mostrando 100 de ${R.length}. Usa el buscador o acorta el periodo.</p>`:""):`<div class="empty card">No hay movimientos.</div>`}
 
 function anotar(m){
  m=m||{tipo:"gasto",fecha:ymd(new Date()),categoria:"",descripcion:"",monto:"",origen:"ventas"};
@@ -83,11 +83,12 @@ function anotar(m){
  const d=modal(m.id?"Editar movimiento":"Anotar",`
   <div class="tp" id="aT"><button type="button" data-e="0" class="${ent?"":"on"}">Salió dinero</button><button type="button" data-e="1" class="${ent?"on":""}">Entró dinero</button></div>
   <div class="fg"><div><label>Monto ($)</label><input name="mo" type="number" min="0.01" step="0.01" inputmode="decimal" value="${m.monto}" autofocus></div><div><label>Fecha</label><input name="f" type="date" value="${m.fecha}"></div>
-  <div class="full"><label>¿En qué? <small>(elige o escribe)</small></label><input name="c" list="dlC" maxlength="60" value="${esc(m.categoria)}"><datalist id="dlC"></datalist></div>
+  <div class="full"><label>¿En qué? <small>(elige o escribe)</small></label><input name="c" list="dlC" maxlength="60" value="${esc(m.categoria)}"><datalist id="dlC"></datalist><div class="chs" id="aCh"></div></div>
   <div class="full" id="aO"><label>¿De dónde salió el dinero?</label><div class="tp" id="aOr"><button type="button" data-o="ventas" class="${or==="ventas"?"on":""}">De las ventas</button><button type="button" data-o="propio" class="${or==="propio"?"on":""}">De mi bolsillo / tarjeta</button></div></div>
   <div class="full"><label>Nota <small>(opcional)</small></label><input name="d" maxlength="160" value="${esc(m.descripcion||"")}"></div></div><div class="err2" id="aE" role="alert"></div>`,
   {foot:`${m.id?'<button class="btn g" id="aDel" style="color:var(--bad);margin-right:auto">Eliminar</button>':""}<button class="btn g" data-x>Cancelar</button><button class="btn" id="aOk">Guardar</button>`});
- const ref=()=>{d.q("#dlC").innerHTML=(ent?CAT_IN:CAT_OUT).map(c=>`<option>${esc(c)}`).join("");d.q("#aO").style.display=ent?"none":"";d.el.querySelectorAll("#aT button").forEach(b=>b.classList.toggle("on",(b.dataset.e==="1")===ent))};ref();
+ const ref=()=>{d.q("#dlC").innerHTML=(ent?CAT_IN:CAT_OUT).map(c=>`<option>${esc(c)}`).join("");d.q("#aO").style.display=ent?"none":"";const cs=ent?CAT_IN:CAT_OUT;d.q("#aCh").innerHTML=cs.map(c=>`<button type="button" data-c="${esc(c)}">${esc(c)}</button>`).join("");d.el.querySelectorAll("#aT button").forEach(b=>b.classList.toggle("on",(b.dataset.e==="1")===ent))};ref();
+ d.q("#aCh").addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(b)d.q("[name=c]").value=b.dataset.c});
  d.q("#aT").addEventListener("click",e=>{const b=e.target.closest("[data-e]");if(!b)return;ent=b.dataset.e==="1";ref()});
  d.q("#aOr").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;or=b.dataset.o;d.el.querySelectorAll("#aOr button").forEach(x=>x.classList.toggle("on",x===b))});
  const g=n=>d.q(`[name=${n}]`).value.trim();

@@ -154,3 +154,5 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 .fs #mL .rw.mv .mi{grid-area:i}.fs #mL .rw.mv .am2{grid-area:a;margin:0;text-align:right}.fs #mL .rw.mv .am2 b{font-size:20px}
 .fs #mL .rw.mv .ti{grid-area:t}.fs #mL .rw.mv .ti small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px;overflow-wrap:anywhere}
 @media(max-width:520px){#mL{grid-template-columns:1fr 1fr;gap:10px}.fs #mL .rw.mv{padding:12px}.fs #mL .rw.mv .am2 b{font-size:17px}}
+.chs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chs button{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:7px 12px;font-size:13px;min-height:34px;cursor:pointer}.chs button:hover{border-color:var(--wine);color:var(--wine)}
+.fs #mL .rw.mv{grid-template-columns:1fr;grid-template-areas:"a" "t"}.fs #mL .rw.mv .am2{text-align:left}
