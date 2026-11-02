@@ -44,7 +44,7 @@ const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+
 /* ---------- Resumen ---------- */
 /* Gráfica: 4 series por mes (todas visibles al abrir; toca una leyenda para ocultarla o mostrarla) */
 const SER=[["ing","Ingreso neto","var(--wine)"],["ope","Gastos operativos","var(--gold)"],["dir","Gastos directos","#d9822b"],["bal","Balance","var(--ok)"]];
-let agr="mes",vista="pastel";const serOn=new Set(SER.map(x=>x[0]));
+let agr="todo",vista="pastel";const serOn=new Set(SER.map(x=>x[0]));
 document.addEventListener("click",e=>{const vv=e.target.closest("#rG [data-vw]");if(vv){vista=vv.dataset.vw;$("rG").innerHTML=grafico();return}const g=e.target.closest("#rG [data-ag]");if(g){agr=g.dataset.ag;$("rG").innerHTML=grafico();return}const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
 function grafico(){
  const mp={};const gk=k=>agr==="anio"?k.slice(0,4):agr==="todo"?"todo":k;const mk=k=>{k=gk(k);return mp[k]=mp[k]||{ing:0,ope:0,dir:0,bal:0}};
