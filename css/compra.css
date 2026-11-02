@@ -114,3 +114,12 @@ kbd{background:var(--chip);border:1px solid var(--line);border-radius:5px;paddin
 
 .rw.al{display:flex;align-items:center;gap:10px}.rw.al .aim{width:56px;height:56px;border-radius:10px;object-fit:cover;flex:none;background:var(--bg)}.rw.al .aim.ph0{display:grid;place-items:center;font:700 20px "Bricolage Grotesque",sans-serif;color:#fff;background:linear-gradient(135deg,var(--wine),var(--gold))}.rw.al .ti small{display:block}
 @media(max-width:639px){.dgal{gap:10px}.dgal .main{aspect-ratio:auto;height:32vh;height:32dvh;max-height:300px;object-fit:contain}.dgal .th img{width:40px;height:40px}}
+/* botones de las tarjetas */
+.pb .ac{display:grid;grid-template-columns:1fr auto;gap:8px;padding-top:10px}
+.pb .ac .btn{flex:none;min-height:40px;border-radius:10px;font-size:14px;white-space:nowrap;padding:8px 12px}
+.pb .ac .ed{grid-column:1/-1;font-weight:700}
+.pb .ac .tg{display:flex;align-items:center;justify-content:center;gap:7px}
+.pb .ac .tg::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--mute);flex:none}
+.pb .ac .tg.on{color:var(--ok)}.pb .ac .tg.on::before{background:var(--ok)}
+.pb .ac .tr{width:44px;padding:0;display:grid;place-items:center;color:var(--bad)}
+.pb .ac .tr:hover{background:color-mix(in srgb,var(--bad) 12%,var(--card))}
