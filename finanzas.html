@@ -6,14 +6,14 @@
 <link rel="stylesheet" href="css/estilo.css?v=202611011610">
 <link rel="stylesheet" href="css/compra.css?v=202610311459">
 <link rel="stylesheet" href="css/almacen.css?v=202611021033">
-<link rel="stylesheet" href="css/paginas.css?v=202611021322"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<link rel="stylesheet" href="css/paginas.css?v=202611021326"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide fs">
  <div class="head">
   <a class="back" href="menu.html">‹ Menú</a>
   <div><h1>Finanzas</h1></div>
-  <div class="hact"><button class="btn" id="aNew" type="button">+ Anotar</button><a class="btn g" href="finanzas-avanzado.html">Más</a></div>
+  <div class="hact"><button class="btn" id="aNew" type="button">+ Anotar</button><button class="btn g" id="dNew" type="button">+ Deuda</button></div>
  </div>
  <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
 
@@ -33,6 +33,7 @@
  <section class="pan caja res" id="vRes"></section>
 
  <div class="kp3" id="vDeu"></div>
+ <section class="pan hidden" id="vDL"><h3>Deudas</h3><div id="dL"></div></section>
 
  <section class="pan">
   <h3>¿En qué se fue el dinero?</h3>
@@ -53,5 +54,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="js/app.js?v=202611021229"></script>
 <script src="js/comun.js?v=202610311459"></script>
-<script src="js/finanzas.js?v=202611021322"></script>
+<script src="js/finanzas.js?v=202611021326"></script>
 </body></html>

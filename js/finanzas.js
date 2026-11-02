@@ -10,6 +10,7 @@ if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const $n=n=>n<0?"−"+$$(-n):$$(n);
 const S={q:"all",desde:"",hasta:"",V:[],M:[],K:[],C:[],PC:[],f:"all"};
+const hoy=()=>ymd(new Date());
 const CAT_IN=["Venta","Otro ingreso"],CAT_OUT=["Productos","Insumos y empaques","Tarjetas y etiquetas","Envíos","Impuestos y aduanas","Publicidad","Pago de préstamo","Otros"];
 const COL=["#6B2D3E","#C9973F","#d9822b","#2f7d4f","#4a6fa5","#9b5de5","#8d8d8d"];
 
@@ -19,8 +20,8 @@ async function cargar(){
   db.rpc("fin_ventas_mensuales",{p_desde:S.desde,p_hasta:S.hasta}),
   fetchAll(()=>db.from("fin_movimientos").select("*").gte("fecha",S.desde).lte("fecha",S.hasta).order("fecha",{ascending:false}).order("created_at",{ascending:false})),
   fetchAll(()=>db.from("capital_movs").select("tipo,monto,fecha").gte("fecha",S.desde).lte("fecha",S.hasta)).catch(()=>[]),
-  fetchAll(()=>db.from("fin_cuentas").select("tipo,monto,abonado,estado")).catch(()=>[]),
-  fetchAll(()=>db.from("ventas").select("pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente")).catch(()=>[])]);
+  fetchAll(()=>db.from("fin_cuentas").select("id,tipo,tercero,concepto,monto,abonado,estado,vence,fecha").order("vence",{ascending:true,nullsFirst:false})).catch(()=>[]),
+  fetchAll(()=>db.from("ventas").select("numero,cliente_nombre,pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente")).catch(()=>[])]);
  if(v.error)throw new Error(v.error.message);
  S.V=v.data||[];S.M=m;S.K=k;S.C=c;S.PC=pc}
 
@@ -50,7 +51,8 @@ function pintar(){
  const q=$("vQue");q.textContent=$n(c.queda);q.className=c.queda>=0?"pos":"neg";
  $("vPuse").textContent=$$(c.puse);
  $("vRes").innerHTML=c.puse<=0?`<p class="rt">Sin dinero propio puesto.</p>`:c.res>=0?`<p class="rt ok">Ya recuperaste lo que pusiste. Ganancia: <b>${$$(c.res)}</b></p>`:`<p class="rt mal">Te faltan <b>${$$(-c.res)}</b> para recuperar lo que pusiste</p>`;
- $("vDeu").innerHTML=`<a href="finanzas-avanzado.html"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="finanzas-avanzado.html"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
+ $("vDeu").innerHTML=`<a href="#vDL"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="#vDL"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
+ deudas();
  const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});
  let it=Object.entries(cat).sort((a,b)=>b[1]-a[1]);if(it.length>6){const o=it.slice(6).reduce((t,x)=>t+x[1],0);it=it.slice(0,6);it.push(["Otros",o])}
  $("vGraf").innerHTML=donut(it);
@@ -83,6 +85,23 @@ function anotar(m){
   if(ok){d.close();toast("Guardado");await refrescar()}};
  const del=d.q("#aDel");if(del)del.onclick=async()=>{if(!await pedirClave("Vas a eliminar este movimiento."))return;
   const ok=await espera(async()=>{const {error}=await db.from("fin_movimientos").delete().eq("id",m.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Eliminado");await refrescar()}}}
+
+
+/* ---------- Deudas: lo que debo y lo que me deben ---------- */
+function deudas(){
+ const P=S.C.filter(c=>c.estado==="pendiente"),pcs=S.PC.filter(v=>+v.pendiente_monto>0);
+ $("vDL").classList.toggle("hidden",!P.length&&!pcs.length);
+ $("dL").innerHTML=P.map(c=>{const venc=c.vence&&c.vence<hoy(),pag=c.tipo==="pagar";return `<div class="rw"><div class="ti"><b>${pag?"Debo":"Me deben"} · ${esc(c.tercero)}</b><small>${esc(c.concepto||"")}${c.vence?" · vence "+fdate(c.vence):""}${venc?' · <span class="neg">vencida</span>':""}</small></div><div class="am2"><b class="${pag?"neg":"pos"}">${$$(c.monto-c.abonado)}</b><small>de ${$$(c.monto)}</small></div><button class="btn sm" data-ab="${c.id}">${pag?"Abonar":"Cobrar"}</button></div>`}).join("")
+ +pcs.map(v=>`<div class="rw"><div class="ti"><b>Me deben · ${esc(v.cliente_nombre||"Cliente")}</b><small>Venta #${v.numero} con cobro pendiente</small></div><div class="am2"><b class="pos">${$$(+v.pendiente_monto)}</b></div></div>`).join("")}
+$("dL").addEventListener("click",e=>{const b=e.target.closest("[data-ab]");if(!b)return;const c=S.C.find(x=>x.id===b.dataset.ab);if(!c)return;const sal=r2(c.monto-c.abonado),pag=c.tipo==="pagar";
+ const d=modal(pag?"Abonar a la deuda":"Registrar cobro",`<p style="margin-top:0"><b>${esc(c.tercero)}</b> · saldo ${$$(sal)}</p><label>Monto ($)</label><input name="a" type="number" min="0.01" step="0.01" max="${sal}" value="${sal}" inputmode="decimal"><p class="hint">${pag?"Se anota como salida de las ventas.":"Se anota como entrada."}</p><div class="err2" id="abE" role="alert"></div>`,{foot:'<button class="btn g" data-x>Cancelar</button><button class="btn" id="abOk">Guardar</button>'});
+ d.q("#abOk").onclick=async()=>{const a=r2(Number(d.q("[name=a]").value));if(!(a>0)||a>sal){d.q("#abE").textContent="El monto debe ser mayor a cero y no pasar de "+$$(sal);return}
+  const ok=await espera(async()=>{const {error}=await db.rpc("abonar_cuenta",{p_id:c.id,p_monto:a});if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Guardado");await refrescar()}}});
+$("dNew").onclick=()=>{let pag=true;
+ const d=modal("Nueva deuda",`<div class="tp" id="dT"><button type="button" data-p="1" class="on">Yo debo</button><button type="button" data-p="0">Me deben</button></div><div class="fg"><div class="full"><label>¿A quién?</label><input name="t" maxlength="80"></div><div><label>Monto ($)</label><input name="m" type="number" min="0.01" step="0.01" inputmode="decimal"></div><div><label>Vence <small>(opcional)</small></label><input name="v" type="date"></div><div class="full"><label>Nota <small>(opcional)</small></label><input name="c" maxlength="120"></div></div><div class="err2" id="dE" role="alert"></div>`,{foot:'<button class="btn g" data-x>Cancelar</button><button class="btn" id="dOk">Guardar</button>'});
+ d.q("#dT").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(!b)return;pag=b.dataset.p==="1";d.el.querySelectorAll("#dT button").forEach(x=>x.classList.toggle("on",x===b))});
+ d.q("#dOk").onclick=async()=>{const g=n=>d.q(`[name=${n}]`).value.trim(),mo=Number(g("m"));if(!g("t")){d.q("#dE").textContent="Escribe a quién.";return}if(!(mo>0)){d.q("#dE").textContent="Escribe un monto mayor a cero.";return}
+  const ok=await espera(async()=>{const {error}=await db.from("fin_cuentas").insert({tipo:pag?"pagar":"cobrar",tercero:g("t"),concepto:g("c")||null,monto:r2(mo),vence:g("v")||null});if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Guardado");await refrescar()}}};
 
 async function refrescar(){await espera(async()=>{await cargar();return true});pintar()}
 $("aNew").onclick=()=>anotar();
