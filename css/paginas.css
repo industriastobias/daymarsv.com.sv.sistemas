@@ -60,3 +60,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .lgb{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:4px 2px;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
 .lgb i{display:inline-block;width:10px;height:10px;border-radius:50%}
 .lgb.off{opacity:.45;text-decoration:line-through}
+
+.lgb.ag{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:700;color:var(--mute)}
+.lgb.ag.on{background:var(--wine);border-color:var(--wine);color:#fff}

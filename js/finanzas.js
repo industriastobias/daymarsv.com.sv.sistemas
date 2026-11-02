@@ -44,14 +44,15 @@ const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+
 /* ---------- Resumen ---------- */
 /* Gráfica: 4 series por mes (todas visibles al abrir; toca una leyenda para ocultarla o mostrarla) */
 const SER=[["ing","Ingreso neto","var(--wine)"],["ope","Gastos operativos","var(--gold)"],["dir","Gastos directos","#d9822b"],["bal","Balance","var(--ok)"]];
-const serOn=new Set(SER.map(x=>x[0]));
-document.addEventListener("click",e=>{const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
+let agr="mes";const serOn=new Set(SER.map(x=>x[0]));
+document.addEventListener("click",e=>{const g=e.target.closest("#rG [data-ag]");if(g){agr=g.dataset.ag;$("rG").innerHTML=grafico();return}const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
 function grafico(){
- const mp={};const mk=k=>mp[k]=mp[k]||{ing:0,ope:0,dir:0,bal:0};
+ const mp={};const gk=k=>agr==="anio"?k.slice(0,4):agr==="todo"?"todo":k;const mk=k=>{k=gk(k);return mp[k]=mp[k]||{ing:0,ope:0,dir:0,bal:0}};
  S.V.forEach(x=>{const o=mk(mkey(x.mes));o.ing+=+x.ventas;o.dir+=+x.costo});
  S.M.forEach(m=>{const o=mk(mkey(m.fecha));if(m.tipo==="ingreso")o.ing+=+m.monto;else if(m.tipo==="gasto")o.ope+=+m.monto;else if(m.tipo==="costo")o.dir+=+m.monto});
  const ks=Object.keys(mp).sort();ks.forEach(k=>{const o=mp[k];o.bal=o.ing-o.ope-o.dir});
- const lg=`<div class="lg">`+SER.map(([k,n,c])=>`<button type="button" class="lgb${serOn.has(k)?"":" off"}" data-sr="${k}" aria-pressed="${serOn.has(k)}"><i style="background:${c}"></i>${n}</button>`).join("")+`</div>`;
+ const ag=`<div class="lg agr">`+[["todo","Todo"],["anio","Por año"],["mes","Por mes"]].map(([k,n])=>`<button type="button" class="lgb ag${agr===k?" on":""}" data-ag="${k}">${n}</button>`).join("")+`</div>`;
+ const lg=ag+`<div class="lg">`+SER.map(([k,n,c])=>`<button type="button" class="lgb${serOn.has(k)?"":" off"}" data-sr="${k}" aria-pressed="${serOn.has(k)}"><i style="background:${c}"></i>${n}</button>`).join("")+`</div>`;
  if(!ks.length)return lg+`<div class="empty">Sin movimientos en este periodo.</div>`;
  const act=SER.filter(x=>serOn.has(x[0]));if(!act.length)return lg+`<div class="empty">Toca una leyenda para mostrar datos.</div>`;
  const vals=ks.flatMap(k=>act.map(x=>mp[k][x[0]]));
@@ -59,12 +60,12 @@ function grafico(){
  const nice=v=>{if(v<=0)return 0;const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p};
  const top=nice(Math.max(1,...vals)),bot=-nice(Math.max(0,-Math.min(0,...vals))),rg=top-bot,Y=v=>pt+ih*(1-(v-bot)/rg);
  const fm=v=>Math.abs(v)>=1000?(v/1000)+"k":Math.round(v);
- let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingreso neto, gastos y balance por mes">`;
+ let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingreso neto, gastos y balance">`;
  for(let i=0;i<=4;i++){const v=bot+rg*i/4,y=Y(v);s+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="${Math.abs(v)<1e-9?"var(--mute)":"var(--line)"}"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${fm(v)}</text>`}
  ks.forEach((k,j)=>{const cx=pl+gp*j+gp/2,x0=cx-bw*act.length/2;
   act.forEach(([id,n,c],i)=>{const v=mp[k][id],y=Y(Math.max(v,0)),h=Math.abs(Y(v)-Y(0));
-   s+=`<rect x="${x0+i*bw+1}" y="${y}" width="${bw-2}" height="${Math.max(h,1)}" rx="3" style="fill:${c}"><title>${mes(k)} · ${n} ${money(v)}</title></rect>`});
-  s+=`<text x="${cx}" y="${H-8}" text-anchor="middle">${mes(k)}</text>`});
+   s+=`<rect x="${x0+i*bw+1}" y="${y}" width="${bw-2}" height="${Math.max(h,1)}" rx="3" style="fill:${c}"><title>${k==="todo"?"Total":k.length===4?k:mes(k)} · ${n} ${money(v)}</title></rect>`});
+  s+=`<text x="${cx}" y="${H-8}" text-anchor="middle">${k==="todo"?"Total":k.length===4?k:mes(k)}</text>`});
  return lg+s+"</svg>"}
 function pintarRes(){
  const c=calc();
