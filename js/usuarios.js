@@ -10,7 +10,7 @@ let EMAIL="";try{EMAIL=(await db.auth.getSession()).data.session.user.email.toLo
 const ESP=EMAIL===PRINCIPAL;
 mountSide($("side"),"usuarios",me.rol);$("app").classList.remove("hidden");$("bnav").remove();
 document.querySelector("main").style.paddingBottom="30px";
-if(!ESP)$("inv").classList.add("hidden"),$("soloP").classList.remove("hidden");
+if(!ESP)$("inv").classList.add("hidden");
 let U=[],I=[];
 async function cargar(){
  const [a,b]=await Promise.all([db.from("profiles").select("*").order("created_at"),db.from("invitaciones").select("*").eq("usada",false).order("created_at",{ascending:false})]);
