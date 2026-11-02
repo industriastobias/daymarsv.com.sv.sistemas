@@ -88,3 +88,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .kp3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .kp3>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.kp3 span{font-size:12px;color:var(--mute)}.kp3 b{display:block;font:700 18px "Bricolage Grotesque",sans-serif}.kp3 small{font-size:11px;color:var(--mute)}
 @media(max-width:560px){.kp3{grid-template-columns:1fr}}
+
+.cas{padding:6px 14px}.cas .st{padding:12px 2px}.cas .st.fin{margin:6px 0;padding:12px}
+details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan .din{border:0;padding:0;box-shadow:none;margin-top:8px}

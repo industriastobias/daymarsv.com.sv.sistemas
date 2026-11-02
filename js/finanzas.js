@@ -43,8 +43,8 @@ const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+
 
 /* ---------- Resumen ---------- */
 /* Gráfica: 4 series por mes (todas visibles al abrir; toca una leyenda para ocultarla o mostrarla) */
-const SER=[["ing","Ingreso neto","var(--wine)"],["ope","Gastos operativos","var(--gold)"],["dir","Gastos directos","#d9822b"],["bal","Balance","var(--ok)"]];
-let agr="todo",vista="pastel";const serOn=new Set(SER.map(x=>x[0]));
+const SER=[["ing","Ingresos","var(--wine)"],["ope","Gastos operativos","var(--gold)"],["dir","Gastos directos","#d9822b"],["bal","Me queda","var(--ok)"]];
+let agr="todo",vista="barras";const serOn=new Set(SER.map(x=>x[0]));
 document.addEventListener("click",e=>{const vv=e.target.closest("#rG [data-vw]");if(vv){vista=vv.dataset.vw;$("rG").innerHTML=grafico();return}const g=e.target.closest("#rG [data-ag]");if(g){agr=g.dataset.ag;$("rG").innerHTML=grafico();return}const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
 function grafico(){
  const mp={};const gk=k=>agr==="anio"?k.slice(0,4):agr==="todo"?"todo":k;const mk=k=>{k=gk(k);return mp[k]=mp[k]||{ing:0,ope:0,dir:0,bal:0}};
@@ -90,15 +90,14 @@ function pintarRes(){
  pintarDin();
  const c=calc();
  const neto=c.ingresos-c.costoV-c.co,gd=c.costoV+c.co,bal=c.util;
- const st=(n,v,cl,sub)=>`<div class="st ${cl||""}"><span>${n}${sub?`<small>${sub}</small>`:""}</span><b>${v}</b></div>`;
- $("rK").innerHTML=`<div class="pan cas"><h3>¿Cuánto gané? Paso a paso</h3>
-  ${st("Total ingresos",$$(c.ingresos),"","ventas "+$$(c.ventas)+" + otros ingresos "+$$(c.oi))}
-  ${st("− Gastos directos","−"+$$(gd),"neg","costo de lo vendido y costos directos")}
-  ${st("= Ingreso neto",$n(neto),"sub","")}
-  ${st("− Gastos operativos","−"+$$(c.ga),"neg","alquiler, luz, publicidad…")}
-  ${st("= Balance final",$n(bal),"fin "+(bal>=0?"pos":"neg"),bal>=0?"esto es lo que te queda":"gastaste más de lo que entró")}
+ const st=(n,v,cl)=>`<div class="st ${cl||""}"><span>${n}</span><b>${v}</b></div>`;
+ $("rK").innerHTML=`<div class="pan cas">
+  ${st("Ingresos",$$(c.ingresos),"")}
+  ${st("Gastos directos","−"+$$(gd),"neg")}
+  ${st("Gastos operativos","−"+$$(c.ga),"neg")}
+  ${st("Me queda",$n(bal),"fin "+(bal>=0?"pos":"neg"))}
  </div>
- <div class="kp3"><div><span>Inversión total</span><b>${$$(sumK("inversion"))}</b><small>dinero tuyo puesto en el negocio</small></div><div><span>Deudas por pagar</span><b>${$$(pend("pagar"))}</b><small>lo que debes</small></div><div><span>Por cobrar</span><b>${$$(pend("cobrar"))}</b><small>lo que te deben</small></div></div>`;
+ <div class="kp3"><div><span>Inversión</span><b>${$$(sumK("inversion"))}</b></div><div><span>Debo</span><b>${$$(pend("pagar"))}</b></div><div><span>Me deben</span><b>${$$(pend("cobrar"))}</b></div></div>`;
  $("rG").innerHTML=grafico();
  const ven=S.C.filter(x=>x.estado==="pendiente"&&x.vence&&x.vence<ymd(new Date()));
  $("rA").innerHTML=ven.length?`<div class="alert bad"><div><b>${ven.length} cuenta(s) vencida(s)</b>${ven.slice(0,3).map(x=>esc(x.tercero)).join(", ")}${ven.length>3?"…":""} — revísalas en Cuentas.</div></div>`:""}
