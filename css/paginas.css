@@ -176,3 +176,7 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 .fs #dL .rw.dc{grid-template-rows:auto 1fr auto;height:100%;box-sizing:border-box;align-content:stretch}
 .fs #dL .rw.dc .ti{min-height:64px}
 .fs #dL .rw.dc .am2{align-self:end}
+/* sin caja blanca alrededor de las tarjetas */
+.fs #p-cue>.pan,.fs #p-mov>.pan{background:none;border:0;box-shadow:none;padding:0}
+.fs #p-cue .rw.dc{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+@media(max-width:600px){.fs #dL{grid-template-columns:1fr!important;gap:12px}.fs #dL .rw.dc{padding:16px;border-radius:18px;border:1px solid var(--line);border-top-width:5px}.fs #dL .rw.dc .am2{width:auto;order:0}.fs #dL .rw.dc .btn{order:0}}
