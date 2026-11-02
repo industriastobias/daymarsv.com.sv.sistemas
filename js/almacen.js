@@ -155,9 +155,8 @@ function pintarInv(){
    <td class="${sIcon(p)}">${p.stock}${resTxt(p)?`<br>${resTxt(p)}`:""}</td><td>${esc(p.cat||"—")}</td><td><div class="ac">${btns(p)}</div></td></tr>`).join("")+`</tbody></table></div>`}
  else{
   $("invList").innerHTML=`<div class="pg">`+items.map((p,i)=>`<div class="pc" data-id="${p.id}" id="card-${a+i+1}">${thumb(p,"ph")}
-   <div class="pb">${chk(p)}<b class="n">${hl(p.nombre,q)}</b>${cols(p)}${p.descuento_pct>0?`<span class="dsc">${p.descuento_pct}% de descuento</span>`:""}
-   <div class="mt"><small>${esc(p.codigo||"")} · ${esc(p.cat||"Sin categoría")}</small><small class="${sIcon(p)}">Stock: ${p.stock}</small>${resTxt(p)}</div>
-   ${p.codigo_barras?`<img class="bc" src="${bcUrl(p.codigo_barras)}" alt="" data-bar="${esc(p.codigo_barras)}">`:""}
+   <div class="pb">${chk(p)}<b class="n">${hl(p.nombre,q)}</b>${cols(p)}
+   <div class="mt"><small class="${sIcon(p)}">Stock: ${p.stock}</small>${resTxt(p)}</div>
    <div class="pr">${$$(p.fin)}</div><div class="ac">${btns(p)}</div></div></div>`).join("")+`</div>`;
 }
  const pgH=tot>1?`<button class="btn g sm" data-pg="-1" ${S.page<=1?"disabled":""}>‹ Anterior</button><span>Página ${S.page} de ${tot}</span><button class="btn g sm" data-pg="1" ${S.page>=tot?"disabled":""}>Siguiente ›</button>`:"";$("pagerTop").innerHTML=pgH;
