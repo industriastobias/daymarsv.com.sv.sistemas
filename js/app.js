@@ -21,24 +21,61 @@ const fotosAlm={
   try{await db.storage.from("productos").remove(paths)}catch(e){}
   if(R2.worker)try{await fetch(R2.worker.replace(/\/$/,"")+"/borrar",{method:"POST",headers:{Authorization:"Bearer "+await sesionToken(),"Content-Type":"application/json"},body:JSON.stringify({paths})})}catch(e){}}
 };
+/* Importa el catálogo de la tienda en línea (products.js) al sistema. Solo administrador principal. */
+const TIENDA_BASE="https://industriastobias.github.io/klohesvtiendaonline/";
+async function leerCatalogoTienda(){
+ const r=await fetch(TIENDA_BASE+"products.js?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("No se pudo leer la tienda ("+r.status+")");
+ const txt=await r.text();
+ /* se ejecuta aislado en un Worker (sin acceso a tu sesión ni a la página) */
+ const src="try{"+txt+";postMessage({ok:true,p:JSON.parse(JSON.stringify(products))})}catch(e){postMessage({ok:false,e:String(e)})}";
+ const w=new Worker(URL.createObjectURL(new Blob([src],{type:"text/javascript"})));
+ const res=await new Promise((ok,ko)=>{const t=setTimeout(()=>{w.terminate();ko(new Error("La lectura tardó demasiado"))},15000);w.onmessage=e=>{clearTimeout(t);w.terminate();ok(e.data)};w.onerror=e=>{clearTimeout(t);w.terminate();ko(new Error("No se pudo leer products.js"))}});
+ if(!res.ok||!Array.isArray(res.p))throw new Error(res.e||"products.js no tiene el formato esperado");
+ return res.p}
+function fotosTienda(p){
+ const fina=/^joyer[ií]a fina$/i.test(String(p.category||"").trim());
+ const L=Array.isArray(p.images)&&p.images.length?p.images:[p.barcode+".jpg"];
+ const out=L.map((im,i)=>{let x=String(im).trim();if(/^https?:/i.test(x))return x;
+  if(!fina)return TIENDA_BASE+"generalimg/"+encodeURIComponent(x.includes("/")?x.split("/").pop():x);
+  x=x.replace(/^prodimg\//i,"").replace(/_(\d+)(\.[^.]+)$/i,".$1$2");
+  if(i===0&&x.toLowerCase()===String(p.barcode).toLowerCase()+".jpg")x=p.barcode+".1.jpg";
+  return TIENDA_BASE+"prodimg/"+encodeURIComponent(x)});
+ return [...new Set(out)]}
+async function importarTienda(btn){
+ const t0=btn.textContent;btn.disabled=true;btn.textContent="Leyendo la tienda…";
+ try{
+  const P=await leerCatalogoTienda();
+  const vistos=new Set(),items=[];let rep=0;
+  P.forEach(p=>{const b=String(p.barcode||"").trim();if(!b||vistos.has(b)){rep++;return}vistos.add(b);items.push({name:p.name,price:p.price,stock:p.stock,barcode:b,category:p.category,description:p.description||null,imgs:fotosTienda(p)})});
+  const conStock=items.filter(i=>+i.stock>0).length,uds=items.reduce((t,i)=>t+(+i.stock||0),0);
+  btn.textContent=t0;
+  const txt="Se importarán "+items.length+" productos de la tienda: "+conStock+" con stock ("+uds+" unidades) y "+(items.length-conStock)+" agotados."+(rep?" ("+rep+" repetidos o sin código se omiten.)":"")+"\n\nIMPORTANTE: se BORRARÁN los productos que hoy tienes en el sistema. Los que aparecen en alguna venta (completada o pendiente) no se borran: quedan ocultos para conservar tus ventas y facturas. Las ventas, facturas y clientes no se tocan. Esto no se puede deshacer.\n\nPara confirmar escribe IMPORTAR:";
+  const v=await input(txt,"",{titulo:"Importar productos de la tienda",ok:"Importar",peligro:true});
+  if(v===null||String(v).trim().toUpperCase()!=="IMPORTAR"){if(v!==null)await say("No se escribió IMPORTAR. No se cambió nada.");return}
+  btn.textContent="Importando…";
+  const r=await db.rpc("importar_productos_tienda",{p_items:items,p_limpiar:true});
+  if(r.error)throw new Error(r.error.message);const d=r.data||{};
+  await say("Listo. Importados: "+d.importados+" productos con "+d.fotos+" fotos. Borrados del sistema: "+d.borrados+". Ocultos por tener ventas: "+d.ocultos+"."+(d.omitidos?" Omitidos: "+d.omitidos+(d.omitidos_codigos&&d.omitidos_codigos.length?" ("+d.omitidos_codigos.slice(0,8).join(", ")+")":"")+".":"")+" Recarga la página. Las fotos siguen en la tienda; usa «Pasar fotos a Cloudflare» para copiarlas.",{titulo:"Importación terminada"})
+ }catch(e){await say("No se pudo importar: "+e.message+". No se cambió nada.")}
+ finally{btn.disabled=false;btn.textContent=t0}}
 /* Pasa a R2 las fotos que hoy están en Supabase y actualiza sus enlaces. No borra nada de Supabase. */
 async function pasarFotosR2(btn){
  if(!R2.worker){await say("Cloudflare R2 todavía no está conectado. Sigue la guía cloudflare/LEEME.md y pide a Claude que lo conecte.");return}
  if(!await ask("Se copiarán a Cloudflare R2 las fotos que están en Supabase y los productos pasarán a usar las nuevas direcciones. Las fotos originales NO se borran de Supabase todavía (puedes liberarlas después). Puede tardar unos minutos; no cierres la página.",{titulo:"Pasar fotos a Cloudflare",ok:"Empezar"}))return;
  const t0=btn.textContent;btn.disabled=true;
- const marca="/object/public/productos/",rutaDe=u=>{const i=(u||"").indexOf(marca);return i<0?null:decodeURIComponent(u.slice(i+marca.length).split("?")[0])};
+ const marca="/object/public/productos/",srcDe={},rutaDe=u=>{if((u||"").startsWith(TIENDA_BASE)){const p="tienda/"+decodeURIComponent(u.slice(TIENDA_BASE.length).split("?")[0]);srcDe[p]=u;return p}const i=(u||"").indexOf(marca);return i<0?null:decodeURIComponent(u.slice(i+marca.length).split("?")[0])};
  try{
   const R=[];for(let f=0;;f+=1000){const {data,error}=await db.from("producto_imagenes").select("id,producto_id,url,thumb_url").range(f,f+999);if(error)throw new Error(error.message);R.push(...data);if(data.length<1000)break}
   const rutas=new Set();R.forEach(r=>{[r.url,r.thumb_url].forEach(u=>{const p=rutaDe(u);if(p)rutas.add(p)})});
   const L=[...rutas];let hechas=0,fallas=0;
   const pool=async(n)=>{let i=0;await Promise.all(Array.from({length:n},async()=>{while(i<L.length){const p=L[i++];
-    try{const r=await fetch(db.storage.from("productos").getPublicUrl(p).data.publicUrl);if(!r.ok)throw new Error("origen "+r.status);const b=await r.blob();await fotosAlm.subirR2(p,b.type?b:new Blob([b],{type:"image/jpeg"}))}catch(e){fallas++;rutas.delete(p)}
+    try{const r=await fetch(srcDe[p]||db.storage.from("productos").getPublicUrl(p).data.publicUrl);if(!r.ok)throw new Error("origen "+r.status);const b=await r.blob();await fotosAlm.subirR2(p,b.type?b:new Blob([b],{type:"image/jpeg"}))}catch(e){fallas++;rutas.delete(p)}
     hechas++;btn.textContent="Copiando… "+hechas+"/"+L.length}}))};
   await pool(4);
   let act=0;
   for(const r of R){const pu=rutaDe(r.url),pt=rutaDe(r.thumb_url),ok=(p)=>!p||rutas.has(p);if(!ok(pu)||!ok(pt)||(!pu&&!pt))continue;
    const nu=pu?fotosAlm.url(pu):r.url,nt=pt?fotosAlm.url(pt):r.thumb_url;
-   const e1=await db.from("producto_imagenes").update({url:nu,thumb_url:nt}).eq("id",r.id);if(e1.error)throw new Error(e1.error.message);
+   const e1=await db.from("producto_imagenes").update({url:nu,thumb_url:nt,...(pu?{path:pu}:{}),...(pt?{thumb_path:pt}:{})}).eq("id",r.id);if(e1.error)throw new Error(e1.error.message);
    if(r.thumb_url&&nt!==r.thumb_url){const e2=await db.from("productos").update({foto_url:nt}).eq("id",r.producto_id).eq("foto_url",r.thumb_url);if(e2.error)throw new Error(e2.error.message)}
    act++}
   await say("Listo: "+(L.length-fallas)+" de "+L.length+" archivos copiados a Cloudflare y "+act+" fotos actualizadas."+(fallas?" "+fallas+" no se pudieron copiar y siguen en Supabase.":"")+" Revisa que las fotos se vean bien en el sistema y en la tienda; después podrás borrar las originales de Supabase.",{titulo:"Fotos pasadas"})
@@ -243,7 +280,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
   e.innerHTML=barra("Base de datos",d.db_bytes,500*MB)+barra("Fotos",d.storage_bytes,1024*MB)+`<p class="cf-m" style="margin:0">${d.productos} productos · ${d.fotos} archivos de foto · ${d.ventas} ventas${d.ventas_completadas==null?"":` (${d.ventas_completadas} completadas · ${d.ventas_anuladas} anuladas · ${d.ventas_pendientes} pendientes)`} · ${d.clientes} clientes. Límites del plan gratis de Supabase.</p>`});
  const bk=q("#cfBk");if(bk){const t=()=>{let u=null;try{u=localStorage.getItem("dms_backup")}catch(e){}q("#cfBkT").textContent=u?"Último respaldo en este dispositivo: "+new Date(u).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"}):"Aún no has descargado un respaldo desde este dispositivo."};t();
   bk.onclick=async()=>{bk.disabled=true;try{await respaldo();t()}finally{bk.disabled=false}}}
- db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3>Fotos</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 10px">Borra las fotos que ya no pertenecen a ningún producto (por ejemplo, de importaciones que se cortaron). Las fotos de tus productos no se tocan.</p><button type="button" class="btn g s" id="cfFo">Liberar espacio de fotos</button>${R2.worker?`<p class="cf-m" style="margin:12px 0 8px">Cloudflare R2 está conectado: las fotos nuevas se guardan allí. Las anteriores siguen en Supabase hasta que las pases.</p><button type="button" class="btn g s" id="cfR2">Pasar fotos a Cloudflare</button>`:""}</div><h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()};q("#cfFo").onclick=()=>liberarFotos(q("#cfFo"));if(q("#cfR2"))q("#cfR2").onclick=()=>pasarFotosR2(q("#cfR2"))}},()=>{});
+ db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3>Fotos</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 10px">Borra las fotos que ya no pertenecen a ningún producto (por ejemplo, de importaciones que se cortaron). Las fotos de tus productos no se tocan.</p><button type="button" class="btn g s" id="cfFo">Liberar espacio de fotos</button><p class="cf-m" style="margin:12px 0 8px">Trae al sistema todos los productos de tu tienda en línea (con su stock y fotos) y borra los que hoy tienes aquí.</p><button type="button" class="btn g s" id="cfImp" style="color:var(--bad)">Importar productos de la tienda</button>${R2.worker?`<p class="cf-m" style="margin:12px 0 8px">Cloudflare R2 está conectado: las fotos nuevas se guardan allí. Las anteriores siguen en Supabase hasta que las pases.</p><button type="button" class="btn g s" id="cfR2">Pasar fotos a Cloudflare</button>`:""}</div><h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()};q("#cfFo").onclick=()=>liberarFotos(q("#cfFo"));q("#cfImp").onclick=()=>importarTienda(q("#cfImp"));if(q("#cfR2"))q("#cfR2").onclick=()=>pasarFotosR2(q("#cfR2"))}},()=>{});
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}
