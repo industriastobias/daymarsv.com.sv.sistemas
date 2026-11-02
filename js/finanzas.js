@@ -63,8 +63,8 @@ function pintar(){
 
 function lista(){
  const q=norm($("mQ").value),R=[];
- S.M.forEach(m=>{const ent=m.tipo==="ingreso";if(S.f==="in"&&!ent||S.f==="out"&&ent)return;if(q&&!norm((m.categoria||"")+" "+(m.descripcion||"")).includes(q))return;R.push({k:"m",m,ts:new Date(m.fecha+"T12:00:00-06:00").getTime()})});
- if(S.f!=="out")S.VD.forEach(v=>{if(q&&!norm("venta "+v.numero+" "+(v.cliente_nombre||"")+" "+(v.metodo_pago||"")).includes(q))return;R.push({k:"v",v,ts:new Date(v.created_at).getTime()})});
+ S.M.forEach(m=>{const ent=m.tipo==="ingreso";const esV=ent&&/^venta/i.test(m.categoria||"");if(S.f==="in"&&(!ent||esV)||S.f==="ven"&&!esV||S.f==="out"&&ent)return;if(q&&!norm((m.categoria||"")+" "+(m.descripcion||"")).includes(q))return;R.push({k:"m",m,ts:new Date(m.fecha+"T12:00:00-06:00").getTime()})});
+ if(S.f==="all"||S.f==="ven")S.VD.forEach(v=>{if(q&&!norm("venta "+v.numero+" "+(v.cliente_nombre||"")+" "+(v.metodo_pago||"")).includes(q))return;R.push({k:"v",v,ts:new Date(v.created_at).getTime()})});
  R.sort((a,b)=>b.ts-a.ts);
  $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.f));
  $("mL").innerHTML=R.length?R.slice(0,100).map(r=>{
