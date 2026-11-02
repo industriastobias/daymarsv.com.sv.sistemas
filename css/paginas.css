@@ -74,3 +74,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 .din .dc{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin-top:10px}@media(max-width:640px){.din .dc{grid-template-columns:1fr}}
 .din ul{list-style:none;margin:0;padding:0}.din li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
 .din li b.pos{color:var(--ok)}.din li b.neg{color:var(--bad)}
+
+#rK{grid-template-columns:repeat(2,1fr)}@media(min-width:900px){#rK{grid-template-columns:repeat(3,1fr)}}
+#rK small{display:block;margin-top:2px}#rK .kf{border-color:var(--wine)}#rK b.pos{color:var(--ok)}#rK b.neg{color:var(--bad)}
