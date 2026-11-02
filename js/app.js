@@ -1,6 +1,6 @@
 /* DAYMAR-SHOP · funciones compartidas (conexión, sesión y utilidades) */
 (function(){
-try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611021139";document.head.appendChild(sc)}}catch(e){}
+try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611021229";document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 const db=supabase.createClient(CFG.url,CFG.key);
 /* Fotos en Cloudflare R2 (opcional). Vacío = se siguen guardando en Supabase. Ver cloudflare/LEEME.md */
@@ -155,7 +155,7 @@ pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
 const GRUPOS=[
  {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"inbox",h:"pedidos.html",ok:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1}]},
  {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"image",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"book",h:"catalogo.html",ok:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"correos",n:"Correos enviados",i:"mail",h:"correos.html",ok:1,adm:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
- {t:"Negocio",m:[{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1},{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"usuarios",n:"Usuarios",i:"shield",h:"usuarios.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1}]}];
+ {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"usuarios",n:"Usuarios",i:"shield",h:"usuarios.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1},{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 const visibles=(g,rol)=>g.m.filter(m=>(!m.adm||rol==="admin")&&(!m.pri||DAY.principal));
 const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}"${m.ext?' target="_blank" rel="noopener"':""} ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span>${m.k==="pedidos"||m.k==="pendientes"?`<em class="nbd hidden" data-nbd="${m.k}"></em>`:""}</a>`;
