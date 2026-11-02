@@ -51,14 +51,75 @@ async function enviarUno(sub, texto, env) {
   return { ok: r.ok, st: r.status };
 }
 
+
+/* ---------- Monitor de caídas (cada 5 minutos) + registro de dispositivos ---------- */
+const SUPA = 'https://itafqiemoulcztmhfqah.supabase.co', SUPA_KEY = 'sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB';
+const REVISAR = [
+  { n: 'La tienda en línea', f: () => fetch('https://industriastobias.github.io/klohesvtiendaonline/', { cf: { cacheTtl: 0 } }) },
+  { n: 'El sistema', f: () => fetch('https://industriastobias.github.io/daymarsv.com.sv.sistemas/', { cf: { cacheTtl: 0 } }) },
+  { n: 'La base de datos', f: async () => { const r = await fetch(SUPA + '/rest/v1/rpc/tienda_stock', { method: 'POST', headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok) { const j = await r.json(); if (!Array.isArray(j)) throw new Error('respuesta rara'); } return r; } }
+];
+const sha = async t => b64u.en(await crypto.subtle.digest('SHA-256', enc.encode(t)));
+async function esAdmin(token) {
+  try {
+    const r = await fetch(SUPA + '/rest/v1/rpc/es_admin', { method: 'POST', headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: '{}' });
+    return r.ok && (await r.json()) === true;
+  } catch (e) { return false; }
+}
+async function avisarATodos(env, titulo, cuerpo, url) {
+  if (!env.AVISOS) return 0;
+  const texto = JSON.stringify({ titulo, cuerpo, url: url || 'menu.html' });
+  const { keys } = await env.AVISOS.list({ prefix: 'sub:', limit: 50 });
+  let n = 0;
+  await Promise.all(keys.map(async k => {
+    const sub = JSON.parse((await env.AVISOS.get(k.name)) || 'null'); if (!sub) return;
+    const r = await enviarUno(sub, texto, env).catch(() => ({ ok: false, st: -1 }));
+    if (r.ok) n++; else if (r.st === 404 || r.st === 410) await env.AVISOS.delete(k.name);
+  }));
+  return n;
+}
+async function revisar(env) {
+  if (!env.AVISOS) return;
+  const est = JSON.parse((await env.AVISOS.get('estado')) || '{}');
+  const cambios = [];
+  for (const c of REVISAR) {
+    let ok = false;
+    try { const r = await Promise.race([c.f(), new Promise((_, rej) => setTimeout(() => rej(new Error('tiempo')), 15000))]); ok = r.ok; } catch (e) { ok = false; }
+    const e = est[c.n] || { fallos: 0, caido: false };
+    if (ok) { if (e.caido) cambios.push(['ok', c.n]); est[c.n] = { fallos: 0, caido: false }; }
+    else { e.fallos++; if (e.fallos >= 2 && !e.caido) { e.caido = true; cambios.push(['mal', c.n]); } est[c.n] = e; }
+  }
+  await env.AVISOS.put('estado', JSON.stringify(est));
+  for (const [t, n] of cambios) {
+    if (t === 'mal') await avisarATodos(env, 'Posible caída', n + ' no responde. Revísalo.', 'menu.html');
+    else await avisarATodos(env, 'Todo normal otra vez', n + ' ya responde.', 'menu.html');
+  }
+  return cambios;
+}
+
 const ORIGENES = ['https://industriastobias.github.io'];
-const cors = req => { const o = req.headers.get('Origin'); return ORIGENES.includes(o) ? { 'Access-Control-Allow-Origin': o, 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' } : {}; };
+const cors = req => { const o = req.headers.get('Origin'); return ORIGENES.includes(o) ? { 'Access-Control-Allow-Origin': o, 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Vary': 'Origin' } : {}; };
 
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req) });
     if (req.method === 'GET' && url.pathname === '/ping') return new Response('ok');
+    if (req.method === 'POST' && url.pathname === '/registrar') {
+      if (!env.AVISOS) return new Response('sin almacenamiento', { status: 500, headers: cors(req) });
+      const tk = (req.headers.get('Authorization') || '').replace(/^Bearer /, '');
+      if (!tk || !(await esAdmin(tk))) return new Response('no autorizado', { status: 401, headers: cors(req) });
+      let d; try { d = await req.json(); } catch (e) { return new Response('json', { status: 400, headers: cors(req) }); }
+      let u; try { u = new URL(d.endpoint); } catch (e) { return new Response('endpoint', { status: 400, headers: cors(req) }); }
+      if (u.protocol !== 'https:' || !HOSTS_OK.some(r => r.test(u.hostname))) return new Response('endpoint', { status: 400, headers: cors(req) });
+      const k = 'sub:' + await sha(d.endpoint);
+      if (d.quitar) { await env.AVISOS.delete(k); return Response.json({ ok: true }, { headers: cors(req) }); }
+      if (!d.p256dh || !d.auth) return new Response('datos', { status: 400, headers: cors(req) });
+      const { keys } = await env.AVISOS.list({ prefix: 'sub:', limit: 60 });
+      if (keys.length >= 50 && !keys.some(x => x.name === k)) return new Response('lleno', { status: 429, headers: cors(req) });
+      await env.AVISOS.put(k, JSON.stringify({ endpoint: d.endpoint, p256dh: d.p256dh, auth: d.auth }));
+      return Response.json({ ok: true }, { headers: cors(req) });
+    }
     if (req.method !== 'POST' || url.pathname !== '/enviar') return new Response('no', { status: 404 });
     if (!env.VAPID_PRIVADA || !env.VAPID_PUBLICA) return new Response('sin claves', { status: 500 });
     let d; try { d = await req.json(); } catch (e) { return new Response('json', { status: 400 }); }
@@ -67,4 +128,6 @@ export default {
     const res = await Promise.all(subs.map(s => enviarUno(s, texto, env).catch(() => ({ ok: false, st: -1 }))));
     return Response.json({ enviados: res.filter(r => r.ok).length, total: subs.length, estados: res.map(r => r.st) }, { headers: cors(req) });
   }
+  ,
+  async scheduled(ev, env, ctx) { ctx.waitUntil(revisar(env)); }
 };

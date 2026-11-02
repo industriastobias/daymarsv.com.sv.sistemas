@@ -47,6 +47,8 @@ const u8=b=>{b=b.replace(/-/g,"+").replace(/_/g,"/");b+="=".repeat((4-b.length%4
 const esIOS=()=>/iPhone|iPad/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
 const instalada=()=>matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||navigator.standalone===true;
 async function suscripcionActual(){try{const reg=await navigator.serviceWorker.ready;return await reg.pushManager.getSubscription()}catch(e){return null}}
+async function regWorker(j,quitar){try{const {data}=await db.auth.getSession();const t=data&&data.session&&data.session.access_token;if(!t)return;
+ await fetch(PUSH.worker+"/registrar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+t},body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys&&j.keys.p256dh,auth:j.keys&&j.keys.auth,quitar:!!quitar})})}catch(e){}}
 async function pintarAvisos(q){
  const box=q("#cfAv");if(!box)return;
  if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){box.innerHTML='<p class="cf-m" style="margin:0">Este navegador no permite avisos.'+(esIOS()?" En iPhone hay que instalar la app primero: Compartir → Agregar a pantalla de inicio, y abrirla desde el ícono.":"")+"</p>";return}
@@ -56,13 +58,14 @@ async function pintarAvisos(q){
  const n=await db.rpc("mis_dispositivos_push").then(r=>r.data||0,()=>0);
  box.innerHTML=`<p class="cf-m" style="margin:0 0 10px">${sub?"Los avisos están <b>activados</b> en este dispositivo.":"Recibe una notificación en este dispositivo cada vez que llegue un pedido en línea."} Dispositivos con avisos: ${n}.</p>`+
   (sub?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn g s" id="cfAvT">Probar aviso</button><button type="button" class="btn g s" id="cfAvOff">Desactivar aquí</button></div>':'<button type="button" class="btn s" id="cfAvOn">Activar avisos en este dispositivo</button>');
+ if(sub)regWorker(sub.toJSON());
  const on=q("#cfAvOn"),off=q("#cfAvOff"),pr=q("#cfAvT");
  if(on)on.onclick=async()=>{on.disabled=true;try{
   const p=await Notification.requestPermission();if(p!=="granted"){toast("No se dieron permisos para los avisos");return pintarAvisos(q)}
   const reg=await navigator.serviceWorker.ready;const s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)});const j=s.toJSON();
   const r=await db.rpc("guardar_suscripcion_push",{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_dispositivo:(esIOS()?"iPhone":/Android/.test(navigator.userAgent)?"Android":"Computadora")});
-  if(r.error)throw new Error(r.error.message);toast("Avisos activados");pintarAvisos(q)}catch(e){toast("No se pudo activar: "+(e.message||e));on.disabled=false}};
- if(off)off.onclick=async()=>{try{const s=await suscripcionActual();if(s){await db.rpc("quitar_suscripcion_push",{p_endpoint:s.endpoint});await s.unsubscribe()}toast("Avisos desactivados");pintarAvisos(q)}catch(e){toast("No se pudo desactivar")}};
+  if(r.error)throw new Error(r.error.message);await regWorker(j);toast("Avisos activados");pintarAvisos(q)}catch(e){toast("No se pudo activar: "+(e.message||e));on.disabled=false}};
+ if(off)off.onclick=async()=>{try{const s=await suscripcionActual();if(s){await regWorker(s.toJSON(),true);await db.rpc("quitar_suscripcion_push",{p_endpoint:s.endpoint});await s.unsubscribe()}toast("Avisos desactivados");pintarAvisos(q)}catch(e){toast("No se pudo desactivar")}};
  if(pr)pr.onclick=async()=>{pr.disabled=true;try{const j=sub.toJSON();const r=await fetch(PUSH.worker+"/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({titulo:"Aviso de prueba",cuerpo:"Así te avisaremos de los pedidos en línea.",url:"pedidos.html",subs:[{endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth}]})});const d=await r.json();toast(d.enviados?"Aviso enviado: míralo en tus notificaciones":"No se pudo enviar el aviso")}catch(e){toast("No se pudo enviar el aviso")}pr.disabled=false}}
 async function importarTienda(btn){
  const t0=btn.textContent;btn.disabled=true;btn.textContent="Leyendo la tienda…";
