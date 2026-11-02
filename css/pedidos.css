@@ -58,3 +58,5 @@ dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
 .pl-cols .pl-items{grid-template-columns:1fr}
 .pl-cols .pl-sec:first-child{margin-top:0}
 }
+
+.pl-vc{display:block;font-size:12px;font-weight:700;color:var(--mute);margin-top:2px}.pl-vc.mal{color:var(--bad)}

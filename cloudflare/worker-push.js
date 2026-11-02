@@ -78,6 +78,10 @@ async function avisarATodos(env, titulo, cuerpo, url) {
   }));
   return n;
 }
+/* Anula los pedidos en línea que llevan más de 12 horas sin atenderse */
+async function vencerPedidos() {
+  try { await fetch(SUPA + '/rest/v1/rpc/vencer_pedidos_linea', { method: 'POST', headers: { apikey: SUPA_KEY, 'Content-Type': 'application/json' }, body: '{}' }); } catch (e) { /* se reintenta en 5 minutos */ }
+}
 async function revisar(env) {
   if (!env.AVISOS) return;
   const est = JSON.parse((await env.AVISOS.get('estado')) || '{}');
@@ -129,5 +133,5 @@ export default {
     return Response.json({ enviados: res.filter(r => r.ok).length, total: subs.length, estados: res.map(r => r.st) }, { headers: cors(req) });
   }
   ,
-  async scheduled(ev, env, ctx) { ctx.waitUntil(revisar(env)); }
+  async scheduled(ev, env, ctx) { ctx.waitUntil(Promise.all([vencerPedidos(), revisar(env)])); }
 };

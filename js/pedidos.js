@@ -14,13 +14,18 @@ const bonito=m=>{m=String(m||"Ocurrió un error");
 const con=async(fn,txt)=>{const o=$("ov");if(o){$("ovT").textContent=txt||"Procesando…";o.classList.add("on")}
  try{return await fn()}catch(e){console.error(e);if(o)o.classList.remove("on");await DAY.say(bonito(e&&e.message),{titulo:"No se pudo completar"});return undefined}finally{if(o)o.classList.remove("on")}};
 const EST={nuevo:["wa","Nuevo"],aceptado:["ok","Aceptado"],rechazado:["or","Rechazado"]};
+const HORAS=12;
+const vencido=p=>p.estado==="rechazado"&&!p.atendido_por&&/Vencido autom/.test(p.nota||"");
+const dur=ms=>{const m=Math.max(0,Math.floor(ms/60000)),h=Math.floor(m/60),mm=m%60;return h?h+" h "+(mm<10?"0":"")+mm+" min":mm+" min"};
+const tiempo=p=>{if(p.estado!=="nuevo")return"";const t=Date.now()-new Date(p.created_at).getTime(),resta=HORAS*3600000-t;
+ return resta<=0?`<span class="pl-vc mal">Vencido: se anula en unos minutos</span>`:`<span class="pl-vc${resta<2*3600000?" mal":""}">Lleva ${dur(t)} · se anula en ${dur(resta)}</span>`};
 let L=[];
-async function cargar(){const d=await espera(async()=>{const {data,error}=await db.from("pedidos_linea").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw new Error(error.message);return data},"Cargando pedidos…");if(d){L=d;pintar();DAY.refrescarBadges()}}
+async function cargar(){const d=await espera(async()=>{try{await db.rpc("vencer_pedidos_linea")}catch(e){}const {data,error}=await db.from("pedidos_linea").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw new Error(error.message);return data},"Cargando pedidos…");if(d){L=d;pintar();DAY.refrescarBadges()}}
 const lineas=p=>`<div class="pl-items">`+(p.items||[]).map(i=>`<div class="pl-it">${imgH(fotosT(i))}<div class="pl-b"><div class="pl-n">${esc(i.nombre||i.codigo)}</div><div class="pl-m1"><span class="pl-c">Cant. ${esc(i.cantidad)}</span><span class="pl-c">${$$(+i.precio)}</span><span class="pl-c">Cód. ${esc(i.codigo)}</span></div></div></div>`).join("")+`</div>`;
 function pintar(){
  const nu=L.filter(x=>x.estado==="nuevo").length;
  $("kK").innerHTML=`<div><span>Por atender</span><b>${nu}</b></div><div><span>Aceptados</span><b>${L.filter(x=>x.estado==="aceptado").length}</b></div><div><span>Rechazados</span><b>${L.filter(x=>x.estado==="rechazado").length}</b></div>`;
- $("kL").innerHTML=L.length?L.map(p=>{const es=EST[p.estado];return `<div class="rw" data-k="${p.id}" style="cursor:pointer"><div class="ti"><b>${esc(p.cliente_nombre||"Sin nombre")} · ${$$(+p.total)}</b><small>${fdate(p.created_at)} ${ftime(p.created_at)} · ${(p.items||[]).length} producto${(p.items||[]).length===1?"":"s"} · ${esc(p.metodo)}</small></div><span class="bd ${es[0]}">${es[1]}</span></div>`}).join(""):`<div class="empty card">Aún no hay pedidos de la tienda.</div>`}
+ $("kL").innerHTML=L.length?L.map(p=>{const es=vencido(p)?["or","Vencido"]:EST[p.estado];return `<div class="rw" data-k="${p.id}" style="cursor:pointer"><div class="ti"><b>${esc(p.cliente_nombre||"Sin nombre")} · ${$$(+p.total)}</b><small>${fdate(p.created_at)} ${ftime(p.created_at)} · ${(p.items||[]).length} producto${(p.items||[]).length===1?"":"s"} · ${esc(p.metodo)}</small>${tiempo(p)}</div><span class="bd ${es[0]}">${es[1]}</span></div>`}).join(""):`<div class="empty card">Aún no hay pedidos de la tienda.</div>`}
 /* catálogo del sistema para saber qué líneas ya están registradas y poder emparejar las demás */
 let CAT=null,VAR=[],EQ={};
 async function catalogo(){if(CAT)return;
@@ -61,8 +66,8 @@ async function abrir(p){await catalogo();
  const I=(n,l,v,t,full)=>`<div${full?' class="full"':""}><label>${l}</label><input name="${n}" type="${t||"text"}" maxlength="${n==="direccion"||n==="nota"?300:120}" value="${esc(v||"")}"></div>`;
  const ficha=nuevo?`<div class="pl-g">${I("nombre","Cliente",p.cliente_nombre)}${I("telefono","Teléfono",p.cliente_telefono,"tel")}${I("correo","Correo",p.cliente_correo,"email")}<div><label>Pago</label><select name="metodo"><option${p.metodo==="Efectivo"?" selected":""}>Efectivo</option><option${p.metodo==="Transferencia"?" selected":""}>Transferencia</option></select></div><div class="full"><label>Tipo de venta al aceptar</label><select name="tipo"><option value="cod">Contra entrega (se cobra al entregar)</option><option value="entrega_pendiente">Ya pagó · solo falta entregar</option></select></div>${I("direccion","Dirección",p.cliente_direccion,"text",1)}<div class="full pl-reg" id="plReg" style="background:var(--chip);border-radius:10px;padding:10px 12px;font-size:13px"></div>${I("nota","Nota",p.nota,"text")}${I("envio","Envío ($)",(+p.envio).toFixed(2),"number")}</div>`
   :`<div class="pl-g"><div><label>Teléfono</label><b>${esc(p.cliente_telefono||"—")}</b></div><div><label>Correo</label><b>${esc(p.cliente_correo||"—")}</b></div><div class="full"><label>Dirección</label><b>${esc(p.cliente_direccion||"—")}</b></div>${p.nota?`<div class="full"><label>Nota</label><b>${esc(p.nota)}</b></div>`:""}<div><label>Pago</label><b>${esc(p.metodo)}</b></div><div><label>Envío</label><b>${$$(+p.envio)}</b></div></div>`;
- const ini=String(p.cliente_nombre||"?").trim().charAt(0).toUpperCase()||"?",sub=(p.items||[]).reduce((t,i)=>t+(+i.precio)*(+i.cantidad),0),nP=(p.items||[]).length,es=EST[p.estado];
- const m=modal("Pedido en línea",`<div class="pl-top"><div class="pl-av">${esc(ini)}</div><div class="pl-who"><b>${esc(p.cliente_nombre||"Sin nombre")}</b><small>${fdate(p.created_at)} ${ftime(p.created_at)} · ${nP} producto${nP===1?"":"s"}</small></div><div class="pl-tt"><b id="plTop">${$$(+p.total)}</b><span class="bd ${es[0]}">${es[1]}</span></div></div>
+ const ini=String(p.cliente_nombre||"?").trim().charAt(0).toUpperCase()||"?",sub=(p.items||[]).reduce((t,i)=>t+(+i.precio)*(+i.cantidad),0),nP=(p.items||[]).length,es=vencido(p)?["or","Vencido"]:EST[p.estado];
+ const m=modal("Pedido en línea",`<div class="pl-top"><div class="pl-av">${esc(ini)}</div><div class="pl-who"><b>${esc(p.cliente_nombre||"Sin nombre")}</b><small>${fdate(p.created_at)} ${ftime(p.created_at)} · ${nP} producto${nP===1?"":"s"}</small>${tiempo(p)}</div><div class="pl-tt"><b id="plTop">${$$(+p.total)}</b><span class="bd ${es[0]}">${es[1]}</span></div></div>
   <div class="pl-cols"><div><div class="pl-sec">Datos del cliente</div>${ficha}</div>
   <div><div class="pl-sec">Productos</div>${nuevo?lineasEst(p):lineas(p)}
   <div class="pl-tot"><div><span>Productos</span><span>${$$(sub)}</span></div><div><span>Envío</span><span id="plEnv">${$$(+p.envio)}</span></div><div class="t"><span>Total</span><span id="plTot">${$$(+p.total)}</span></div></div></div></div>
@@ -111,4 +116,5 @@ const ha=document.querySelector(".hact");if(ha&&ADM){ha.innerHTML='<button class
    if(!await confirmar(dias===null?"Se borrarán <b>todos</b> los pedidos atendidos.":"Se borrarán los pedidos atendidos de hace más de <b>"+dias+" días</b>.",{titulo:"Limpiar historial",ok:"Borrar",peligro:true}))return;
    const n=await con(()=>rpc("borrar_pedidos_linea",{p_dias:dias}),"Limpiando…");if(n!==undefined&&n!==null){toast(n+" pedido"+(n===1?"":"s")+" borrado"+(n===1?"":"s"));await cargar()}})}}
 await cargar();
+setInterval(()=>{if(!document.querySelector("dialog[open]"))pintar()},60000);
 })();
