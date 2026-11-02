@@ -106,3 +106,7 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 .fs .kp3{grid-template-columns:1fr 1fr}.fs .kp3 a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-decoration:none;color:var(--ink)}
 .fs .kp3 a span{display:block;font-size:12px;color:var(--mute)}.fs .kp3 a b{font:700 18px "Bricolage Grotesque",sans-serif}
 .fs .head .hact{display:flex;gap:8px}.fs .caja .st:last-child{border-bottom:0}
+
+.fs .tb{width:100%;border-collapse:collapse;margin:4px 0 12px;font-size:14px}.fs .tb td,.fs .tb th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}.fs .tb .n{text-align:right;white-space:nowrap}
+.fs #iDoc h4{margin:12px 0 2px}.fs #iDoc .mn{color:var(--mute);margin:0 0 6px}
+@media print{body.imp .side,body.imp .head,body.imp .bnav,body.imp #fBar,body.imp #p-res,body.imp #p-mov,body.imp #p-cue,body.imp .ctl{display:none!important}body.imp #p-inf{display:block!important}body.imp .shell{display:block}}

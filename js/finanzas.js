@@ -51,13 +51,13 @@ function pintar(){
  const q=$("vQue");q.textContent=$n(c.queda);q.className=c.queda>=0?"pos":"neg";
  $("vPuse").textContent=$$(c.puse);
  $("vRes").innerHTML=c.puse<=0?`<p class="rt">Sin dinero propio puesto.</p>`:c.res>=0?`<p class="rt ok">Ya recuperaste lo que pusiste. Ganancia: <b>${$$(c.res)}</b></p>`:`<p class="rt mal">Te faltan <b>${$$(-c.res)}</b> para recuperar lo que pusiste</p>`;
- $("vDeu").innerHTML=`<a href="#vDL"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="#vDL"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
+ $("vDeu").innerHTML=`<a href="#cue"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="#cue"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
  deudas();
  const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});
  let it=Object.entries(cat).sort((a,b)=>b[1]-a[1]);if(it.length>6){const o=it.slice(6).reduce((t,x)=>t+x[1],0);it=it.slice(0,6);it.push(["Otros",o])}
  $("vGraf").innerHTML=donut(it);
  $("fBar").querySelectorAll("[data-q]").forEach(b=>b.classList.toggle("on",b.dataset.q===S.q));
- lista()}
+ lista();informe()}
 
 function lista(){
  const q=norm($("mQ").value);
@@ -90,8 +90,7 @@ function anotar(m){
 /* ---------- Deudas: lo que debo y lo que me deben ---------- */
 function deudas(){
  const P=S.C.filter(c=>c.estado==="pendiente"),pcs=S.PC.filter(v=>+v.pendiente_monto>0);
- $("vDL").classList.toggle("hidden",!P.length&&!pcs.length);
- $("dL").innerHTML=P.map(c=>{const venc=c.vence&&c.vence<hoy(),pag=c.tipo==="pagar";return `<div class="rw"><div class="ti"><b>${pag?"Debo":"Me deben"} · ${esc(c.tercero)}</b><small>${esc(c.concepto||"")}${c.vence?" · vence "+fdate(c.vence):""}${venc?' · <span class="neg">vencida</span>':""}</small></div><div class="am2"><b class="${pag?"neg":"pos"}">${$$(c.monto-c.abonado)}</b><small>de ${$$(c.monto)}</small></div><button class="btn sm" data-ab="${c.id}">${pag?"Abonar":"Cobrar"}</button></div>`}).join("")
+ $("dL").innerHTML=(!P.length&&!pcs.length?`<div class="empty">No hay deudas pendientes.</div>`:"")+P.map(c=>{const venc=c.vence&&c.vence<hoy(),pag=c.tipo==="pagar";return `<div class="rw"><div class="ti"><b>${pag?"Debo":"Me deben"} · ${esc(c.tercero)}</b><small>${esc(c.concepto||"")}${c.vence?" · vence "+fdate(c.vence):""}${venc?' · <span class="neg">vencida</span>':""}</small></div><div class="am2"><b class="${pag?"neg":"pos"}">${$$(c.monto-c.abonado)}</b><small>de ${$$(c.monto)}</small></div><button class="btn sm" data-ab="${c.id}">${pag?"Abonar":"Cobrar"}</button></div>`}).join("")
  +pcs.map(v=>`<div class="rw"><div class="ti"><b>Me deben · ${esc(v.cliente_nombre||"Cliente")}</b><small>Venta #${v.numero} con cobro pendiente</small></div><div class="am2"><b class="pos">${$$(+v.pendiente_monto)}</b></div></div>`).join("")}
 $("dL").addEventListener("click",e=>{const b=e.target.closest("[data-ab]");if(!b)return;const c=S.C.find(x=>x.id===b.dataset.ab);if(!c)return;const sal=r2(c.monto-c.abonado),pag=c.tipo==="pagar";
  const d=modal(pag?"Abonar a la deuda":"Registrar cobro",`<p style="margin-top:0"><b>${esc(c.tercero)}</b> · saldo ${$$(sal)}</p><label>Monto ($)</label><input name="a" type="number" min="0.01" step="0.01" max="${sal}" value="${sal}" inputmode="decimal"><p class="hint">${pag?"Se anota como salida de las ventas.":"Se anota como entrada."}</p><div class="err2" id="abE" role="alert"></div>`,{foot:'<button class="btn g" data-x>Cancelar</button><button class="btn" id="abOk">Guardar</button>'});
@@ -103,6 +102,29 @@ $("dNew").onclick=()=>{let pag=true;
  d.q("#dOk").onclick=async()=>{const g=n=>d.q(`[name=${n}]`).value.trim(),mo=Number(g("m"));if(!g("t")){d.q("#dE").textContent="Escribe a quién.";return}if(!(mo>0)){d.q("#dE").textContent="Escribe un monto mayor a cero.";return}
   const ok=await espera(async()=>{const {error}=await db.from("fin_cuentas").insert({tipo:pag?"pagar":"cobrar",tercero:g("t"),concepto:g("c")||null,monto:r2(mo),vence:g("v")||null});if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Guardado");await refrescar()}}};
 
+/* ---------- Informes ---------- */
+const mkey=d=>String(d).slice(0,7);
+const mes=k=>{const [y,m]=k.split("-");return["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"][+m-1]+" "+y.slice(2)};
+function porMes(){
+ const o={};const g=k=>o[k]=o[k]||{e:0,s:0};
+ S.V.forEach(x=>{g(mkey(x.mes)).e+=+x.ventas});
+ S.M.forEach(m=>{const r=g(mkey(m.fecha));if(m.tipo==="ingreso")r.e+=+m.monto;else if(m.origen!=="propio")r.s+=+m.monto});
+ return Object.keys(o).sort().map(k=>[k,o[k].e,o[k].s,o[k].e-o[k].s])}
+function porCat(){const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});return Object.entries(cat).sort((a,b)=>b[1]-a[1])}
+function informe(){
+ const c=calc(),cats=porCat(),tot=cats.reduce((t,x)=>t+x[1],0),pm=porMes(),t=(rows)=>rows.map(r=>`<tr>${r.map((x,i)=>`<${i?"td class=\"n\"":"td"}>${x}</${i?"td":"td"}>`).join("")}</tr>`).join("");
+ $("iDoc").innerHTML=`<h3>Informe de finanzas</h3><p class="mn">Del ${fdate(S.desde)} al ${fdate(S.hasta)}</p>
+ <h4>Resumen</h4><table class="tb"><tbody>${t([["Entró (ventas y otros ingresos)",$$(c.entro)],["Salió de las ventas","−"+$$(c.salV)],["<b>Queda en caja</b>","<b>"+$n(c.queda)+"</b>"],["Lo que puse yo (tarjeta o bolsillo)",$$(c.puse)],["<b>Recuperado (caja − lo que puse)</b>","<b>"+$n(c.res)+"</b>"],["Debo",$$(c.debo)],["Me deben",$$(c.deben)]])}</tbody></table>
+ <h4>En qué se fue el dinero</h4><table class="tb"><tbody>${cats.length?t(cats.map(([n,v])=>[esc(n),$$(v)+" · "+(tot?(v/tot*100).toFixed(0):0)+"%"])):'<tr><td>Sin salidas</td></tr>'}</tbody></table>
+ <h4>Mes por mes</h4><table class="tb"><thead><tr><th>Mes</th><th class="n">Entró</th><th class="n">Salió</th><th class="n">Queda</th></tr></thead><tbody>${pm.length?t(pm.map(([k,e,s,q])=>[mes(k),$$(e),$$(s),$n(q)])):'<tr><td colspan="4">Sin datos</td></tr>'}</tbody></table>`}
+$("iPr").onclick=()=>{document.body.classList.add("imp");setTimeout(()=>{window.print();document.body.classList.remove("imp")},50)};
+$("iXls").onclick=()=>{const c=calc();excel("finanzas-informe",[
+ {n:"Resumen",c:[["Concepto",38],["Monto",16,"money"]],f:[["Entró (ventas y otros ingresos)",c.entro],["Salió de las ventas",c.salV],["Queda en caja",c.queda],["Lo que puse yo",c.puse],["Recuperado",c.res],["Debo",c.debo],["Me deben",c.deben]]},
+ {n:"Por categoría",c:[["Categoría",30],["Monto",14,"money"]],f:porCat()},
+ {n:"Mes por mes",c:[["Mes",12],["Entró",14,"money"],["Salió",14,"money"],["Queda",14,"money"]],f:porMes().map(r=>[mes(r[0]),r[1],r[2],r[3]])},
+ {n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")])},
+ {n:"Deudas",c:[["Tipo",12],["Persona",26],["Nota",30],["Monto",12,"money"],["Abonado",12,"money"],["Saldo",12,"money"],["Vence",12]],f:S.C.filter(x=>x.estado==="pendiente").map(x=>[x.tipo==="pagar"?"Debo":"Me deben",x.tercero,x.concepto||"",+x.monto,+x.abonado,+x.monto-+x.abonado,x.vence||""])}])};
+
 async function refrescar(){await espera(async()=>{await cargar();return true});pintar()}
 $("aNew").onclick=()=>anotar();
 $("fBar").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(!b)return;S.q=b.dataset.q;refrescar()});
@@ -110,5 +132,7 @@ $("mSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b)
 $("mQ").addEventListener("input",deb(lista,150));
 $("mL").addEventListener("click",e=>{const r=e.target.closest("[data-id]");if(r)anotar(S.M.find(x=>x.id===r.dataset.id))});
 $("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")])}]);
+const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
+UI.pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Deudas",IC.cue],["inf","Informes",IC.inf]],k=>{$("fBar").classList.toggle("hidden",k==="cue")});
 await refrescar();
 })();

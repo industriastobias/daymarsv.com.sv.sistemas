@@ -6,47 +6,49 @@
 <link rel="stylesheet" href="css/estilo.css?v=202611011610">
 <link rel="stylesheet" href="css/compra.css?v=202610311459">
 <link rel="stylesheet" href="css/almacen.css?v=202611021033">
-<link rel="stylesheet" href="css/paginas.css?v=202611021326"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<link rel="stylesheet" href="css/paginas.css?v=202611021330"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide fs">
  <div class="head">
   <a class="back" href="menu.html">‹ Menú</a>
   <div><h1>Finanzas</h1></div>
-  <div class="hact"><button class="btn" id="aNew" type="button">+ Anotar</button><button class="btn g" id="dNew" type="button">+ Deuda</button></div>
+  <div class="hact"><button class="btn" id="aNew" type="button">+ Anotar</button></div>
  </div>
  <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
 
  <div class="prd" id="fBar"><button class="btn g" data-q="all">Todo</button><button class="btn g" data-q="year">Este año</button><button class="btn g" data-q="month">Este mes</button></div>
 
- <section class="pan caja">
-  <h3>Caja de ventas</h3>
-  <div class="st"><span>Entró</span><b class="pos" id="vEnt">$0.00</b></div>
-  <div class="st"><span>Salió</span><b class="neg" id="vSal">$0.00</b></div>
-  <div class="st fin"><span>Queda en caja</span><b id="vQue">$0.00</b></div>
+ <section id="p-res">
+  <section class="pan caja">
+   <h3>Caja de ventas</h3>
+   <div class="st"><span>Entró</span><b class="pos" id="vEnt">$0.00</b></div>
+   <div class="st"><span>Salió</span><b class="neg" id="vSal">$0.00</b></div>
+   <div class="st fin"><span>Queda en caja</span><b id="vQue">$0.00</b></div>
+  </section>
+  <section class="pan caja"><div class="st"><span>Lo que puse yo</span><b id="vPuse">$0.00</b></div></section>
+  <section class="pan caja res" id="vRes"></section>
+  <div class="kp3" id="vDeu"></div>
+  <section class="pan"><h3>¿En qué se fue el dinero?</h3><div id="vGraf"></div></section>
  </section>
 
- <section class="pan caja">
-  <div class="st"><span>Lo que puse yo</span><b id="vPuse">$0.00</b></div>
+ <section id="p-mov" class="hidden">
+  <section class="pan">
+   <div class="seg2" id="mSg"><button data-t="all" class="on">Todos</button><button data-t="in">Entradas</button><button data-t="out">Salidas</button></div>
+   <div class="ctl"><input id="mQ" type="search" placeholder="Buscar" style="flex:1;min-width:140px;width:auto"><button class="btn g sm" id="mXls" type="button">Excel</button></div>
+   <div id="mL"></div>
+  </section>
  </section>
 
- <section class="pan caja res" id="vRes"></section>
-
- <div class="kp3" id="vDeu"></div>
- <section class="pan hidden" id="vDL"><h3>Deudas</h3><div id="dL"></div></section>
-
- <section class="pan">
-  <h3>¿En qué se fue el dinero?</h3>
-  <div id="vGraf"></div>
+ <section id="p-cue" class="hidden">
+  <div class="ctl"><span class="grow"></span><button class="btn" id="dNew" type="button">+ Deuda</button></div>
+  <section class="pan"><div id="dL"></div></section>
  </section>
 
- <section class="pan">
-  <h3>Movimientos</h3>
-  <div class="seg2" id="mSg"><button data-t="all" class="on">Todos</button><button data-t="in">Entradas</button><button data-t="out">Salidas</button></div>
-  <div class="ctl"><input id="mQ" type="search" placeholder="Buscar" style="flex:1;min-width:140px;width:auto"><button class="btn g sm" id="mXls" type="button">Excel</button></div>
-  <div id="mL"></div>
+ <section id="p-inf" class="hidden">
+  <div class="ctl"><span class="grow"></span><button class="btn g sm" id="iPr" type="button">Imprimir / PDF</button><button class="btn g sm" id="iXls" type="button">Excel completo</button></div>
+  <section class="pan" id="iDoc"></section>
  </section>
-
 </main>
 </div>
 <div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
@@ -54,5 +56,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="js/app.js?v=202611021229"></script>
 <script src="js/comun.js?v=202610311459"></script>
-<script src="js/finanzas.js?v=202611021326"></script>
+<script src="js/finanzas.js?v=202611021330"></script>
 </body></html>
