@@ -4,7 +4,7 @@
 const {esc,toast,mountSide,requireSession,$$,db}=DAY;
 const {$,fdate,ftime,rpc,espera,modal,confirmar}=UI;
 const me=await requireSession();if(!me)return;
-if(me.rol!=="admin"){location.replace("menu.html");return}
+const ADM=me.rol==="admin";
 mountSide($("side"),"pedidos",me.rol);$("app").classList.remove("hidden");
 const bonito=m=>{m=String(m||"Ocurrió un error");
  let r=m.match(/Producto no registrado en el sistema: (.*) \((.*)\)/);if(r)return `${r[1]||"Un producto"} (código ${r[2]}) no está registrado en el sistema, así que no se puede crear la venta. Toca Emparejar en esa línea para elegir el producto del sistema, u Omitir esta línea, y vuelve a aceptar.`;
@@ -50,11 +50,14 @@ function elegirProducto(i,hecho){
  m.q("#epQ").addEventListener("input",pint);pint();
  m.q("#epL").addEventListener("click",async e=>{const b=e.target.closest("[data-pc]");if(!b)return;const cod=b.dataset.pc;
   const ok=await con(async()=>{await rpc("guardar_equivalencia",{p_tienda:i.codigo,p_sistema:cod});return true},"Guardando…");if(ok){EQ[i.codigo]=cod;m.close();hecho()}})}
+const waLink=p=>{let t=String(p.cliente_telefono||"").replace(/\D/g,"");if(!t)return"";if(t.length===8)t="503"+t;
+ const n=(p.items||[]).length,msg="Hola"+(p.cliente_nombre?" "+String(p.cliente_nombre).trim().split(/\s+/)[0]:"")+", recibimos tu pedido en DAYMAR ("+n+" producto"+(n===1?"":"s")+", total $"+(+p.total).toFixed(2)+"). Te confirmamos en breve. ¡Gracias!";
+ return "https://wa.me/"+t+"?text="+encodeURIComponent(msg)};
 async function abrir(p){await catalogo();
  let reg=null;if(p.estado==="nuevo"){try{const sel="id,nombre,telefono,correo,direccion";
   if(p.cliente_correo){const r=await db.from("clientes").select(sel).ilike("correo",p.cliente_correo.replace(/[%_\\]/g,"\\$&")).limit(1);reg=r.data&&r.data[0]}
   if(!reg&&p.cliente_telefono){const r=await db.from("clientes").select(sel).eq("telefono",p.cliente_telefono).limit(1);reg=r.data&&r.data[0]}}catch(e){}}
- const nuevo=p.estado==="nuevo";
+ const nuevo=p.estado==="nuevo"&&ADM;
  const I=(n,l,v,t,full)=>`<div${full?' class="full"':""}><label>${l}</label><input name="${n}" type="${t||"text"}" maxlength="${n==="direccion"||n==="nota"?300:120}" value="${esc(v||"")}"></div>`;
  const ficha=nuevo?`<div class="pl-g">${I("nombre","Cliente",p.cliente_nombre)}${I("telefono","Teléfono",p.cliente_telefono,"tel")}${I("correo","Correo",p.cliente_correo,"email")}<div><label>Pago</label><select name="metodo"><option${p.metodo==="Efectivo"?" selected":""}>Efectivo</option><option${p.metodo==="Transferencia"?" selected":""}>Transferencia</option></select></div><div class="full"><label>Tipo de venta al aceptar</label><select name="tipo"><option value="cod">Contra entrega (se cobra al entregar)</option><option value="entrega_pendiente">Ya pagó · solo falta entregar</option></select></div>${I("direccion","Dirección",p.cliente_direccion,"text",1)}<div class="full pl-reg" id="plReg" style="background:var(--chip);border-radius:10px;padding:10px 12px;font-size:13px"></div>${I("nota","Nota",p.nota,"text")}${I("envio","Envío ($)",(+p.envio).toFixed(2),"number")}</div>`
   :`<div class="pl-g"><div><label>Teléfono</label><b>${esc(p.cliente_telefono||"—")}</b></div><div><label>Correo</label><b>${esc(p.cliente_correo||"—")}</b></div><div class="full"><label>Dirección</label><b>${esc(p.cliente_direccion||"—")}</b></div>${p.nota?`<div class="full"><label>Nota</label><b>${esc(p.nota)}</b></div>`:""}<div><label>Pago</label><b>${esc(p.metodo)}</b></div><div><label>Envío</label><b>${$$(+p.envio)}</b></div></div>`;
@@ -63,10 +66,12 @@ async function abrir(p){await catalogo();
   <div class="pl-cols"><div><div class="pl-sec">Datos del cliente</div>${ficha}</div>
   <div><div class="pl-sec">Productos</div>${nuevo?lineasEst(p):lineas(p)}
   <div class="pl-tot"><div><span>Productos</span><span>${$$(sub)}</span></div><div><span>Envío</span><span id="plEnv">${$$(+p.envio)}</span></div><div class="t"><span>Total</span><span id="plTot">${$$(+p.total)}</span></div></div></div></div>
+  ${!ADM&&p.estado==="nuevo"?`<p class="pl-hint">Solo el administrador puede aceptar o rechazar este pedido. Tú puedes avisarle al cliente por WhatsApp que lo recibimos.</p>`:""}
   ${nuevo?`<p class="pl-hint">Puedes completar o corregir los datos antes de aceptar. Al aceptar se crea una venta contra entrega y baja el stock; los precios se toman del sistema. Si cambias el envío, el total se recalcula al guardar.</p>`:""}`,
-  {foot:nuevo?'<button class="btn g" data-x>Cerrar</button><button class="btn g" id="pSv">Guardar datos</button><button class="btn g" id="pPv">Llevar al punto de venta</button><button class="btn dg" id="pRe">Rechazar</button><button class="btn" id="pOk">Aceptar</button>':'<button class="btn g" data-x>Cerrar</button><button class="btn dg" id="pDel">Eliminar del historial</button>'});
+  {foot:!ADM?'<button class="btn g" data-x>Cerrar</button>'+(waLink(p)?'<a class="btn" id="pWa" target="_blank" rel="noopener" href="'+waLink(p)+'">Avisar al cliente por WhatsApp</a>':''):nuevo?'<button class="btn g" data-x>Cerrar</button><button class="btn g" id="pSv">Guardar datos</button><button class="btn g" id="pPv">Llevar al punto de venta</button><button class="btn dg" id="pRe">Rechazar</button><button class="btn" id="pOk">Aceptar</button>':'<button class="btn g" data-x>Cerrar</button><button class="btn dg" id="pDel">Eliminar del historial</button>'+(waLink(p)?'<a class="btn" id="pWa" target="_blank" rel="noopener" href="'+waLink(p)+'">Avisar al cliente</a>':'')});
  m.el.classList.add("pl-m");
  if(nuevo){const ei=m.q("[name=envio]"),rec=()=>{const e=Math.min(50,Math.max(0,parseFloat(ei.value)||0)),t=Math.round((sub+e)*100)/100;m.q("#plEnv").textContent=$$(e);m.q("#plTot").textContent=$$(t);m.q("#plTop").textContent=$$(t)};ei.addEventListener("input",rec);rec()}
+ if(!ADM)return;
  if(!nuevo){m.q("#pDel").onclick=async()=>{if(!await confirmar("Se borrará este pedido del historial. La venta (si se aceptó) no se toca.",{titulo:"Eliminar pedido",ok:"Eliminar",peligro:true}))return;const v=await con(()=>rpc("borrar_pedidos_linea",{p_ids:[p.id]}));if(v!==undefined&&v!==null){m.close();toast("Pedido eliminado");await cargar()}};return}
  m.el.addEventListener("click",e=>{const b=e.target.closest("[data-emp]");if(!b)return;const it=(p.items||[]).find(x=>String(x.codigo)===b.dataset.emp);if(it)elegirProducto(it,()=>{m.close();abrir(p)})});
  const datos=()=>{const g=n=>m.q("[name="+n+"]").value;return {nombre:g("nombre"),telefono:g("telefono"),correo:g("correo"),direccion:g("direccion"),nota:g("nota"),metodo:g("metodo"),envio:g("envio")}};
@@ -100,7 +105,7 @@ async function abrir(p){await catalogo();
   const v=await con(()=>rpc("aceptar_pedido_linea",{p_id:p.id,p_omitir:omit,p_tipo:m.q("[name=tipo]").value,p_guardar_dir:!!(m.q("#plDirS")&&m.q("#plDirS").checked),p_cliente_id:sel?sel.id:null}),"Creando la venta…");if(v){m.close();toast("Pedido aceptado: venta creada en Pendientes");await cargar()}};
  m.q("#pRe").onclick=async()=>{if(!await confirmar("Se rechazará este pedido. El inventario no cambia.",{titulo:"Rechazar pedido",ok:"Rechazar",peligro:true}))return;const v=await con(async()=>{await rpc("rechazar_pedido_linea",{p_id:p.id});return true});if(v){m.close();toast("Pedido rechazado");await cargar()}}}
 $("kL").addEventListener("click",ev=>{const r=ev.target.closest("[data-k]");if(!r)return;const p=L.find(z=>z.id===r.dataset.k);if(p)abrir(p)});
-const ha=document.querySelector(".hact");if(ha){ha.innerHTML='<button class="btn g" id="pLimp" type="button">Limpiar historial</button>';
+const ha=document.querySelector(".hact");if(ha&&ADM){ha.innerHTML='<button class="btn g" id="pLimp" type="button">Limpiar historial</button>';
  $("pLimp").onclick=()=>{const m=modal("Limpiar historial de pedidos",`<p class="pw" style="margin-top:0">Borra los pedidos <b>ya atendidos</b> (aceptados o rechazados) para ahorrar espacio. Los pedidos nuevos no se tocan y las ventas que se crearon al aceptar tampoco.</p><div class="ctl" style="flex-direction:column;align-items:stretch;gap:8px"><button class="btn g" data-d="30" type="button">Borrar los atendidos de hace más de 30 días</button><button class="btn g" data-d="7" type="button">Borrar los atendidos de hace más de 7 días</button><button class="btn g" data-d="all" type="button" style="color:var(--bad)">Borrar todo el historial atendido</button></div>`,{foot:'<button class="btn g" data-x>Cancelar</button>'});
   m.el.addEventListener("click",async e=>{const b=e.target.closest("[data-d]");if(!b)return;const dias=b.dataset.d==="all"?null:+b.dataset.d;m.close();
    if(!await confirmar(dias===null?"Se borrarán <b>todos</b> los pedidos atendidos.":"Se borrarán los pedidos atendidos de hace más de <b>"+dias+" días</b>.",{titulo:"Limpiar historial",ok:"Borrar",peligro:true}))return;
