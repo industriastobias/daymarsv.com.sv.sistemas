@@ -3,13 +3,16 @@
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 const db=supabase.createClient(CFG.url,CFG.key);
 /* Fotos en Cloudflare R2 (opcional). Vacío = se siguen guardando en Supabase. Ver cloudflare/LEEME.md */
-const R2={worker:"",publico:""};
+const R2={worker:"https://daymar-fotos.daymarsv.workers.dev",publico:"https://daymar-fotos.daymarsv.workers.dev/f"};
 const sesionToken=async()=>{const s=(await db.auth.getSession()).data.session;if(!s)throw new Error("Tu sesión expiró. Vuelve a entrar.");return s.access_token};
 const fotosAlm={
  r2:()=>!!R2.worker,
  url:path=>R2.worker?R2.publico.replace(/\/$/,"")+"/"+path:db.storage.from("productos").getPublicUrl(path).data.publicUrl,
+ async subirSupabase(path,blob){const {error}=await db.storage.from("productos").upload(path,blob,{contentType:"image/jpeg"});if(error)throw new Error(error.message);return db.storage.from("productos").getPublicUrl(path).data.publicUrl},
  async subir(path,blob){
-  if(!R2.worker){const {error}=await db.storage.from("productos").upload(path,blob,{contentType:"image/jpeg"});if(error)throw new Error(error.message);return fotosAlm.url(path)}
+  if(!R2.worker)return fotosAlm.subirSupabase(path,blob);
+  try{return await fotosAlm.subirR2(path,blob)}catch(e){console.warn("R2 falló, se guarda en Supabase:",e.message);return fotosAlm.subirSupabase(path,blob)}},
+ async subirR2(path,blob){
   const r=await fetch(R2.worker.replace(/\/$/,"")+"/subir?path="+encodeURIComponent(path),{method:"POST",headers:{Authorization:"Bearer "+await sesionToken(),"Content-Type":blob.type||"image/jpeg"},body:blob});
   if(!r.ok){let m="";try{m=(await r.json()).error}catch(e){}throw new Error(m||"No se pudo subir la foto ("+r.status+")")}
   return fotosAlm.url(path)},
@@ -29,7 +32,7 @@ async function pasarFotosR2(btn){
   const rutas=new Set();R.forEach(r=>{[r.url,r.thumb_url].forEach(u=>{const p=rutaDe(u);if(p)rutas.add(p)})});
   const L=[...rutas];let hechas=0,fallas=0;
   const pool=async(n)=>{let i=0;await Promise.all(Array.from({length:n},async()=>{while(i<L.length){const p=L[i++];
-    try{const r=await fetch(db.storage.from("productos").getPublicUrl(p).data.publicUrl);if(!r.ok)throw new Error("origen "+r.status);const b=await r.blob();await fotosAlm.subir(p,b.type?b:new Blob([b],{type:"image/jpeg"}))}catch(e){fallas++;rutas.delete(p)}
+    try{const r=await fetch(db.storage.from("productos").getPublicUrl(p).data.publicUrl);if(!r.ok)throw new Error("origen "+r.status);const b=await r.blob();await fotosAlm.subirR2(p,b.type?b:new Blob([b],{type:"image/jpeg"}))}catch(e){fallas++;rutas.delete(p)}
     hechas++;btn.textContent="Copiando… "+hechas+"/"+L.length}}))};
   await pool(4);
   let act=0;

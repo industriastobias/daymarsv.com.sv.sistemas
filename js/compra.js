@@ -134,8 +134,8 @@ async function subirImagenes(id,list,reemplazar){
   const paths=old.flatMap(o=>[o.path,o.thumb_path]).filter(Boolean);if(paths.length)await DAY.fotosAlm.quitar(paths);
   if(old.length)await ok(db.from("producto_imagenes").delete().eq("producto_id",id))}
  const rows=await Promise.all(list.map(async(im,i)=>{const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",una=!im.thumb||im.thumb===im.main,p2=una?p1:base+"_t.jpg";
-  await Promise.all([DAY.fotosAlm.subir(p1,im.main),...(una?[]:[DAY.fotosAlm.subir(p2,im.thumb)])]);
-  return {producto_id:id,url:pub(p1),thumb_url:pub(p2),path:p1,thumb_path:p2,orden:i}}));
+  const [u1,u2]=await Promise.all([DAY.fotosAlm.subir(p1,im.main),una?null:DAY.fotosAlm.subir(p2,im.thumb)]);
+  return {producto_id:id,url:u1,thumb_url:una?u1:u2,path:p1,thumb_path:p2,orden:i}}));
  if(rows.length){await ok(db.from("producto_imagenes").insert(rows));await ok(db.from("productos").update({foto_url:rows[0].thumb_url}).eq("id",id))}}
 
 /* guardar producto */
