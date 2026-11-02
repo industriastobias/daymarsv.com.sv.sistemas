@@ -89,8 +89,16 @@ function pintarDin(){
 function pintarRes(){
  pintarDin();
  const c=calc();
- const neto=c.ingresos-c.costoV-c.co,sg=n=>`<b class="${n>=0?"pos":"neg"}">${$n(n)}</b>`;
- $("rK").innerHTML=`<div><span>Total ingresos</span><b>${$$(c.ingresos)}</b><small>ventas ${$$(c.ventas)} + otros ingresos ${$$(c.oi)}</small></div><div><span>Ingreso neto</span><b>${$$(neto)}</b><small>total ingresos − gastos directos (${$$(c.costoV+c.co)})</small></div><div class="kf"><span>Balance final</span>${sg(c.util)}<small>ingreso neto − gastos operativos · lo que te queda</small></div><div><span>Gastos operativos</span><b>${$$(c.ga)}</b><small>alquiler, luz, publicidad…</small></div><div><span>Inversión total</span><b>${$$(sumK("inversion"))}</b><small>dinero tuyo puesto en el negocio (no cuenta como ingreso)</small></div><div><span>Deudas por pagar</span><b>${$$(pend("pagar"))}</b><small>por cobrar: ${$$(pend("cobrar"))}</small></div>`;
+ const neto=c.ingresos-c.costoV-c.co,gd=c.costoV+c.co,bal=c.util;
+ const st=(n,v,cl,sub)=>`<div class="st ${cl||""}"><span>${n}${sub?`<small>${sub}</small>`:""}</span><b>${v}</b></div>`;
+ $("rK").innerHTML=`<div class="pan cas"><h3>¿Cuánto gané? Paso a paso</h3>
+  ${st("Total ingresos",$$(c.ingresos),"","ventas "+$$(c.ventas)+" + otros ingresos "+$$(c.oi))}
+  ${st("− Gastos directos","−"+$$(gd),"neg","costo de lo vendido y costos directos")}
+  ${st("= Ingreso neto",$n(neto),"sub","")}
+  ${st("− Gastos operativos","−"+$$(c.ga),"neg","alquiler, luz, publicidad…")}
+  ${st("= Balance final",$n(bal),"fin "+(bal>=0?"pos":"neg"),bal>=0?"esto es lo que te queda":"gastaste más de lo que entró")}
+ </div>
+ <div class="kp3"><div><span>Inversión total</span><b>${$$(sumK("inversion"))}</b><small>dinero tuyo puesto en el negocio</small></div><div><span>Deudas por pagar</span><b>${$$(pend("pagar"))}</b><small>lo que debes</small></div><div><span>Por cobrar</span><b>${$$(pend("cobrar"))}</b><small>lo que te deben</small></div></div>`;
  $("rG").innerHTML=grafico();
  const ven=S.C.filter(x=>x.estado==="pendiente"&&x.vence&&x.vence<ymd(new Date()));
  $("rA").innerHTML=ven.length?`<div class="alert bad"><div><b>${ven.length} cuenta(s) vencida(s)</b>${ven.slice(0,3).map(x=>esc(x.tercero)).join(", ")}${ven.length>3?"…":""} — revísalas en Cuentas.</div></div>`:""}
