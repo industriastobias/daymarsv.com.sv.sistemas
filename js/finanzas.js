@@ -9,21 +9,23 @@ const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const $n=n=>n<0?"−"+$$(-n):$$(n);
-const S={q:"all",desde:"",hasta:"",V:[],M:[],K:[],C:[],PC:[],f:"all"};
+const S={q:"all",desde:"",hasta:"",V:[],M:[],K:[],C:[],PC:[],VD:[],f:"all"};
 const hoy=()=>ymd(new Date());
 const CAT_IN=["Venta","Otro ingreso"],CAT_OUT=["Productos","Insumos y empaques","Tarjetas y etiquetas","Envíos","Impuestos y aduanas","Publicidad","Pago de préstamo","Otros"];
 const COL=["#6B2D3E","#C9973F","#d9822b","#2f7d4f","#4a6fa5","#9b5de5","#8d8d8d"];
 
 async function cargar(){
  if(S.q!=="custom"){[S.desde,S.hasta]=rango(S.q)}
- const [v,m,k,c,pc]=await Promise.all([
+ const d0=new Date(S.desde+"T00:00:00-06:00"),d1=new Date(S.hasta+"T00:00:00-06:00");d1.setDate(d1.getDate()+1);
+ const [v,m,k,c,pc,vd]=await Promise.all([
   db.rpc("fin_ventas_mensuales",{p_desde:S.desde,p_hasta:S.hasta}),
   fetchAll(()=>db.from("fin_movimientos").select("*").gte("fecha",S.desde).lte("fecha",S.hasta).order("fecha",{ascending:false}).order("created_at",{ascending:false})),
   fetchAll(()=>db.from("capital_movs").select("tipo,monto,fecha").gte("fecha",S.desde).lte("fecha",S.hasta)).catch(()=>[]),
   fetchAll(()=>db.from("fin_cuentas").select("id,tipo,tercero,concepto,monto,abonado,estado,vence,fecha").order("vence",{ascending:true,nullsFirst:false})).catch(()=>[]),
-  fetchAll(()=>db.from("ventas").select("numero,cliente_nombre,pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente")).catch(()=>[])]);
+  fetchAll(()=>db.from("ventas").select("numero,cliente_nombre,pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente")).catch(()=>[]),
+  fetchAll(()=>db.from("ventas").select("id,numero,created_at,total,cliente_nombre,metodo_pago").eq("estado","completada").gte("created_at",d0.toISOString()).lt("created_at",d1.toISOString()).order("created_at",{ascending:false})).catch(()=>[])]);
  if(v.error)throw new Error(v.error.message);
- S.V=v.data||[];S.M=m;S.K=k;S.C=c;S.PC=pc}
+ S.V=v.data||[];S.M=m;S.K=k;S.C=c;S.PC=pc;S.VD=vd}
 
 const sum=a=>a.reduce((t,x)=>t+(+x.monto||0),0);
 const esSal=m=>m.tipo!=="ingreso";
@@ -60,10 +62,14 @@ function pintar(){
  lista();informe()}
 
 function lista(){
- const q=norm($("mQ").value);
- const L=S.M.filter(m=>(S.f==="all"||(S.f==="in"?m.tipo==="ingreso":m.tipo!=="ingreso"))&&(!q||norm((m.categoria||"")+" "+(m.descripcion||"")).includes(q)));
+ const q=norm($("mQ").value),R=[];
+ S.M.forEach(m=>{const ent=m.tipo==="ingreso";if(S.f==="in"&&!ent||S.f==="out"&&ent)return;if(q&&!norm((m.categoria||"")+" "+(m.descripcion||"")).includes(q))return;R.push({k:"m",m,ts:new Date(m.fecha+"T12:00:00-06:00").getTime()})});
+ if(S.f!=="out")S.VD.forEach(v=>{if(q&&!norm("venta "+v.numero+" "+(v.cliente_nombre||"")+" "+(v.metodo_pago||"")).includes(q))return;R.push({k:"v",v,ts:new Date(v.created_at).getTime()})});
+ R.sort((a,b)=>b.ts-a.ts);
  $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.f));
- $("mL").innerHTML=L.length?L.slice(0,80).map(m=>{const ent=m.tipo==="ingreso";return `<div class="rw mv" data-id="${m.id}"><div class="ti"><b>${esc(m.categoria||"")}</b><small>${esc(m.descripcion||"")}</small><small>${fdate(m.fecha)}${ent?"":" · "+(m.origen==="propio"?"mi bolsillo / tarjeta":"de las ventas")}</small></div><div class="am2"><b class="${ent?"pos":"neg"}">${ent?"+":"−"}${$$(+m.monto)}</b></div></div>`}).join("")+(L.length>80?`<p class="hint">Mostrando 80 de ${L.length}. Usa el buscador o acorta el periodo.</p>`:""):`<div class="empty card">No hay movimientos.</div>`}
+ $("mL").innerHTML=R.length?R.slice(0,100).map(r=>{
+  if(r.k==="v"){const v=r.v;return `<div class="rw mv"><div class="ti"><b>Venta #${v.numero}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</b><small>${fdate(v.created_at)}${v.metodo_pago?" · "+esc(v.metodo_pago):""} · del sistema de ventas</small></div><div class="am2"><b class="pos">+${$$(+v.total)}</b></div></div>`}
+  const m=r.m,ent=m.tipo==="ingreso";return `<div class="rw mv" data-id="${m.id}"><div class="ti"><b>${esc(m.categoria||"")}</b><small>${esc(m.descripcion||"")}</small><small>${fdate(m.fecha)}${ent?"":" · "+(m.origen==="propio"?"mi bolsillo / tarjeta":"de las ventas")}</small></div><div class="am2"><b class="${ent?"pos":"neg"}">${ent?"+":"−"}${$$(+m.monto)}</b></div></div>`}).join("")+(R.length>100?`<p class="hint">Mostrando 100 de ${R.length}. Usa el buscador o acorta el periodo.</p>`:""):`<div class="empty card">No hay movimientos.</div>`}
 
 function anotar(m){
  m=m||{tipo:"gasto",fecha:ymd(new Date()),categoria:"",descripcion:"",monto:"",origen:"ventas"};
@@ -131,7 +137,7 @@ $("fBar").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(!
 $("mSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.f=b.dataset.t;lista()}});
 $("mQ").addEventListener("input",deb(lista,150));
 $("mL").addEventListener("click",e=>{const r=e.target.closest("[data-id]");if(r)anotar(S.M.find(x=>x.id===r.dataset.id))});
-$("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")])}]);
+$("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.VD.map(v=>[String(v.created_at).slice(0,10),"Entró","Venta #"+v.numero,v.cliente_nombre||"",+v.total,""]).concat(S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")]))}]);
 const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
 UI.pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Deudas",IC.cue],["inf","Informes",IC.inf]],k=>{$("fBar").classList.toggle("hidden",k==="cue")});
 await refrescar();
