@@ -52,7 +52,7 @@ function pintar(){
  $("vEnt").textContent="+"+$$(c.entro);$("vSal").textContent="−"+$$(c.salV);
  const q=$("vQue");q.textContent=$n(c.queda);q.className=c.queda>=0?"pos":"neg";
  $("vPuse").textContent=$$(c.puse);
- $("vRes").innerHTML=c.puse<=0?`<p class="rt">Sin dinero propio puesto.</p>`:c.res>=0?`<p class="rt ok">Ya recuperaste lo que pusiste. Ganancia: <b>${$$(c.res)}</b></p>`:`<p class="rt mal">Te faltan <b>${$$(-c.res)}</b> para recuperar lo que pusiste</p>`;
+ $("vRes").innerHTML=c.puse<=0?`<p class="rt">Sin inversión propia.</p>`:c.res>=0?`<p class="rt ok">Ya recuperaste tu inversión. Ganancia: <b>${$$(c.res)}</b></p>`:`<p class="rt mal">Te faltan <b>${$$(-c.res)}</b> para recuperar tu inversión</p>`;
  $("vDeu").innerHTML=`<a href="#cue"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="#cue"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
  deudas();
  const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});
@@ -120,12 +120,12 @@ function porCat(){const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categori
 function informe(){
  const c=calc(),cats=porCat(),tot=cats.reduce((t,x)=>t+x[1],0),pm=porMes(),t=(rows)=>rows.map(r=>`<tr>${r.map((x,i)=>`<${i?"td class=\"n\"":"td"}>${x}</${i?"td":"td"}>`).join("")}</tr>`).join("");
  $("iDoc").innerHTML=`<h3>Informe de finanzas</h3><p class="mn">Del ${fdate(S.desde)} al ${fdate(S.hasta)}</p>
- <h4>Resumen</h4><table class="tb"><tbody>${t([["Entró (ventas y otros ingresos)",$$(c.entro)],["Salió de las ventas","−"+$$(c.salV)],["<b>Queda en caja</b>","<b>"+$n(c.queda)+"</b>"],["Lo que puse yo (tarjeta o bolsillo)",$$(c.puse)],["<b>Recuperado (caja − lo que puse)</b>","<b>"+$n(c.res)+"</b>"],["Debo",$$(c.debo)],["Me deben",$$(c.deben)]])}</tbody></table>
+ <h4>Resumen</h4><table class="tb"><tbody>${t([["Entró (ventas y otros ingresos)",$$(c.entro)],["Salió de las ventas","−"+$$(c.salV)],["<b>Queda en caja</b>","<b>"+$n(c.queda)+"</b>"],["Inversión (tarjeta o bolsillo)",$$(c.puse)],["<b>Recuperado (caja − inversión)</b>","<b>"+$n(c.res)+"</b>"],["Debo",$$(c.debo)],["Me deben",$$(c.deben)]])}</tbody></table>
  <h4>En qué se fue el dinero</h4><table class="tb"><tbody>${cats.length?t(cats.map(([n,v])=>[esc(n),$$(v)+" · "+(tot?(v/tot*100).toFixed(0):0)+"%"])):'<tr><td>Sin salidas</td></tr>'}</tbody></table>
  <h4>Mes por mes</h4><table class="tb"><thead><tr><th>Mes</th><th class="n">Entró</th><th class="n">Salió</th><th class="n">Queda</th></tr></thead><tbody>${pm.length?t(pm.map(([k,e,s,q])=>[mes(k),$$(e),$$(s),$n(q)])):'<tr><td colspan="4">Sin datos</td></tr>'}</tbody></table>`}
 $("iPr").onclick=()=>{document.body.classList.add("imp");setTimeout(()=>{window.print();document.body.classList.remove("imp")},50)};
 $("iXls").onclick=()=>{const c=calc();excel("finanzas-informe",[
- {n:"Resumen",c:[["Concepto",38],["Monto",16,"money"]],f:[["Entró (ventas y otros ingresos)",c.entro],["Salió de las ventas",c.salV],["Queda en caja",c.queda],["Lo que puse yo",c.puse],["Recuperado",c.res],["Debo",c.debo],["Me deben",c.deben]]},
+ {n:"Resumen",c:[["Concepto",38],["Monto",16,"money"]],f:[["Entró (ventas y otros ingresos)",c.entro],["Salió de las ventas",c.salV],["Queda en caja",c.queda],["Inversión",c.puse],["Recuperado",c.res],["Debo",c.debo],["Me deben",c.deben]]},
  {n:"Por categoría",c:[["Categoría",30],["Monto",14,"money"]],f:porCat()},
  {n:"Mes por mes",c:[["Mes",12],["Entró",14,"money"],["Salió",14,"money"],["Queda",14,"money"]],f:porMes().map(r=>[mes(r[0]),r[1],r[2],r[3]])},
  {n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")])},
