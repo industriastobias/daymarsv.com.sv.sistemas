@@ -21,7 +21,9 @@ const tiempo=p=>{if(p.estado!=="nuevo")return"";const t=Date.now()-new Date(p.cr
  return resta<=0?`<span class="pl-vc mal">Vencido: se anula en unos minutos</span>`:`<span class="pl-vc${resta<2*3600000?" mal":""}">Lleva ${dur(t)} · se anula en ${dur(resta)}</span>`};
 let L=[];
 async function cargar(){const d=await espera(async()=>{try{await db.rpc("vencer_pedidos_linea")}catch(e){}const {data,error}=await db.from("pedidos_linea").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw new Error(error.message);return data},"Cargando pedidos…");if(d){L=d;pintar();DAY.refrescarBadges()}}
-const lineas=p=>`<div class="pl-items">`+(p.items||[]).map(i=>`<div class="pl-it">${imgH(fotosT(i))}<div class="pl-b"><div class="pl-n">${esc(i.nombre||i.codigo)}</div><div class="pl-m1"><span class="pl-c">Cant. ${esc(i.cantidad)}</span><span class="pl-c">${$$(+i.precio)}</span><span class="pl-c">Cód. ${esc(i.codigo)}</span></div></div></div>`).join("")+`</div>`;
+/* foto de un pedido ya cerrado: la del producto en el sistema (por código o, si el código cambió, por nombre) y luego las de respaldo */
+const fotoSis=i=>{let f=null;try{const x=CAT&&buscar(i);f=x&&x.foto;if(!f&&CAT){const n=String(i.nombre||"").trim().toLowerCase();const p=n&&CAT.find(y=>String(y.nombre||"").trim().toLowerCase()===n&&y.foto_url);f=p&&p.foto_url}}catch(e){}return f};
+const lineas=p=>`<div class="pl-items">`+(p.items||[]).map(i=>`<div class="pl-it">${imgH([fotoSis(i)].concat(fotosT(i)))}<div class="pl-b"><div class="pl-n">${esc(i.nombre||i.codigo)}</div><div class="pl-m1"><span class="pl-c">Cant. ${esc(i.cantidad)}</span><span class="pl-c">${$$(+i.precio)}</span><span class="pl-c">Cód. ${esc(i.codigo)}</span></div></div></div>`).join("")+`</div>`;
 function pintar(){
  const nu=L.filter(x=>x.estado==="nuevo").length;
  $("kK").innerHTML=`<div><span>Por atender</span><b>${nu}</b></div><div><span>Aceptados</span><b>${L.filter(x=>x.estado==="aceptado").length}</b></div><div><span>Rechazados</span><b>${L.filter(x=>x.estado==="rechazado").length}</b></div>`;
