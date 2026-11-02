@@ -49,8 +49,8 @@ function pintar(){
  $("vEnt").textContent="+"+$$(c.entro);$("vSal").textContent="−"+$$(c.salV);
  const q=$("vQue");q.textContent=$n(c.queda);q.className=c.queda>=0?"pos":"neg";
  $("vPuse").textContent=$$(c.puse);
- $("vRes").innerHTML=`<h3>3 · ¿Ya recuperé lo que puse?</h3>`+(c.puse<=0?`<p class="rt">No has puesto dinero propio en este periodo.</p>`:c.res>=0?`<p class="rt ok">Sí. Ya recuperaste lo que pusiste y te sobran <b>${$$(c.res)}</b> de ganancia.</p>`:`<p class="rt mal">Todavía no. Te faltan <b>${$$(-c.res)}</b> para recuperar lo que pusiste.</p>`)+`<p class="mn">Es lo que queda en caja (${$n(c.queda)}) menos lo que pusiste (${$$(c.puse)}).</p>`;
- $("vDeu").innerHTML=`<div><span>Debo</span><b>${$$(c.debo)}</b></div><div><span>Me deben</span><b>${$$(c.deben)}</b></div><div><a href="finanzas-avanzado.html" class="lk">Ver deudas y abonar ›</a></div>`;
+ $("vRes").innerHTML=c.puse<=0?`<p class="rt">Sin dinero propio puesto.</p>`:c.res>=0?`<p class="rt ok">Ya recuperaste lo que pusiste. Ganancia: <b>${$$(c.res)}</b></p>`:`<p class="rt mal">Te faltan <b>${$$(-c.res)}</b> para recuperar lo que pusiste</p>`;
+ $("vDeu").innerHTML=`<a href="finanzas-avanzado.html"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="finanzas-avanzado.html"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
  const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});
  let it=Object.entries(cat).sort((a,b)=>b[1]-a[1]);if(it.length>6){const o=it.slice(6).reduce((t,x)=>t+x[1],0);it=it.slice(0,6);it.push(["Otros",o])}
  $("vGraf").innerHTML=donut(it);
