@@ -7,7 +7,7 @@ const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',cap:'<path d="M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',ban:'<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/>',prov:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/>'};
-const S={q:"month",desde:"",hasta:"",V:[],M:[],VD:[],DV:[],C:[],PR:[],B:[],CL:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",PC:[],ready:false,all:[]};
+const S={q:"all",desde:"",hasta:"",V:[],M:[],VD:[],DV:[],C:[],PR:[],B:[],CL:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",PC:[],ready:false,all:[]};
 const CATS=["Alquiler","Servicios (luz, agua, internet)","Salarios","Publicidad","Transporte y envíos","Empaque","Impuestos","Mercadería","Flete","Comisiones","Materiales","Otros ingresos","Otros gastos"];
 const TN={ingreso:["Ingreso","ok"],gasto:["Gasto","or"],costo:["Costo directo","wa"],compra:["Compra de mercadería","wa"]};
 const mkey=d=>String(d).slice(0,7);
