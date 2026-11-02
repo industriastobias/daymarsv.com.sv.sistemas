@@ -22,10 +22,18 @@ main.wide{padding-bottom:92px}
 }
 
 /* Filtros del inventario */
-.fl{display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-bottom:8px}
-.fl .full{grid-column:1/-1}
-@media(min-width:900px){.fl{grid-template-columns:2fr 1.3fr 90px 90px 1.2fr 1fr auto auto;align-items:end}.fl .full{grid-column:auto}}
-.fl label{margin:0 0 3px;font-size:12px}
+.fl{margin-bottom:8px}
+.fr{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.fr #fSearch{grid-column:1/-1;min-height:42px}
+.fr select{min-height:40px;padding:6px 10px;min-width:0}
+.fr .btn{min-height:40px;padding:6px 14px}
+.fm{display:none;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;padding:10px;background:var(--chip);border-radius:12px;align-items:end}
+.fl.open .fm{display:grid}
+.fm>div{min-width:0}.fm input{min-height:38px;padding:6px 10px;width:100%}
+.fm label{margin:0 0 3px;font-size:12px}
+.fm .chk input{width:18px;height:18px;min-height:0;flex:none}
+.fm .chk{margin:0;min-height:38px;display:flex;align-items:center;gap:6px}
+@media(min-width:700px){.fr{grid-template-columns:1fr 220px auto auto}.fr #fSearch{grid-column:auto}.fm{grid-template-columns:110px 110px 1.4fr 1.2fr auto}}
 .ctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .ctl .grow{flex:1;min-width:140px;color:var(--mute);font-size:13px}
 .ctl select,.ctl input{width:auto;min-height:38px;padding:6px 8px}.ctl input{width:84px}
@@ -135,8 +143,6 @@ input[readonly].lk{background:var(--chip)}
 .seg2 button.on{background:var(--card);color:var(--wine);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .kv .dsc{display:inline-block;margin-top:2px}
 
-.tgl{display:none}
-@media(max-width:899px){.tgl{display:inline-flex;align-items:center}.fl:not(.open) .fx{display:none}}
 @media(max-width:799px){
  .hact{display:grid;grid-template-columns:repeat(4,1fr);width:100%;gap:6px;margin-left:0}
  .hact .tot{order:0;grid-column:1/4}.hact .more{order:1;grid-column:4/5;align-self:center}.hact .more .btn{width:100%;padding:6px 4px}.hact>.btn{order:2;padding:6px 4px;font-size:13px;line-height:1.15}

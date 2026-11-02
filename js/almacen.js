@@ -127,11 +127,11 @@ function drawHist(){const h=$("hist");if(!S.hist.length){h.classList.remove("on"
 function filtrar(keep){
  const q=$("fSearch").value.trim(),cat=$("fCat").value,mn=parseFloat($("fMin").value)||0,mx=parseFloat($("fMax").value)||Infinity,
   bc=$("fBar").value.trim().toLowerCase(),dt=$("fDate").value,low=$("fLow").checked,ql=norm(q);
- S.filt=S.prods.filter(p=>(!q||fuzzy(p.nombre,q)||norm(p.codigo).includes(ql))&&(!cat||p.cat===cat)&&p.fin>=mn&&p.fin<=mx&&
+ S.filt=S.prods.filter(p=>(!q||fuzzy(p.nombre,q)||norm(p.codigo).includes(ql)||(p.codigo_barras||"").toLowerCase().includes(q.toLowerCase()))&&(!cat||p.cat===cat)&&p.fin>=mn&&p.fin<=mx&&
   (!bc||(p.codigo_barras||"").toLowerCase().includes(bc))&&(!dt||p.dia===dt)&&(!low||p.stock<=0));
  S.filt.sort((a,b)=>b.stock-a.stock||a.nombre.localeCompare(b.nombre));
  if(!keep)S.page=1;
- const nf=[cat,mn,mx<Infinity,bc,dt,low].filter(Boolean).length;$("fTog").textContent=nf?"Filtros ("+nf+")":"Filtros";
+ const nf=[cat,mn,mx<Infinity,bc,dt,low].filter(Boolean).length;$("fTog").textContent=nf?"Filtros ("+nf+")":"Filtros";$("fTog").classList.toggle("on",nf>0);
  pintarInv()}
 const sIcon=p=>p.stock<=0?"zero":"";
 const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(cls==="ph"?DAY.grande(p.foto_url):p.foto_url)}" ${cls==="ph"?`onerror="this.onerror=null;this.src='${esc(p.foto_url)}'" `:""}alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
@@ -749,7 +749,7 @@ function escaneado(code,fromCam){
  snd("ok");
  if(S.multi){addSel(p.id);return}
  if(S.tab!=="inv")tab("inv");
- $("fBar").value=code;filtrar();
+ abrF(true);$("fBar").value=code;filtrar();
  if(fromCam&&document.querySelector("dialog[open]"))return;
  requestAnimationFrame(()=>{const el=document.getElementById("row-1")||document.getElementById("card-1");if(el){el.classList.add("hl");el.scrollIntoView({behavior:"smooth",block:"center"})}});
  setTimeout(()=>{if(!document.querySelector("dialog[open]"))abrirVenta(p)},350);toast("Producto encontrado: "+p.nombre)}
@@ -773,12 +773,12 @@ function camara(){
 function pararCamara(){const q=QR;QR=null;const rm=()=>{const b=document.getElementById("scanBox");if(b)b.remove()};
  if(q){q.stop().then(rm).catch(rm)}else rm()}
 function usb(on){S.usb=on===undefined?!S.usb:on;$("bUsb").classList.toggle("on",S.usb);$("bUsb").setAttribute("aria-pressed",String(S.usb));
- if(S.usb){tab("inv");$("fBar").focus();toast("Lector USB activado")}else toast("Lector USB desactivado")}
+ if(S.usb){tab("inv");abrF(true);$("fBar").focus();toast("Lector USB activado")}else toast("Lector USB desactivado")}
 document.addEventListener("keydown",e=>{
  if(S.usb&&(!document.querySelector("dialog[open]")||S.venta)){
   if(e.key==="Enter"){if(usbBuf){const c=usbBuf;usbBuf="";escaneado(c,false);e.preventDefault()}}
   else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey){const n=Date.now();if(n-usbT>100)usbBuf="";usbT=n;usbBuf+=e.key}}
- if(e.ctrlKey&&e.key.toLowerCase()==="b"){e.preventDefault();tab("inv");$("fBar").focus()}
+ if(e.ctrlKey&&e.key.toLowerCase()==="b"){e.preventDefault();tab("inv");abrF(true);$("fBar").focus()}
  if(e.key==="Escape"&&QR)pararCamara()});
 
 /* ---------- exportar inventario a Excel (con imágenes) ---------- */
@@ -1350,7 +1350,7 @@ const fdeb=deb(()=>filtrar(),150);
 ["fCat","fDate","fLow"].forEach(i=>$(i).addEventListener("change",()=>filtrar()));
 $("fSearch").addEventListener("change",()=>addHist($("fSearch").value));
 $("fSearch").addEventListener("keydown",e=>{if(e.key==="Enter")addHist($("fSearch").value)});
-$("fTog").onclick=()=>$("fl").classList.toggle("open");
+const abrF=o=>{$("fl").classList.toggle("open",o);$("fTog").setAttribute("aria-expanded",o)};$("fTog").onclick=()=>abrF(!$("fl").classList.contains("open"));
 $("fClear").onclick=()=>{["fSearch","fMin","fMax","fBar","fDate","fGo"].forEach(i=>$(i).value="");$("fCat").value="";$("fLow").checked=false;filtrar()};
 $("hist").addEventListener("click",e=>{const h=e.target.closest("[data-h]");if(h){$("fSearch").value=h.dataset.h;filtrar()}if(e.target.closest("[data-clr]")){S.hist=[];LS("dms_hist2","[]");drawHist()}});
 $("vt").addEventListener("click",e=>{const b=e.target.closest("[data-v]");if(!b)return;S.view=b.dataset.v;LS("dms_vw",S.view);pintarInv()});
