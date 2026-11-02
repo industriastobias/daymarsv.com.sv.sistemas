@@ -60,6 +60,7 @@ const S={prods:[],byId:new Map(),filt:[],page:1,size:1000,view:LS("dms_vw")||(ma
 try{S.hist=JSON.parse(LS("dms_hist2")||"[]")}catch(e){}
 
 async function cargarProductos(){
+ S.sv=await DAY.catsSinValor(true);
  const rows=await fetchAll(()=>db.from("productos").select("id,codigo,nombre,precio_venta,precio_costo,descuento_pct,stock,stock_minimo,foto_url,codigo_barras,descripcion,fecha_compra,created_at,categorias(nombre)").eq("activo",true).order("nombre"));
  let vs=[];try{vs=await fetchAll(()=>db.from("producto_variantes").select("id,producto_id,nombre,codigo_barras,stock,orden").order("orden").order("nombre"))}catch(e){}
  const VB={};vs.forEach(v=>(VB[v.producto_id]=VB[v.producto_id]||[]).push(v));
@@ -76,7 +77,7 @@ async function cargarProductos(){
  $("fCat").innerHTML='<option value="">Todas</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("fCat").value=cur;
  stats()}
 function stats(){
- const v=S.prods.reduce((s,p)=>s+p.fin*(p.stock||0),0);$("totalAmount").textContent=$$(v);
+ const v=S.prods.reduce((s,p)=>s+(S.sv&&S.sv.has((p.cat||"").trim().toLowerCase())?0:p.fin*(p.stock||0)),0);$("totalAmount").textContent=$$(v);
  $("nTotal").textContent=new Set(S.prods.map(p=>p.real||p.id)).size}
 const SEL_ITEMS="id,cantidad,precio_unit,precio_original,descuento_pct,nombre,codigo,codigo_barras,producto_id,es_libre,productos(foto_url,nombre,codigo,codigo_barras)";
 async function cargarPend(){

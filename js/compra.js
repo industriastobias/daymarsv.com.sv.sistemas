@@ -27,12 +27,13 @@ document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>$(b.dataset.x).cl
 /* ---------- carga de datos ---------- */
 async function load(){
  const [c,p]=await Promise.all([ok(db.from("categorias").select("*").order("nombre")),fetchAll(()=>db.from("productos").select("*").order("created_at",{ascending:false}))]);
- cats=c;inv=p.filter(x=>x.activo);trash=p.filter(x=>!x.activo&&x.eliminado_en)}
+ window.__sv=await DAY.catsSinValor(true);cats=c;inv=p.filter(x=>x.activo);trash=p.filter(x=>!x.activo&&x.eliminado_en)}
 function renderCats(){
  const sel=(id,first)=>{const el=$(id),cur=el.value;el.innerHTML=`<option value="">${first}</option>`+cats.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join("");if(cur&&cats.some(c=>c.id===cur))el.value=cur};
  sel("category","Sin categoría (General)");sel("categoryFilter","Todas las categorías")}
 function calcTotal(){
- $("totalAmount").textContent=$$(inv.reduce((s,p)=>s+num(p.precio_venta)*(1-num(p.descuento_pct)/100)*num(p.stock),0));
+ const sv=window.__sv||new Set(),nm=id=>{const k=cats.find(x=>x.id===id);return k?String(k.nombre).trim().toLowerCase():""};
+ $("totalAmount").textContent=$$(inv.filter(p=>!sv.has(nm(p.categoria_id))).reduce((s,p)=>s+num(p.precio_venta)*(1-num(p.descuento_pct)/100)*num(p.stock),0));
  $("countBadge").textContent=`${inv.length} producto${inv.length===1?"":"s"}`;$("cnt2").textContent=inv.length}
 async function refresh(){await load();renderCats();renderInv();calcTotal()}
 

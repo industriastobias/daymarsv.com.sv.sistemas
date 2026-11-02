@@ -9,9 +9,10 @@ mountSide($("side"),"inventario",me.rol);$("app").classList.remove("hidden");
 const IC={sum:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',cat:'<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',top:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
 /* stock bajo = sin existencias (0) */
 const mini=p=>0,crit=p=>0;
-let P=[],NP=0;
+let P=[],NP=0,SV=new Set();
 const fin=p=>r2(p.precio_venta*(1-(+p.descuento_pct||0)/100));
 async function cargar(){
+ SV=await DAY.catsSinValor(true);
  const rows=await fetchAll(()=>db.from("productos").select("id,codigo,nombre,precio_venta,precio_costo,descuento_pct,stock,stock_minimo,foto_url,codigo_barras,descripcion,categorias(nombre)").eq("activo",true).order("nombre"));
  let vs=[];try{vs=await fetchAll(()=>db.from("producto_variantes").select("id,producto_id,nombre,codigo_barras,stock,orden").order("orden").order("nombre"))}catch(e){}
  const VB={};vs.forEach(v=>(VB[v.producto_id]=VB[v.producto_id]||[]).push(v));NP=rows.length;P=[];
@@ -22,7 +23,7 @@ async function cargar(){
   if(p.stock>suma){const c={...b,base:p.nombre,color:"Sin color",nombre:p.nombre+" – sin color",stock:p.stock-suma,codigo_barras:p.codigo_barras};c.val=c.fin*c.stock;P.push(c)}})}
 const sum=(L,f)=>L.reduce((s,p)=>s+f(p),0);
 function datos(){
- const unidades=sum(P,p=>p.stock),valor=sum(P,p=>p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock<=0),sano=P.filter(p=>p.stock>mini(p));
+ const unidades=sum(P,p=>p.stock),valor=sum(P,p=>SV.has((p.cat||"").trim().toLowerCase())?0:p.val),agot=P.filter(p=>p.stock===0),bajo=P.filter(p=>p.stock<=0),sano=P.filter(p=>p.stock>mini(p));
  const cats={};P.forEach(p=>{const c=cats[p.cat]=cats[p.cat]||{n:0,u:0,v:0,costo:0};c.n++;c.u+=p.stock;c.v+=p.val;c.costo+=p.precio_costo*p.stock});
  const top=[...P].sort((a,b)=>b.val-a.val).slice(0,10),aten=P.filter(p=>p.stock<=crit(p)).sort((a,b)=>a.stock-b.stock||a.nombre.localeCompare(b.nombre));
  const costo=sum(P,p=>p.precio_costo*p.stock);
