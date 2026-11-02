@@ -63,12 +63,13 @@ async function cargarProductos(){
  const rows=await fetchAll(()=>db.from("productos").select("id,codigo,nombre,precio_venta,precio_costo,descuento_pct,stock,stock_minimo,foto_url,codigo_barras,descripcion,fecha_compra,created_at,categorias(nombre)").eq("activo",true).order("nombre"));
  let vs=[];try{vs=await fetchAll(()=>db.from("producto_variantes").select("id,producto_id,nombre,codigo_barras,stock,orden").order("orden").order("nombre"))}catch(e){}
  const VB={};vs.forEach(v=>(VB[v.producto_id]=VB[v.producto_id]||[]).push(v));
- S.prods=[];S.all=[];S.byId=new Map();rows.forEach(p=>{p.cat=p.categorias?p.categorias.nombre:"";p.fin=fin(p);p.dia=p.fecha_compra||dkey(p.created_at);
+ const RP={},RV={};try{const rr=await db.rpc("reservas_pedidos_linea");(rr.data||[]).forEach(r=>{RP[r.producto_id]=(RP[r.producto_id]||0)+r.cant;if(r.variante_id)RV[r.variante_id]=r.cant})}catch(e){}
+ S.prods=[];S.all=[];S.byId=new Map();rows.forEach(p=>{p.res=RP[p.id]||0;p.cat=p.categorias?p.categorias.nombre:"";p.fin=fin(p);p.dia=p.fecha_compra||dkey(p.created_at);
   S.prods.push(p);S.byId.set(p.id,p);const L=VB[p.id];if(!L){S.all.push(p);return}
   /* un producto con colores es UNO solo en la lista; al vender se elige el color */
   p.vars=[];let suma=0;
-  L.forEach(v=>{suma+=v.stock;const e=Object.assign({},p,{id:p.id+"~"+v.id,real:p.id,vid:v.id,vnom:v.nombre,base:p,vars:null,nombre:p.nombre+" – "+v.nombre,stock:v.stock,codigo_barras:v.codigo_barras||p.codigo_barras});p.vars.push(e);S.byId.set(e.id,e);S.all.push(e)});
-  if(p.stock>suma){const e=Object.assign({},p,{id:p.id+"~0",real:p.id,vnom:"Sin color",base:p,vars:null,nombre:p.nombre+" – sin color",stock:p.stock-suma});p.vars.push(e);S.byId.set(e.id,e);S.all.push(e)}
+  L.forEach(v=>{suma+=v.stock;const e=Object.assign({},p,{id:p.id+"~"+v.id,real:p.id,vid:v.id,vnom:v.nombre,base:p,vars:null,res:RV[v.id]||0,nombre:p.nombre+" – "+v.nombre,stock:v.stock,codigo_barras:v.codigo_barras||p.codigo_barras});p.vars.push(e);S.byId.set(e.id,e);S.all.push(e)});
+  if(p.stock>suma){const e=Object.assign({},p,{id:p.id+"~0",real:p.id,vnom:"Sin color",base:p,vars:null,res:0,nombre:p.nombre+" – sin color",stock:p.stock-suma});p.vars.push(e);S.byId.set(e.id,e);S.all.push(e)}
   S.all.push(p)});
  S.stamp=Date.now();
  const cats=[...new Set(S.prods.map(p=>p.cat).filter(Boolean))].sort(),cur=$("fCat").value;
@@ -134,6 +135,7 @@ function filtrar(keep){
  const nf=[cat,mn,mx<Infinity,bc,dt,low].filter(Boolean).length;$("fTog").textContent=nf?"Filtros ("+nf+")":"Filtros";$("fTog").classList.toggle("on",nf>0);
  pintarInv()}
 const sIcon=p=>p.stock<=0?"zero":"";
+const resTxt=p=>{const r=p.res||0;if(r<1)return"";return r>=p.stock?`<a class="rsv" href="pedidos.html">Mira tus pedidos en línea</a>`:`<span class="rsv">Reservado: ${r} (pedidos en línea)</span>`};
 const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(cls==="ph"?DAY.grande(p.foto_url):p.foto_url)}" ${cls==="ph"?`onerror="this.onerror=null;this.src='${esc(p.foto_url)}'" `:""}alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
 const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>DAY.colorDot(v.vnom)+esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
 const selQ=p=>p.vars?p.vars.reduce((s,v)=>s+(S.sel.get(v.id)||0),0):(S.sel.get(p.id)||0);
@@ -150,11 +152,11 @@ function pintarInv(){
   items.map((p,i)=>`<tr data-id="${p.id}" id="row-${a+i+1}"><td>${chk(p)}${a+i+1}</td><td>${thumb(p,"im")}</td><td>${hl(p.nombre,q)}<br><small style="color:var(--mute)">${esc(p.codigo||"")}</small>${cols(p)}</td>
    <td>${p.codigo_barras?`<img class="bc" src="${bcUrl(p.codigo_barras)}" alt="" data-bar="${esc(p.codigo_barras)}">`:"—"}</td>
    <td>${$$(p.precio_venta)}</td><td>${p.descuento_pct>0?`<span class="dsc">${p.descuento_pct}%</span>`:"—"}</td><td><b>${$$(p.fin)}</b></td><td>${fdate(p.dia)}</td>
-   <td class="${sIcon(p)}">${p.stock}</td><td>${esc(p.cat||"—")}</td><td><div class="ac">${btns(p)}</div></td></tr>`).join("")+`</tbody></table></div>`}
+   <td class="${sIcon(p)}">${p.stock}${resTxt(p)?`<br>${resTxt(p)}`:""}</td><td>${esc(p.cat||"—")}</td><td><div class="ac">${btns(p)}</div></td></tr>`).join("")+`</tbody></table></div>`}
  else{
   $("invList").innerHTML=`<div class="pg">`+items.map((p,i)=>`<div class="pc" data-id="${p.id}" id="card-${a+i+1}">${thumb(p,"ph")}
    <div class="pb">${chk(p)}<b class="n">${hl(p.nombre,q)}</b>${cols(p)}${p.descuento_pct>0?`<span class="dsc">${p.descuento_pct}% de descuento</span>`:""}
-   <div class="mt"><small>${esc(p.codigo||"")} · ${esc(p.cat||"Sin categoría")}</small><small class="${sIcon(p)}">Stock: ${p.stock}</small></div>
+   <div class="mt"><small>${esc(p.codigo||"")} · ${esc(p.cat||"Sin categoría")}</small><small class="${sIcon(p)}">Stock: ${p.stock}</small>${resTxt(p)}</div>
    ${p.codigo_barras?`<img class="bc" src="${bcUrl(p.codigo_barras)}" alt="" data-bar="${esc(p.codigo_barras)}">`:""}
    <div class="pr">${$$(p.fin)}</div><div class="ac">${btns(p)}</div></div></div>`).join("")+`</div>`;
 }
