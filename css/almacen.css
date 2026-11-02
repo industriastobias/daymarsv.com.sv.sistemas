@@ -218,3 +218,15 @@ html[data-tab]:not([data-tab=inv]) .hact>.btn,html[data-tab]:not([data-tab=inv])
 #p-ven .kp{gap:6px}
 #p-ven .kp>div{padding:8px 12px}
 #p-ven .kp b{font-size:18px}
+
+/* Cabecera y pestañas sin huecos en escritorio */
+@media(min-width:800px){
+ .head{gap:10px 16px}
+ .head h1{font-size:24px;white-space:nowrap}
+ .hact{flex:1 1 600px;justify-content:flex-end;gap:6px;min-width:0}
+ .hact .tot{margin-right:auto;padding:5px 10px}
+ .hact .btn{padding:6px 10px;font-size:13.5px;white-space:nowrap}
+ .bnav{max-width:none}
+}
+main.wide{min-width:0;max-width:100%}
+.tw{max-width:100%}
