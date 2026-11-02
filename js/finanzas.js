@@ -51,9 +51,9 @@ function pintar(){
  const c=calc();
  $("vEnt").textContent="+"+$$(c.entro);$("vSal").textContent="−"+$$(c.salV);
  const q=$("vQue");q.textContent=$n(c.queda);q.className=c.queda>=0?"pos":"neg";
- $("vPuse").textContent=$$(c.puse);
- $("vRes").innerHTML=c.puse<=0?`<p class="rt">Sin inversión propia.</p>`:c.res>=0?`<p class="rt ok">Ya recuperaste tu inversión. Ganancia: <b>${$$(c.res)}</b></p>`:`<p class="rt mal">Te faltan <b>${$$(-c.res)}</b> para recuperar tu inversión</p>`;
- $("vDeu").innerHTML=`<a href="#cue"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="#cue"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
+ const bn=$("vRes");bn.className="banner "+(c.puse<=0?"":c.res>=0?"ok":"mal");
+ bn.innerHTML=c.puse<=0?`<span class="bi">i</span><p>Sin inversión propia en este periodo.</p>`:c.res>=0?`<span class="bi">✓</span><p>Ya recuperaste tu inversión. Ganancia: <b>${$$(c.res)}</b></p>`:`<span class="bi">!</span><p>Te faltan <b>${$$(-c.res)}</b> para recuperar tu inversión</p>`;
+ $("vDeu").innerHTML=`<div><span>Inversión</span><b>${$$(c.puse)}</b></div><a href="#cue"><span>Debo</span><b>${$$(c.debo)}</b></a><a href="#cue"><span>Me deben</span><b>${$$(c.deben)}</b></a>`;
  deudas();
  const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});
  let it=Object.entries(cat).sort((a,b)=>b[1]-a[1]);if(it.length>6){const o=it.slice(6).reduce((t,x)=>t+x[1],0);it=it.slice(0,6);it.push(["Otros",o])}
@@ -68,8 +68,8 @@ function lista(){
  R.sort((a,b)=>b.ts-a.ts);
  $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.f));
  $("mL").innerHTML=R.length?R.slice(0,100).map(r=>{
-  if(r.k==="v"){const v=r.v;return `<div class="rw mv"><div class="ti"><b>Venta #${v.numero}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</b><small>${fdate(v.created_at)}${v.metodo_pago?" · "+esc(v.metodo_pago):""} · del sistema de ventas</small></div><div class="am2"><b class="pos">+${$$(+v.total)}</b></div></div>`}
-  const m=r.m,ent=m.tipo==="ingreso";return `<div class="rw mv" data-id="${m.id}"><div class="ti"><b>${esc(m.categoria||"")}</b><small>${esc(m.descripcion||"")}</small><small>${fdate(m.fecha)}${ent?"":" · "+(m.origen==="propio"?"mi bolsillo / tarjeta":"de las ventas")}</small></div><div class="am2"><b class="${ent?"pos":"neg"}">${ent?"+":"−"}${$$(+m.monto)}</b></div></div>`}).join("")+(R.length>100?`<p class="hint">Mostrando 100 de ${R.length}. Usa el buscador o acorta el periodo.</p>`:""):`<div class="empty card">No hay movimientos.</div>`}
+  if(r.k==="v"){const v=r.v;return `<div class="rw mv"><span class="mi in">↑</span><div class="ti"><b>Venta #${v.numero}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</b><small>${fdate(v.created_at)}${v.metodo_pago?" · "+esc(v.metodo_pago):""} · del sistema de ventas</small></div><div class="am2"><b class="pos">+${$$(+v.total)}</b></div></div>`}
+  const m=r.m,ent=m.tipo==="ingreso";return `<div class="rw mv" data-id="${m.id}"><span class="mi ${ent?"in":"out"}">${ent?"↑":"↓"}</span><div class="ti"><b>${esc(m.categoria||"")}</b><small>${esc(m.descripcion||"")}</small><small>${fdate(m.fecha)}${ent?"":" · "+(m.origen==="propio"?"mi bolsillo / tarjeta":"de las ventas")}</small></div><div class="am2"><b class="${ent?"pos":"neg"}">${ent?"+":"−"}${$$(+m.monto)}</b></div></div>`}).join("")+(R.length>100?`<p class="hint">Mostrando 100 de ${R.length}. Usa el buscador o acorta el periodo.</p>`:""):`<div class="empty card">No hay movimientos.</div>`}
 
 function anotar(m){
  m=m||{tipo:"gasto",fecha:ymd(new Date()),categoria:"",descripcion:"",monto:"",origen:"ventas"};

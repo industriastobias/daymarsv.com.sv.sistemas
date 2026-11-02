@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="css/estilo.css?v=202611011610">
 <link rel="stylesheet" href="css/compra.css?v=202610311459">
 <link rel="stylesheet" href="css/almacen.css?v=202611021033">
-<link rel="stylesheet" href="css/paginas.css?v=202611021330"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<link rel="stylesheet" href="css/paginas.css?v=202611021500"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide fs">
@@ -20,16 +20,18 @@
  <div class="prd" id="fBar"><button class="btn g" data-q="all">Todo</button><button class="btn g" data-q="year">Este año</button><button class="btn g" data-q="month">Este mes</button></div>
 
  <section id="p-res">
-  <section class="pan caja">
-   <h3>Caja de ventas</h3>
-   <div class="st"><span>Entró</span><b class="pos" id="vEnt">$0.00</b></div>
-   <div class="st"><span>Salió</span><b class="neg" id="vSal">$0.00</b></div>
-   <div class="st fin"><span>Queda en caja</span><b id="vQue">$0.00</b></div>
-  </section>
-  <section class="pan caja"><div class="st"><span>Inversión</span><b id="vPuse">$0.00</b></div></section>
-  <section class="pan caja res" id="vRes"></section>
-  <div class="kp3" id="vDeu"></div>
-  <section class="pan"><h3>¿En qué se fue el dinero?</h3><div id="vGraf"></div></section>
+  <div class="rg">
+   <div class="rg-l">
+    <section class="hero">
+     <span class="hl">Queda en caja</span>
+     <b class="hn" id="vQue">$0.00</b>
+     <div class="hs"><div><span>Entró</span><b class="pos" id="vEnt">$0.00</b></div><div><span>Salió</span><b class="neg" id="vSal">$0.00</b></div></div>
+    </section>
+    <div class="banner" id="vRes"></div>
+    <div class="tiles" id="vDeu"></div>
+   </div>
+   <section class="pan rg-r"><h3>¿En qué se fue el dinero?</h3><div id="vGraf"></div></section>
+  </div>
  </section>
 
  <section id="p-mov" class="hidden">
@@ -56,5 +58,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="js/app.js?v=202611021229"></script>
 <script src="js/comun.js?v=202610311459"></script>
-<script src="js/finanzas.js?v=202611021343"></script>
+<script src="js/finanzas.js?v=202611021500"></script>
 </body></html>
