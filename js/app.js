@@ -65,7 +65,7 @@ async function regenerarBarras(btn){
   const v=await input("Se cambiará el código de barras de TODOS los productos (en stock, agotados y ocultos) y de sus colores. Solo se puede hacer UNA vez.\n\nOJO: las etiquetas ya impresas dejarán de funcionar, los enlaces de WhatsApp y las fotos de la tienda que usan el código anterior se rompen, y los pedidos en línea pendientes con códigos viejos no encontrarán el producto.\n\nEscribe REGENERAR para continuar.","",{titulo:"Regenerar códigos de barras",ok:"Regenerar",peligro:true});
   if(v===null||String(v).trim().toUpperCase()!=="REGENERAR"){if(v!==null)await say("No se escribió REGENERAR. No se cambió nada.");return}
   btn.disabled=true;btn.textContent="Regenerando…";
-  const r=await db.rpc("regenerar_codigos_barras");if(r.error)throw new Error(r.error.message);const d=r.data||{};
+  const r=await db.rpc("regenerar_codigos_barras_una_vez");if(r.error)throw new Error(r.error.message);const d=r.data||{};
   await say("Listo. Códigos nuevos: "+d.productos+" productos y "+d.variantes+" colores. Recarga las páginas del sistema para verlos.")
  }catch(e){await say("No se pudo regenerar: "+e.message+". No se cambió nada.")}
  finally{btn.disabled=false;btn.textContent=t0}}
