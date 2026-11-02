@@ -170,3 +170,4 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 .fs #dL .rw.dc .ti small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px}
 .fs #dL .rw.dc .btn{width:100%;min-height:40px;margin-top:4px}
 @media(max-width:520px){#dL{grid-template-columns:1fr}}
+@media(min-width:960px){.fs .ftop{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:nowrap;margin-bottom:14px}.fs .ftop .bnav{margin:0;flex:none}.fs .ftop #fBar{margin:0;flex:none}}
