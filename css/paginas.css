@@ -91,3 +91,14 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 
 .cas{padding:6px 14px}.cas .st{padding:12px 2px}.cas .st.fin{margin:6px 0;padding:12px}
 details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan .din{border:0;padding:0;box-shadow:none;margin-top:8px}
+
+/* Finanzas simple */
+.fs .caja{margin-bottom:10px}.fs .caja h3{margin:0 0 4px;font-size:15px}
+.fs .caja .st{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line);font-size:15px}
+.fs .caja .st small{color:var(--mute);font-size:12px;font-weight:400}.fs .caja .st b{font:700 19px "Bricolage Grotesque",sans-serif;white-space:nowrap}
+.fs .caja .st b.pos{color:var(--ok)}.fs .caja .st b.neg{color:var(--bad)}
+.fs .caja .st.fin{border:2px solid var(--wine);border-radius:12px;margin-top:8px;padding:12px;font-weight:700}.fs .caja .st.fin b{font-size:26px}
+.fs .res .rt{font-size:16px;margin:6px 0}.fs .res .rt.ok{color:var(--ok)}.fs .res .rt.mal{color:var(--bad)}.fs .res .mn{color:var(--mute);font-size:12.5px;margin:2px 0 0}
+.fs .kp3 .lk{display:flex;height:100%;align-items:center;justify-content:center;color:var(--wine);font-weight:700;text-decoration:none}
+.fs .rw.mv{cursor:pointer}.fs #fBar{margin-bottom:10px}
+.fs .rw.mv small{display:block}.fs .rw.mv .am2{margin-top:2px}

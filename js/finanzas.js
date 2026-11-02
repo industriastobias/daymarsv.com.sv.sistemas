@@ -1,291 +1,95 @@
-/* DAYMAR-SHOP · Finanzas (solo administradores) · conectado a Supabase */
+/* DAYMARSV · Finanzas simple (solo administradores)
+   Idea: el dinero de las ventas es una caja. De ahí salen las compras (productos, insumos, envíos…).
+   Lo que pagaste con tu tarjeta o tu bolsillo es "lo que puse yo". */
 (async()=>{
 "use strict";
 const {db,esc,$$,ymd,toast,mountSide,requireSession}=DAY;
-const {$,r2,cents,norm,fdate,money,ic,deb,rpc,fetchAll,espera,modal,confirmar,pedirClave,pestanas,vistaDoc,DOC_CSS,excel,rango}=UI;
+const {$,r2,norm,fdate,fetchAll,espera,modal,pedirClave,excel,rango,deb}=UI;
 const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
-const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',cap:'<path d="M12 3v18M16 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',ban:'<path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/>',prov:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/>'};
-const S={q:"all",desde:"",hasta:"",V:[],M:[],VD:[],DV:[],C:[],PR:[],B:[],CL:[],K:[],VA:[],MA:[],kt:"all",inv:0,tipo:"all",cu:"cobrar",PC:[],ready:false,all:[]};
-const CATS=["Alquiler","Servicios (luz, agua, internet)","Salarios","Publicidad","Transporte y envíos","Empaque","Impuestos","Mercadería","Flete","Comisiones","Materiales","Otros ingresos","Otros gastos"];
-const TN={ingreso:["Ingreso","ok"],gasto:["Gasto","or"],costo:["Costo directo","wa"],compra:["Compra de mercadería","wa"]};
-const mkey=d=>String(d).slice(0,7);
-const mes=k=>{const [y,m]=k.split("-");return["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"][+m-1]+" "+y.slice(2)};
-
-/* ---------- datos ---------- */
-async function cargarPeriodo(){
- if(S.q!=="custom"){[S.desde,S.hasta]=rango(S.q);$("fD").value=S.desde;$("fH").value=S.hasta}
- const d0=new Date(S.desde+"T00:00:00-06:00"),d1=new Date(S.hasta+"T00:00:00-06:00");d1.setDate(d1.getDate()+1);
- const [v,m,vd,dv]=await Promise.all([
-  db.rpc("fin_ventas_mensuales",{p_desde:S.desde,p_hasta:S.hasta}),
-  fetchAll(()=>db.from("fin_movimientos").select("*,proveedores(nombre)").gte("fecha",S.desde).lte("fecha",S.hasta).order("fecha",{ascending:false}).order("created_at",{ascending:false})),
-  fetchAll(()=>db.from("ventas").select("id,numero,created_at,total,envio,tipo,metodo_pago,cliente_nombre,profiles(nombre),venta_items(cantidad,precio_unit,nombre,productos(nombre))").eq("estado","completada").gte("created_at",d0.toISOString()).lt("created_at",d1.toISOString()).order("created_at",{ascending:false})),
-  fetchAll(()=>db.from("devoluciones").select("id,numero,fecha,created_at,venta_numero,cliente_nombre,monto_devuelto,monto_nuevo").gte("fecha",S.desde).lte("fecha",S.hasta)).catch(()=>[])]);
- if(v.error)throw new Error(v.error.message);S.V=v.data||[];S.M=m;S.VD=vd;S.DV=dv}
-async function cargarGeneral(){
- const [kk,va,ma,cl]=await Promise.all([db.from("capital_movs").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}),db.rpc("fin_ventas_mensuales",{p_desde:"2000-01-01",p_hasta:ymd(new Date())}),fetchAll(()=>db.from("fin_movimientos").select("tipo,monto")),fetchAll(()=>db.from("clientes").select("id,nombre").order("nombre"))]);
- if(kk.error)throw new Error(kk.error.message);if(va.error)throw new Error(va.error.message);S.K=kk.data;S.VA=va.data||[];S.MA=ma;S.CL=cl;
- const [c,p,b,pr,all]=await Promise.all([db.from("fin_cuentas").select("*").order("vence",{ascending:true,nullsFirst:false}),db.from("proveedores").select("*").order("nombre"),db.from("fin_banco").select("*").order("fecha",{ascending:false}).order("created_at",{ascending:false}).limit(12),
-  fetchAll(()=>db.from("productos").select("stock,precio_costo").eq("activo",true)),fetchAll(()=>db.from("fin_movimientos").select("id,fecha,tipo,monto,conciliado,descripcion,categoria").order("fecha",{ascending:false}).limit(1000))]);
- [c,p,b].forEach(x=>{if(x.error)throw new Error(x.error.message)});
- S.PC=await fetchAll(()=>db.from("ventas").select("id,numero,created_at,cliente_nombre,subtotal,abonado,pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente").order("created_at",{ascending:false})).catch(()=>[]);
- S.C=c.data;S.PR=p.data;S.B=b.data;S.inv=pr.reduce((s,x)=>s+x.stock*x.precio_costo,0);S.all=all}
-const sumM=(t)=>S.M.filter(m=>m.tipo===t).reduce((s,m)=>s+ +m.monto,0);
-function calc(){
- const ventas=S.V.reduce((s,x)=>s+ +x.ventas,0),costoV=S.V.reduce((s,x)=>s+ +x.costo,0),nV=S.V.reduce((s,x)=>s+ +x.n,0);
- const oi=sumM("ingreso"),ga=sumM("gasto"),co=sumM("costo"),cm=sumM("compra");
- const ingresos=ventas+oi,egresos=costoV+co+ga,util=ingresos-egresos;
- const dias=Math.max(1,Math.round((new Date(S.hasta)-new Date(S.desde))/864e5)+1);
- return {ventas,costoV,nV,oi,ga,co,cm,ingresos,egresos,util,dias,bruta:ventas-costoV}}
-const pcTot=()=>S.PC.reduce((s,v)=>s+(+v.pendiente_monto||0),0);
-const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+(c.monto-c.abonado),0)+(t==="cobrar"?pcTot():0);
-
-/* ---------- Resumen ---------- */
-/* Gráfica: 4 series por mes (todas visibles al abrir; toca una leyenda para ocultarla o mostrarla) */
-const SER=[["ing","Ingresos","var(--wine)"],["ope","Gastos operativos","var(--gold)"],["dir","Gastos directos","#d9822b"],["bal","Me queda","var(--ok)"]];
-let agr="todo",vista="barras";const serOn=new Set(SER.map(x=>x[0]));
-document.addEventListener("click",e=>{const vv=e.target.closest("#rG [data-vw]");if(vv){vista=vv.dataset.vw;$("rG").innerHTML=grafico();return}const g=e.target.closest("#rG [data-ag]");if(g){agr=g.dataset.ag;$("rG").innerHTML=grafico();return}const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
-function grafico(){
- const mp={};const gk=k=>agr==="anio"?k.slice(0,4):agr==="todo"?"todo":k;const mk=k=>{k=gk(k);return mp[k]=mp[k]||{ing:0,ope:0,dir:0,bal:0}};
- S.V.forEach(x=>{const o=mk(mkey(x.mes));o.ing+=+x.ventas;o.dir+=+x.costo});
- S.M.forEach(m=>{const o=mk(mkey(m.fecha));if(m.tipo==="ingreso")o.ing+=+m.monto;else if(m.tipo==="gasto")o.ope+=+m.monto;else if(m.tipo==="costo")o.dir+=+m.monto});
- const ks=Object.keys(mp).sort();ks.forEach(k=>{const o=mp[k];o.bal=o.ing-o.ope-o.dir});
- const vw=`<div class="lg agr">`+[["pastel","Pastel"],["barras","Barras"]].map(([k,n])=>`<button type="button" class="lgb ag${vista===k?" on":""}" data-vw="${k}">${n}</button>`).join("")+`</div>`;
- const ag=vw+(vista==="barras"?`<div class="lg agr">`+[["todo","Todo"],["anio","Por año"],["mes","Por mes"]].map(([k,n])=>`<button type="button" class="lgb ag${agr===k?" on":""}" data-ag="${k}">${n}</button>`).join("")+`</div>`:"");
- const lg=ag+`<div class="lg">`+SER.map(([k,n,c])=>`<button type="button" class="lgb${serOn.has(k)?"":" off"}" data-sr="${k}" aria-pressed="${serOn.has(k)}"><i style="background:${c}"></i>${n}</button>`).join("")+`</div>`;
- if(!ks.length)return lg+`<div class="empty">Sin movimientos en este periodo.</div>`;
- const act=SER.filter(x=>serOn.has(x[0]));if(!act.length)return lg+`<div class="empty">Toca una leyenda para mostrar datos.</div>`;
- if(vista==="pastel"){
-  const T=ks.reduce((a,k)=>({ing:a.ing+mp[k].ing,ope:a.ope+mp[k].ope,dir:a.dir+mp[k].dir}),{ing:0,ope:0,dir:0}),bal=T.ing-T.ope-T.dir;
-  const parts=SER.filter(x=>x[0]!=="ing"&&(x[0]!=="bal"||bal>0)).map(([id,n,c])=>[id,n,c,id==="bal"?bal:T[id]]).filter(x=>serOn.has(x[0])&&x[3]>0);
-  const tot=parts.reduce((a,x)=>a+x[3],0);if(!tot)return lg+`<div class="empty">Sin datos para mostrar en este periodo.</div>`;
-  const R=80,r=50,cx=100,cy=100;let a0=-Math.PI/2,sv="";
-  parts.forEach(([id,n,c,v])=>{const f=v/tot,a1=a0+f*2*Math.PI-(f===1?1e-4:0),L=a1-a0>Math.PI?1:0,P=(rr,a)=>(cx+rr*Math.cos(a)).toFixed(2)+" "+(cy+rr*Math.sin(a)).toFixed(2);
-   sv+=`<path d="M${P(R,a0)} A${R} ${R} 0 ${L} 1 ${P(R,a1)} L${P(r,a1)} A${r} ${r} 0 ${L} 0 ${P(r,a0)}Z" style="fill:${c}"><title>${n} ${money(v)} (${(f*100).toFixed(1)}%)</title></path>`;a0=a1});
-  const lista=parts.map(([id,n,c,v])=>`<li><i style="background:${c}"></i><span>${n}</span><b>${money(v)}</b><small>${(v/tot*100).toFixed(1)}%</small></li>`).join("");
-  return lg+`<div class="pie"><svg viewBox="0 0 200 200" role="img" aria-label="Reparto del ingreso">${sv}<text x="100" y="94" text-anchor="middle" class="pc1">${bal>=0?"Balance":"Sin balance"}</text><text x="100" y="114" text-anchor="middle" class="pc2">${money(bal)}</text></svg><div><div class="pm">Ingreso neto: <b>${money(T.ing)}</b></div><ul>${lista}</ul>${bal<0?`<p class="pw">Gastaste más de lo que entró: el balance es ${money(bal)}.</p>`:""}</div></div>`}
- const vals=ks.flatMap(k=>act.map(x=>mp[k][x[0]]));
- const W=640,H=240,pl=48,pb=26,pt=10,ih=H-pb-pt,gp=(W-pl)/ks.length,bw=Math.min(24,gp/(act.length+1));
- const nice=v=>{if(v<=0)return 0;const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p};
- const top=nice(Math.max(1,...vals)),bot=-nice(Math.max(0,-Math.min(0,...vals))),rg=top-bot,Y=v=>pt+ih*(1-(v-bot)/rg);
- const fm=v=>Math.abs(v)>=1000?(v/1000)+"k":Math.round(v);
- let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingreso neto, gastos y balance">`;
- for(let i=0;i<=4;i++){const v=bot+rg*i/4,y=Y(v);s+=`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="${Math.abs(v)<1e-9?"var(--mute)":"var(--line)"}"/><text x="${pl-6}" y="${y+4}" text-anchor="end">${fm(v)}</text>`}
- ks.forEach((k,j)=>{const cx=pl+gp*j+gp/2,x0=cx-bw*act.length/2;
-  act.forEach(([id,n,c],i)=>{const v=mp[k][id],y=Y(Math.max(v,0)),h=Math.abs(Y(v)-Y(0));
-   s+=`<rect x="${x0+i*bw+1}" y="${y}" width="${bw-2}" height="${Math.max(h,1)}" rx="3" style="fill:${c}"><title>${k==="todo"?"Total":k.length===4?k:mes(k)} · ${n} ${money(v)}</title></rect>`});
-  s+=`<text x="${cx}" y="${H-8}" text-anchor="middle">${k==="todo"?"Total":k.length===4?k:mes(k)}</text>`});
- return lg+s+"</svg>"}
-/* Dinero que tengo (estimado, de todo el tiempo): lo que entró en efectivo menos lo que salió */
-function pintarDin(){
- const el=$("rDin");if(!el)return;
- const m=t=>S.MA.filter(x=>x.tipo===t).reduce((a,x)=>a+ +x.monto,0),k=sumK,ven=S.VA.reduce((a,x)=>a+ +x.ventas,0);
- const ent=[["Ventas cobradas",ven],["Otros ingresos y cobros de cuentas",m("ingreso")],["Inversión tuya",k("inversion")],["Préstamos recibidos",k("prestamo")]];
- const sal=[["Gastos",m("gasto")],["Costos directos",m("costo")],["Compras de mercadería",m("compra")],["Retiros",k("retiro")],["Pagos de préstamos",k("pago_prestamo")]];
- const E=ent.reduce((a,x)=>a+x[1],0),Sa=sal.reduce((a,x)=>a+x[1],0),T=E-Sa,b=S.B&&S.B[0];
- const fila=(n,v,c)=>`<li><span>${n}</span><b class="${c}">${c==="neg"?"−":"+"}${$$(v)}</b></li>`;
- el.innerHTML=`<div class="pan din"><h3>Dinero que tengo</h3><div class="dt ${T>=0?"pos":"neg"}">${$n(T)}</div><small class="cf-m">Estimado con todo lo registrado: lo que ha entrado menos lo que ha salido, de todo el tiempo.</small><div class="dc"><ul>${ent.filter(x=>x[1]).map(x=>fila(x[0],x[1],"pos")).join("")}</ul><ul>${sal.filter(x=>x[1]).map(x=>fila(x[0],x[1],"neg")).join("")}</ul></div>${b?`<p class="hint">Saldo que anotaste en Banco: <b>${$$(+b.saldo_banco)}</b> (${fdate(b.fecha)}). Si no coincide, falta registrar algo o actualizar el saldo.</p>`:""}</div>`}
-function pintarRes(){
- pintarDin();
- const c=calc();
- const neto=c.ingresos-c.costoV-c.co,gd=c.costoV+c.co,bal=c.util;
- const st=(n,v,cl)=>`<div class="st ${cl||""}"><span>${n}</span><b>${v}</b></div>`;
- $("rK").innerHTML=`<div class="pan cas">
-  ${st("Ingresos",$$(c.ingresos),"")}
-  ${st("Gastos directos","−"+$$(gd),"neg")}
-  ${st("Gastos operativos","−"+$$(c.ga),"neg")}
-  ${st("Me queda",$n(bal),"fin "+(bal>=0?"pos":"neg"))}
- </div>
- <div class="kp3"><div><span>Inversión</span><b>${$$(sumK("inversion"))}</b></div><div><span>Debo</span><b>${$$(pend("pagar"))}</b></div><div><span>Me deben</span><b>${$$(pend("cobrar"))}</b></div></div>`;
- $("rG").innerHTML=grafico();
- const ven=S.C.filter(x=>x.estado==="pendiente"&&x.vence&&x.vence<ymd(new Date()));
- $("rA").innerHTML=ven.length?`<div class="alert bad"><div><b>${ven.length} cuenta(s) vencida(s)</b>${ven.slice(0,3).map(x=>esc(x.tercero)).join(", ")}${ven.length>3?"…":""} — revísalas en Cuentas.</div></div>`:""}
-
-/* ---------- Movimientos ---------- */
-const TIPO_V={inmediata:"Inmediata",cod:"Contra entrega",entrega_pendiente:"Pend. entrega",cobro_pendiente:"Pend. cobro"};
-function filasMov(){const q=norm($("mQ").value),R=[];
- S.M.forEach(m=>{if((S.tipo==="all"||m.tipo===S.tipo)&&(!q||norm(m.categoria+" "+(m.descripcion||"")+" "+(m.referencia||"")+" "+(m.proveedores?m.proveedores.nombre:"")).includes(q)))R.push({k:"m",m,ts:new Date(m.fecha+"T12:00:00-06:00").getTime()})});
- if(S.tipo==="all"||S.tipo==="ingreso"||S.tipo==="venta"){
-  S.VD.forEach(v=>{const items=(v.venta_items||[]).map(i=>`${i.cantidad}× ${i.nombre||(i.productos&&i.productos.nombre)||"Producto"} a ${$$(i.precio_unit)}`);
-   if(!q||norm("venta "+v.numero+" "+items.join(" ")+" "+(v.cliente_nombre||"")+" "+(v.profiles?v.profiles.nombre:"")+" "+v.metodo_pago).includes(q))R.push({k:"v",v,items,ts:new Date(v.created_at).getTime()})});
-  S.DV.forEach(d=>{if(!q||norm("devolucion "+(d.cliente_nombre||"")).includes(q))R.push({k:"d",d,ts:new Date((d.created_at||d.fecha+"T12:00:00-06:00")).getTime()})})}
- return R.sort((a,b)=>b.ts-a.ts)}
-function pintarMov(){
- const L=filasMov(),c=calc(),t=k=>S.M.filter(m=>m.tipo===k).reduce((s,m)=>s+ +m.monto,0);
- $("mK").innerHTML=`<div><span>Ingresos</span><b class="pos">${$$(c.ingresos)}</b><small>ventas ${$$(c.ventas)} (automático) + otros ${$$(c.oi)}</small></div><div><span>Gastos</span><b class="neg">${$$(t("gasto"))}</b></div><div><span>Costos directos</span><b>${$$(t("costo"))}</b></div><div><span>Compras de mercadería</span><b>${$$(t("compra"))}</b><small>Inventario, no baja la utilidad</small></div>`;
- $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.tipo));
- const fh=iso=>fdate(iso)+" "+new Date(iso).toLocaleTimeString("es-SV",{hour:"2-digit",minute:"2-digit"});
- $("mL").innerHTML=L.length?L.slice(0,300).map(r=>{
-  if(r.k==="v"){const v=r.v;return`<div class="rw"><div class="ti"><b>Venta #${v.numero}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</b><small style="display:block">${r.items.map(esc).join(" · ")}</small><small style="display:block">${fh(v.created_at)} · Vendió: ${esc(v.profiles?v.profiles.nombre:"—")} · ${esc(v.metodo_pago||"")} · ${TIPO_V[v.tipo]||""}</small></div><div class="am2"><span class="bd ok">Venta</span> <b class="pos">+${$$(+v.total-(+v.envio||0))}</b>${+v.envio?`<small style="display:block;color:var(--mute);text-align:right">sin envío ${$$(+v.envio)}</small>`:""}</div></div>`}
-  if(r.k==="d"){const d=r.d,n=+d.monto_nuevo-+d.monto_devuelto;return`<div class="rw"><div class="ti"><b>Devolución/cambio #${d.numero}${d.cliente_nombre?" · "+esc(d.cliente_nombre):""}</b><small>${fdate(d.fecha)} · de la venta #${d.venta_numero||"—"}</small></div><div class="am2"><span class="bd wa">Devolución</span> <b class="${n>=0?"pos":"neg"}">${n>=0?"+":"−"}${$$(Math.abs(n))}</b></div></div>`}
-  const m=r.m;return`<div class="rw"><div class="ti"><b>${esc(m.categoria)}${m.descripcion?" · "+esc(m.descripcion):""}</b><small>${fdate(m.fecha)} · ${esc(m.metodo||"")}${m.proveedores?" · "+esc(m.proveedores.nombre):""}${m.referencia?" · Ref. "+esc(m.referencia):""}</small></div>
-  <div class="am2"><span class="bd ${TN[m.tipo][1]}">${TN[m.tipo][0]}</span> <b class="${m.tipo==="ingreso"?"pos":"neg"}">${m.tipo==="ingreso"?"+":"−"}${$$(m.monto)}</b></div><button class="btn g sm" data-me="${m.id}">Editar</button></div>`}).join("")+(L.length>300?`<p class="hint">Mostrando los 300 más recientes. Acota el periodo para ver el resto.</p>`:"")
-  :`<div class="empty card">No hay movimientos en este periodo.</div>`}
-function formMov(m){
- m=m||{tipo:"gasto",fecha:ymd(new Date()),categoria:"",descripcion:"",monto:"",metodo:"Efectivo",proveedor_id:"",referencia:""};
- let tipo=m.tipo;
- const d=modal(m.id?"Editar movimiento":"Nuevo movimiento",`<div class="tp" id="fmT">${Object.keys(TN).map(k=>`<button type="button" data-t="${k}" class="${k===tipo?"on":""}">${TN[k][0]}</button>`).join("")}</div>
-  <div class="fg"><div><label>Fecha</label><input name="f" type="date" value="${m.fecha}"></div><div><label>Monto ($)</label><input name="mo" type="number" min="0.01" step="0.01" inputmode="decimal" value="${m.monto}"></div>
-  <div><label>Categoría</label><input name="c" list="dlCat" maxlength="60" value="${esc(m.categoria)}" placeholder="Ej. Alquiler"><datalist id="dlCat">${CATS.map(c=>`<option>${esc(c)}`).join("")}</datalist></div>
-  <div><label>Método</label><select name="me">${["Efectivo","Transferencia","Tarjeta"].map(x=>`<option ${x===m.metodo?"selected":""}>${x}</option>`).join("")}</select></div>
-  <div class="full"><label>Descripción <small>(opcional)</small></label><input name="d" maxlength="160" value="${esc(m.descripcion||"")}"></div>
-  <div><label>Proveedor <small>(opcional)</small></label><select name="p"><option value="">—</option>${S.PR.map(p=>`<option value="${p.id}" ${p.id===m.proveedor_id?"selected":""}>${esc(p.nombre)}</option>`).join("")}</select></div>
-  <div><label>Referencia <small>(factura, recibo)</small></label><input name="r" maxlength="60" value="${esc(m.referencia||"")}"></div></div><div class="err2" id="fmE" role="alert"></div>`,
-  {foot:`${m.id?'<button class="btn g" id="fmDel" style="color:var(--bad);margin-right:auto">Eliminar</button>':""}<button class="btn g" data-x>Cancelar</button><button class="btn" id="fmOk">Guardar</button>`});
- d.q("#fmT").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b)return;tipo=b.dataset.t;d.el.querySelectorAll("#fmT button").forEach(x=>x.classList.toggle("on",x===b))});
- const g=n=>d.q(`[name=${n}]`).value.trim();
- d.q("#fmOk").onclick=async()=>{const mo=Number(g("mo"));if(!(mo>0)){d.q("#fmE").textContent="Escribe un monto mayor a cero.";return}if(!g("f")){d.q("#fmE").textContent="Elige la fecha.";return}if(!g("c")){d.q("#fmE").textContent="Escribe una categoría.";return}
-  const row={tipo,fecha:g("f"),monto:r2(mo),categoria:g("c"),descripcion:g("d")||null,metodo:g("me"),proveedor_id:g("p")||null,referencia:g("r")||null};
-  const ok=await espera(async()=>{const {error}=m.id?await db.from("fin_movimientos").update(row).eq("id",m.id):await db.from("fin_movimientos").insert({...row,creado_por:me.id});if(error)throw new Error(error.message);return true});
-  if(ok){d.close();toast("Movimiento guardado");await refrescar()}};
- const del=d.q("#fmDel");if(del)del.onclick=async()=>{if(!await pedirClave("Vas a eliminar este movimiento."))return;
-  const ok=await espera(async()=>{const {error}=await db.from("fin_movimientos").delete().eq("id",m.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Movimiento eliminado");await refrescar()}}}
-$("mNew").onclick=()=>formMov();
-$("mL").addEventListener("click",e=>{const b=e.target.closest("[data-me]");if(b)formMov(S.M.find(x=>x.id===b.dataset.me))});
-$("mSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.tipo=b.dataset.t;pintarMov()}});
-$("mQ").addEventListener("input",deb(pintarMov,150));
-$("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha",12],["Tipo",14],["Categoría",24],["Descripción",34],["Monto",12,"money"],["Método",14],["Proveedor",22],["Referencia",18]],f:S.M.map(m=>[m.fecha,TN[m.tipo][0],m.categoria,m.descripcion||"",+m.monto,m.metodo||"",m.proveedores?m.proveedores.nombre:"",m.referencia||""])},
- {n:"Ventas por mes",c:[["Mes",12],["Ventas",14,"money"],["Costo de ventas",16,"money"],["N.º de ventas",14]],f:S.V.map(v=>[mkey(v.mes),+v.ventas,+v.costo,+v.n])}]);
-
-/* ---------- Cuentas ---------- */
-function pintarCue(){
- $("cSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.cu));
- const L=S.C.filter(c=>c.tipo===S.cu),hoy=ymd(new Date()),p=L.filter(c=>c.estado==="pendiente");
- const pcs=S.cu==="cobrar"?S.PC:[],totC=p.reduce((s,c)=>s+c.monto-c.abonado,0);
- $("cK").innerHTML=`<div><span>${S.cu==="cobrar"?"Total por cobrar":"Por pagar"}</span><b>${$$(totC+(S.cu==="cobrar"?pcTot():0))}</b><small>${p.length+pcs.length} pendiente(s)</small></div>${S.cu==="cobrar"?`<div><span>Pendientes de cobro (ventas)</span><b>${$$(pcTot())}</b><small>${pcs.length} cliente(s)</small></div><div><span>Otras cuentas por cobrar</span><b>${$$(totC)}</b><small>${p.length} cuenta(s)</small></div>`:""}<div><span>Vencidas</span><b class="neg">${p.filter(c=>c.vence&&c.vence<hoy).length}</b></div>`;
- const filasPC=pcs.map(v=>`<div class="rw"><div class="ti"><b>${esc(v.cliente_nombre||"Cliente")}</b><small>Venta #${v.numero} · pendiente de cobro · ${fdate(v.created_at)}</small><div class="bar" style="margin-top:6px"><i style="width:${+v.subtotal?(+v.abonado/+v.subtotal*100):0}%"></i></div></div><div class="am2"><b>${$$(v.pendiente_monto)}</b><br><small>de ${$$(v.subtotal)}</small></div><a class="btn g sm" href="pendientes.html">Ver</a></div>`).join("");
- $("cL").innerHTML=filasPC+(L.length?L.map(c=>{const pc=c.monto?c.abonado/c.monto*100:0,v=c.estado==="pendiente"&&c.vence&&c.vence<hoy;
-  return `<div class="rw"><div class="ti"><b>${esc(c.tercero)}</b><small>${c.cliente_id?"Cliente guardado · ":""}${esc(c.concepto||"")}${c.concepto?" · ":""}${c.vence?"vence "+fdate(c.vence):"sin vencimiento"}</small><div class="bar ${c.estado==="pagada"?"ok":""}" style="margin-top:6px"><i style="width:${pc}%"></i></div></div>
-  <div class="am2"><b>${$$(c.monto-c.abonado)}</b><br><small>de ${$$(c.monto)}</small></div>${c.estado==="pagada"?'<span class="bd ok">Pagada</span>':v?'<span class="bd or">Vencida</span>':""}
-  ${c.estado==="pendiente"?`<button class="btn sm" data-ab="${c.id}">Abonar</button>`:""}<button class="btn g sm" data-cd="${c.id}" style="color:var(--bad)">Eliminar</button></div>`}).join(""):(filasPC?"":`<div class="empty card">No hay cuentas ${S.cu==="cobrar"?"por cobrar":"por pagar"}.</div>`))}
-$("cSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.cu=b.dataset.t;pintarCue()}});
-$("cNew").onclick=()=>{const d=modal("Nueva cuenta por "+(S.cu==="cobrar"?"cobrar":"pagar"),`<div class="fg">${S.cu==="cobrar"?`<div class="full"><label>Cliente guardado</label><select name="cl"><option value="">— Otra persona (escribir nombre) —</option>${S.CL.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join("")}</select></div>`:""}<div class="full"><label>${S.cu==="cobrar"?"Nombre":"Proveedor / acreedor"}</label><input name="t" maxlength="100"></div><div class="full"><label>Concepto <small>(opcional)</small></label><input name="c" maxlength="160"></div>
-  <div><label>Monto ($)</label><input name="m" type="number" min="0.01" step="0.01" inputmode="decimal"></div><div><label>Vence <small>(opcional)</small></label><input name="v" type="date"></div></div><div class="err2" id="cnE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cnOk">Guardar</button>`});
- const g=n=>d.q(`[name=${n}]`).value.trim();
- const sel=d.q("[name=cl]");if(sel)sel.addEventListener("change",()=>{const c=S.CL.find(x=>x.id===sel.value);d.q("[name=t]").value=c?c.nombre:"";d.q("[name=t]").readOnly=!!c});
- d.q("#cnOk").onclick=async()=>{if(!g("t")){d.q("#cnE").textContent="Escribe el nombre.";return}if(!(Number(g("m"))>0)){d.q("#cnE").textContent="Escribe un monto mayor a cero.";return}
-  const ok=await espera(async()=>{const {error}=await db.from("fin_cuentas").insert({tipo:S.cu,tercero:g("t"),concepto:g("c")||null,monto:r2(Number(g("m"))),vence:g("v")||null,cliente_id:(sel&&sel.value)||null});if(error)throw new Error(error.message);return true});
-  if(ok){d.close();toast("Cuenta registrada");await refrescar()}}};
-$("cL").addEventListener("click",async e=>{const a=e.target.closest("[data-ab]"),x=e.target.closest("[data-cd]");
- if(a){const c=S.C.find(z=>z.id===a.dataset.ab),sal=r2(c.monto-c.abonado);
-  const d=modal("Registrar abono",`<p class="pw" style="margin-top:0">${esc(c.tercero)} · saldo <b>${$$(sal)}</b>. El abono se registra también como ${c.tipo==="cobrar"?"ingreso":"gasto"}.</p><label>Monto del abono ($)</label><input name="a" type="number" min="0.01" step="0.01" max="${sal}" value="${sal}" inputmode="decimal"><div class="err2" id="abE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="abOk">Registrar</button>`});
-  d.q("#abOk").onclick=async()=>{const v=Number(d.q("[name=a]").value);if(!(v>0)||v>sal+.001){d.q("#abE").textContent="El abono debe ser mayor a cero y no pasar del saldo.";return}
-   const ok=await espera(async()=>{await rpc("abonar_cuenta",{p_id:c.id,p_monto:r2(v)});return true});if(ok){d.close();toast("Abono registrado");await refrescar()}}}
- if(x&&await confirmar("¿Eliminar esta cuenta? Los abonos ya registrados como movimientos no se borran.",{titulo:"Eliminar cuenta",ok:"Eliminar",peligro:true})){
-  const ok=await espera(async()=>{const {error}=await db.from("fin_cuentas").delete().eq("id",x.dataset.cd);if(error)throw new Error(error.message);return true});if(ok){await refrescar()}}});
-
-/* ---------- Informes ---------- */
-function filasEstado(){const c=calc(),por=(t)=>{const m={};S.M.filter(x=>x.tipo===t).forEach(x=>m[x.categoria]=(m[x.categoria]||0)+ +x.monto);return Object.entries(m).sort((a,b)=>b[1]-a[1])};
- const R=[["Ventas",c.ventas,"h"],["(−) Costo de lo vendido",-c.costoV,""],["Utilidad bruta",c.bruta,"t"]];
- if(c.oi){R.push(["Otros ingresos",null,"h"]);por("ingreso").forEach(([k,v])=>R.push(["   "+k,v,""]))}
- if(c.co){R.push(["(−) Costos directos",null,"h"]);por("costo").forEach(([k,v])=>R.push(["   "+k,-v,""]))}
- if(c.ga){R.push(["(−) Gastos de operación",null,"h"]);por("gasto").forEach(([k,v])=>R.push(["   "+k,-v,""]))}
- R.push(["Utilidad neta",c.util,"t"]);return R}
-function filasBalance(){const b=S.B[0],cobrar=pend("cobrar"),pagar=pend("pagar"),banco=b?+b.saldo_banco:0,act=S.inv+cobrar+banco,patr=act-pagar;
- return [["Activos",null,"h"],["   Efectivo y bancos"+(b?" (saldo al "+fdate(b.fecha)+")":" (sin registrar)"),banco,""],["   Cuentas por cobrar",cobrar,""],["   Inventario (al costo)",S.inv,""],["Total activos",act,"t"],["Pasivos",null,"h"],["   Cuentas por pagar",pagar,""],["Total pasivos",pagar,"t"],["Patrimonio (activos − pasivos)",patr,"t"]]}
-function filasInd(){const c=calc(),p=(a,b)=>b?(a/b*100).toFixed(1)+"%":"—";
- return [["Margen bruto",p(c.bruta,c.ventas)],["Margen neto",p(c.util,c.ingresos)],["Gastos sobre ingresos",p(c.ga+c.co,c.ingresos)],["Ticket promedio",c.nV?$$(c.ventas/c.nV):"—"],["Ventas promedio por día",$$(c.ventas/c.dias)],["Rotación de inventario",S.inv&&c.costoV?(c.costoV/S.inv).toFixed(2)+" veces":"—"],["Días de inventario",S.inv&&c.costoV?Math.round(S.inv/(c.costoV/c.dias))+" días":"—"]]}
-const tabla=(R,tt)=>`<table${tt?"":' class="tb"'}><tbody>${R.map(r=>`<tr class="${r[2]}"><td${r[2]==="h"?' style="font-weight:700"':""}>${esc(r[0]).replace(/ /g,"&nbsp;")}</td><td class="r">${r[1]===null?"":typeof r[1]==="number"?(r[1]<0?"−":"")+money(Math.abs(r[1])):r[1]}</td></tr>`).join("")}</tbody></table>`;
-function pintarInf(){
- $("iE").innerHTML=tabla(filasEstado());$("iB").innerHTML=tabla(filasBalance());$("iI").innerHTML=tabla(filasInd());
- $("iP").textContent=fdate(S.desde)+" al "+fdate(S.hasta)}
-$("iDoc").onclick=()=>{const per=fdate(S.desde)+" al "+fdate(S.hasta),h=`<div class="fx"><style>${DOC_CSS}</style><div class="top"><div><h1>DAYMAR-SHOP</h1><div class="sl">Informe financiero</div></div><div class="no"><b>${per}</b><br><small>Generado ${fdate(new Date().toISOString())}</small></div></div>
- <h2>Estado de resultados</h2>${tabla(filasEstado(),1)}<h2>Balance general (a hoy)</h2>${tabla(filasBalance(),1)}<h2>Indicadores</h2>${tabla(filasInd(),1)}
- <p style="margin-top:14px;color:#666;font-size:11px">Informe de gestión interna basado en las ventas completadas y los movimientos registrados; no sustituye la contabilidad formal.</p></div>`;
- vistaDoc("Informe financiero",h,"informe-financiero-"+S.desde+"_"+S.hasta)};
-
-/* ---------- Conciliación bancaria ---------- */
-function pintarBan(){
- const b=S.B[0],L=S.all,sg=m=>m.tipo==="ingreso"?+m.monto:-m.monto;
- const conc=L.filter(m=>m.conciliado).reduce((s,m)=>s+sg(m),0),pend=L.filter(m=>!m.conciliado);
- $("bK").innerHTML=`<div><span>Saldo del banco${b?" ("+fdate(b.fecha)+")":""}</span><b>${b?$$(b.saldo_banco):"—"}</b></div><div><span>Neto de movimientos conciliados</span><b>${$$(conc)}</b></div><div><span>Pendientes de conciliar</span><b>${pend.length}</b><small>${$$(pend.reduce((s,m)=>s+sg(m),0))}</small></div>`;
- $("bL").innerHTML=L.length?L.slice(0,150).map(m=>`<label class="rw" style="cursor:pointer"><input type="checkbox" class="ck" data-cc="${m.id}" ${m.conciliado?"checked":""}><div class="ti"><b>${esc(m.categoria)}${m.descripcion?" · "+esc(m.descripcion):""}</b><small>${fdate(m.fecha)}</small></div><div class="am2"><b class="${m.tipo==="ingreso"?"pos":"neg"}">${m.tipo==="ingreso"?"+":"−"}${$$(m.monto)}</b></div></label>`).join(""):`<div class="empty card">Aún no hay movimientos para conciliar.</div>`}
-$("bSave").onclick=async()=>{const v=$("bSal").value;if(v===""||!isFinite(Number(v))){toast("Escribe el saldo que muestra tu banco");return}
- const ok=await espera(async()=>{const {error}=await db.from("fin_banco").insert({fecha:$("bFec").value||ymd(new Date()),saldo_banco:r2(Number(v))});if(error)throw new Error(error.message);return true});
- if(ok){$("bSal").value="";toast("Saldo registrado");await refrescar()}};
-$("bL").addEventListener("change",async e=>{const c=e.target.closest("[data-cc]");if(!c)return;const m=S.all.find(x=>x.id===c.dataset.cc);m.conciliado=c.checked;
- const {error}=await db.from("fin_movimientos").update({conciliado:c.checked}).eq("id",m.id);if(error){toast(error.message);m.conciliado=!c.checked}pintarBan()});
-$("bFec").value=ymd(new Date());
-
-/* ---------- Proveedores ---------- */
-function pintarProv(){
- const tot={};S.all.length&&0;
- $("pL").innerHTML=S.PR.length?S.PR.map(p=>`<div class="rw"><div class="th ph">${esc((p.nombre[0]||"?").toUpperCase())}</div><div class="ti"><b>${esc(p.nombre)}</b><small>${[p.nit&&"NIT "+p.nit,p.telefono,p.correo].filter(Boolean).map(esc).join(" · ")||"Sin datos de contacto"}</small></div><button class="btn g sm" data-pe="${p.id}">Editar</button></div>`).join(""):`<div class="empty card">Aún no hay proveedores.</div>`}
-function formProv(p){p=p||{};
- const d=modal(p.id?"Editar proveedor":"Nuevo proveedor",`<div class="fg"><div class="full"><label>Nombre</label><input name="n" maxlength="100" value="${esc(p.nombre||"")}"></div><div><label>NIT</label><input name="nit" maxlength="30" value="${esc(p.nit||"")}"></div><div><label>Teléfono</label><input name="t" maxlength="30" inputmode="tel" value="${esc(p.telefono||"")}"></div>
-  <div class="full"><label>Correo</label><input name="c" type="email" maxlength="100" value="${esc(p.correo||"")}"></div><div class="full"><label>Dirección</label><input name="d" maxlength="160" value="${esc(p.direccion||"")}"></div><div class="full"><label>Observaciones</label><input name="o" maxlength="200" value="${esc(p.observaciones||"")}"></div></div><div class="err2" id="pvE"></div>`,
-  {foot:`${p.id?'<button class="btn g" id="pvDel" style="color:var(--bad);margin-right:auto">Eliminar</button>':""}<button class="btn g" data-x>Cancelar</button><button class="btn" id="pvOk">Guardar</button>`});
- const g=n=>d.q(`[name=${n}]`).value.trim();
- d.q("#pvOk").onclick=async()=>{if(!g("n")){d.q("#pvE").textContent="Escribe el nombre.";return}
-  const row={nombre:g("n"),nit:g("nit")||null,telefono:g("t")||null,correo:g("c")||null,direccion:g("d")||null,observaciones:g("o")||null};
-  const ok=await espera(async()=>{const {error}=p.id?await db.from("proveedores").update(row).eq("id",p.id):await db.from("proveedores").insert(row);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Proveedor guardado");await refrescar()}};
- const del=d.q("#pvDel");if(del)del.onclick=async()=>{if(!await pedirClave("Vas a eliminar al proveedor "+p.nombre+"."))return;
-  const ok=await espera(async()=>{const {error}=await db.from("proveedores").delete().eq("id",p.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Proveedor eliminado");await refrescar()}}}
-$("pNew").onclick=()=>formProv();$("pL").addEventListener("click",e=>{const b=e.target.closest("[data-pe]");if(b)formProv(S.PR.find(x=>x.id===b.dataset.pe))});
-
-/* ---------- Capital: inversión, retiros y préstamos ---------- */
-const KT={inversion:["Inversión","ok"],retiro:["Retiro","or"],prestamo:["Préstamo recibido","bl2"],pago_prestamo:["Pago de préstamo","wa"]};
 const $n=n=>n<0?"−"+$$(-n):$$(n);
-const sumK=t=>S.K.filter(k=>k.tipo===t).reduce((s,k)=>s+ +k.monto,0);
-function gananciaTotal(){const v=S.VA.reduce((s,x)=>s+ +x.ventas-+x.costo,0),m=t=>S.MA.filter(x=>x.tipo===t).reduce((s,x)=>s+ +x.monto,0);return v+m("ingreso")-m("gasto")-m("costo")}
-function pintarCap(){
- const inv=sumK("inversion"),ret=sumK("retiro"),pre=sumK("prestamo"),pag=sumK("pago_prestamo"),gan=gananciaTotal();
- $("kK").innerHTML=`<div><span>Invertido en el negocio</span><b>${$$(inv)}</b></div><div><span>Ganancia del negocio</span><b class="${gan>=0?"pos":"neg"}">${$n(gan)}</b><small>todo el tiempo</small></div>
-  <div><span>Retirado (dinero que tomaste)</span><b>${$$(ret)}</b></div><div><span>Ganancia sin retirar</span><b class="${gan-ret>=0?"pos":"neg"}">${$n(gan-ret)}</b></div>
-  <div><span>Debes por préstamos</span><b class="${pre-pag>0?"neg":""}">${$$(pre-pag)}</b><small>recibido ${$$(pre)} · pagado ${$$(pag)}</small></div><div><span>Inversión recuperada</span><b>${inv?Math.min(100,Math.max(0,ret/inv*100)).toFixed(0)+"%":"—"}</b><small>retiros ÷ inversión</small></div>`;
- const T={};S.K.filter(k=>k.tipo==="prestamo"||k.tipo==="pago_prestamo").forEach(k=>{const n=(k.tercero||"Sin nombre").trim();T[n]=T[n]||{r:0,p:0};if(k.tipo==="prestamo")T[n].r+=+k.monto;else T[n].p+=+k.monto});
- const ks=Object.keys(T);
- $("kP").innerHTML=ks.length?ks.map(n=>{const t=T[n],pc=t.r?Math.min(100,t.p/t.r*100):0;return `<div class="rw"><div class="ti"><b>${esc(n)}</b><small>Recibido ${$$(t.r)} · pagado ${$$(t.p)}</small><div class="bar ${t.r-t.p<=0.005?"ok":""}" style="margin-top:6px"><i style="width:${pc}%"></i></div></div><div class="am2"><b>${$$(t.r-t.p)}</b><br><small>${t.r-t.p<=0.005?"Pagado":"saldo"}</small></div></div>`}).join(""):`<p class="hint" style="margin:0">Aún no hay préstamos registrados.</p>`;
- $("kSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.kt));
- const L=S.K.filter(k=>S.kt==="all"||k.tipo===S.kt);
- $("kL").innerHTML=L.length?L.slice(0,300).map(k=>`<div class="rw"><div class="ti"><b>${esc(k.tercero||KT[k.tipo][0])}${k.descripcion?" · "+esc(k.descripcion):""}</b><small>${fdate(k.fecha)} · ${esc(k.metodo||"")}</small></div>
-  <div class="am2"><span class="bd ${KT[k.tipo][1]}">${KT[k.tipo][0]}</span> <b class="${k.tipo==="inversion"||k.tipo==="prestamo"?"pos":"neg"}">${k.tipo==="inversion"||k.tipo==="prestamo"?"+":"−"}${$$(k.monto)}</b></div><button class="btn g sm" data-ke="${k.id}">Editar</button></div>`).join(""):`<div class="empty card">No hay registros.</div>`}
-function formCap(k){
- k=k||{tipo:"inversion",fecha:ymd(new Date()),tercero:"",descripcion:"",monto:"",metodo:"Efectivo"};
- const AYU={inversion:"Dinero tuyo que pones al negocio (para comprar mercadería, equipo…).",retiro:"Dinero que tomas de las ventas o de la ganancia para ti.",prestamo:"Dinero que te prestó alguien (familiar, banco…). Escribe quién.",pago_prestamo:"Dinero que devuelves de un préstamo. Escribe a quién."};
- const d=modal(k.id?"Editar registro":"Nuevo registro de capital",`<div class="tp" id="kfT">${Object.keys(KT).map(t=>`<button type="button" data-t="${t}" class="${t===k.tipo?"on":""}">${KT[t][0]}</button>`).join("")}</div><p class="hint" id="kfA" style="margin-top:8px">${AYU[k.tipo]}</p>
-  <div class="fg"><div><label>Fecha</label><input name="f" type="date" value="${k.fecha}"></div><div><label>Monto ($)</label><input name="mo" type="number" min="0.01" step="0.01" inputmode="decimal" value="${k.monto}"></div>
-  <div><label id="kfTl">Persona o entidad <small>(opcional)</small></label><input name="t" list="dlKt" maxlength="80" value="${esc(k.tercero||"")}"><datalist id="dlKt">${[...new Set(S.K.filter(x=>x.tercero).map(x=>x.tercero))].map(x=>`<option>${esc(x)}`).join("")}</datalist></div>
-  <div><label>Método</label><select name="me">${["Efectivo","Transferencia","Tarjeta"].map(x=>`<option ${x===k.metodo?"selected":""}>${x}</option>`).join("")}</select></div>
-  <div class="full"><label>Nota <small>(opcional)</small></label><input name="d" maxlength="160" value="${esc(k.descripcion||"")}"></div></div><div class="err2" id="kfE" role="alert"></div>`,
-  {foot:`${k.id?'<button class="btn g" id="kfDel" style="color:var(--bad);margin-right:auto">Eliminar</button>':""}<button class="btn g" data-x>Cancelar</button><button class="btn" id="kfOk">Guardar</button>`});
- let tipo=k.tipo;
- d.q("#kfT").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b)return;tipo=b.dataset.t;d.el.querySelectorAll("#kfT button").forEach(x=>x.classList.toggle("on",x===b));d.q("#kfA").textContent=AYU[tipo]});
- const g=n=>d.q(`[name=${n}]`).value.trim();
- d.q("#kfOk").onclick=async()=>{const mo=Number(g("mo"));if(!(mo>0)){d.q("#kfE").textContent="Escribe un monto mayor a cero.";return}if(!g("f")){d.q("#kfE").textContent="Elige la fecha.";return}
-  if((tipo==="prestamo"||tipo==="pago_prestamo")&&!g("t")){d.q("#kfE").textContent="Escribe quién prestó o a quién le pagas.";return}
-  const row={tipo,fecha:g("f"),monto:r2(mo),tercero:g("t")||null,descripcion:g("d")||null,metodo:g("me")};
-  if(tipo==="pago_prestamo"){const sal=S.K.filter(x=>x.tercero===row.tercero&&x.id!==k.id).reduce((s,x)=>s+(x.tipo==="prestamo"?+x.monto:x.tipo==="pago_prestamo"?-x.monto:0),0);
-   if(row.monto>sal+.005&&!await confirmar(`Ese pago (${$$(row.monto)}) es mayor que lo que debes a ${esc(row.tercero)} (${$$(Math.max(0,sal))}). ¿Guardarlo igual?`,{titulo:"Revisa el pago",ok:"Guardar igual"}))return}
-  const ok=await espera(async()=>{const {error}=k.id?await db.from("capital_movs").update(row).eq("id",k.id):await db.from("capital_movs").insert({...row,creado_por:me.id});if(error)throw new Error(error.message);return true});
-  if(ok){d.close();toast("Registro guardado");await refrescar()}};
- const del=d.q("#kfDel");if(del)del.onclick=async()=>{if(!await pedirClave("Vas a eliminar este registro de capital."))return;
-  const ok=await espera(async()=>{const {error}=await db.from("capital_movs").delete().eq("id",k.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Registro eliminado");await refrescar()}}}
-$("kNew").onclick=()=>formCap();
-$("kL").addEventListener("click",e=>{const b=e.target.closest("[data-ke]");if(b)formCap(S.K.find(x=>x.id===b.dataset.ke))});
-$("kSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.kt=b.dataset.t;pintarCap()}});
+const S={q:"all",desde:"",hasta:"",V:[],M:[],K:[],C:[],PC:[],f:"all"};
+const CAT_IN=["Venta","Otro ingreso"],CAT_OUT=["Productos","Insumos y empaques","Tarjetas y etiquetas","Envíos","Impuestos y aduanas","Publicidad","Pago de préstamo","Otros"];
+const COL=["#6B2D3E","#C9973F","#d9822b","#2f7d4f","#4a6fa5","#9b5de5","#8d8d8d"];
 
-/* ---------- periodo y arranque ---------- */
-function pintarTodo(){pintarRes();pintarMov();pintarCue();pintarInf();pintarBan();pintarProv();pintarCap();
- $("fBar").querySelectorAll("[data-q]").forEach(b=>b.classList.toggle("on",b.dataset.q===S.q))}
-async function refrescar(){await espera(async()=>{await Promise.all([cargarPeriodo(),cargarGeneral()])},"Actualizando…");pintarTodo()}
+async function cargar(){
+ if(S.q!=="custom"){[S.desde,S.hasta]=rango(S.q)}
+ const [v,m,k,c,pc]=await Promise.all([
+  db.rpc("fin_ventas_mensuales",{p_desde:S.desde,p_hasta:S.hasta}),
+  fetchAll(()=>db.from("fin_movimientos").select("*").gte("fecha",S.desde).lte("fecha",S.hasta).order("fecha",{ascending:false}).order("created_at",{ascending:false})),
+  fetchAll(()=>db.from("capital_movs").select("tipo,monto,fecha").gte("fecha",S.desde).lte("fecha",S.hasta)).catch(()=>[]),
+  fetchAll(()=>db.from("fin_cuentas").select("tipo,monto,abonado,estado")).catch(()=>[]),
+  fetchAll(()=>db.from("ventas").select("pendiente_monto").eq("estado","pendiente").eq("tipo","cobro_pendiente")).catch(()=>[])]);
+ if(v.error)throw new Error(v.error.message);
+ S.V=v.data||[];S.M=m;S.K=k;S.C=c;S.PC=pc}
+
+const sum=a=>a.reduce((t,x)=>t+(+x.monto||0),0);
+const esSal=m=>m.tipo!=="ingreso";
+function calc(){
+ const ventas=S.V.reduce((t,x)=>t+ +x.ventas,0),otros=sum(S.M.filter(m=>m.tipo==="ingreso"));
+ const salV=sum(S.M.filter(m=>esSal(m)&&m.origen!=="propio")),salP=sum(S.M.filter(m=>esSal(m)&&m.origen==="propio"));
+ const inv=sum(S.K.filter(k=>k.tipo==="inversion"));
+ const entro=ventas+otros,queda=entro-salV,puse=salP+inv;
+ const debo=S.C.filter(c=>c.tipo==="pagar"&&c.estado==="pendiente").reduce((t,c)=>t+c.monto-c.abonado,0);
+ const deben=S.C.filter(c=>c.tipo==="cobrar"&&c.estado==="pendiente").reduce((t,c)=>t+c.monto-c.abonado,0)+S.PC.reduce((t,v)=>t+(+v.pendiente_monto||0),0);
+ return {entro,salV,queda,puse,res:queda-puse,debo,deben}}
+
+function donut(items){
+ const tot=items.reduce((t,x)=>t+x[1],0);if(!tot)return `<div class="empty">Todavía no hay salidas en este periodo.</div>`;
+ const R=80,r=50,cx=100,cy=100;let a0=-Math.PI/2,sv="";
+ const P=(rr,a)=>(cx+rr*Math.cos(a)).toFixed(2)+" "+(cy+rr*Math.sin(a)).toFixed(2);
+ items.forEach(([n,v],i)=>{const f=v/tot,a1=a0+f*2*Math.PI-(f===1?1e-4:0),L=a1-a0>Math.PI?1:0;
+  sv+=`<path d="M${P(R,a0)} A${R} ${R} 0 ${L} 1 ${P(R,a1)} L${P(r,a1)} A${r} ${r} 0 ${L} 0 ${P(r,a0)}Z" style="fill:${COL[i%COL.length]}"><title>${esc(n)} ${$$(v)}</title></path>`;a0=a1});
+ const li=items.map(([n,v],i)=>`<li><i style="background:${COL[i%COL.length]}"></i><span>${esc(n)}</span><b>${$$(v)}</b><small>${(v/tot*100).toFixed(0)}%</small></li>`).join("");
+ return `<div class="pie"><svg viewBox="0 0 200 200" role="img" aria-label="En qué se fue el dinero">${sv}<text x="100" y="95" text-anchor="middle" class="pc1">Salió</text><text x="100" y="115" text-anchor="middle" class="pc2">${$$(tot)}</text></svg><ul>${li}</ul></div>`}
+
+function pintar(){
+ const c=calc();
+ $("vEnt").textContent="+"+$$(c.entro);$("vSal").textContent="−"+$$(c.salV);
+ const q=$("vQue");q.textContent=$n(c.queda);q.className=c.queda>=0?"pos":"neg";
+ $("vPuse").textContent=$$(c.puse);
+ $("vRes").innerHTML=`<h3>3 · ¿Ya recuperé lo que puse?</h3>`+(c.puse<=0?`<p class="rt">No has puesto dinero propio en este periodo.</p>`:c.res>=0?`<p class="rt ok">Sí. Ya recuperaste lo que pusiste y te sobran <b>${$$(c.res)}</b> de ganancia.</p>`:`<p class="rt mal">Todavía no. Te faltan <b>${$$(-c.res)}</b> para recuperar lo que pusiste.</p>`)+`<p class="mn">Es lo que queda en caja (${$n(c.queda)}) menos lo que pusiste (${$$(c.puse)}).</p>`;
+ $("vDeu").innerHTML=`<div><span>Debo</span><b>${$$(c.debo)}</b></div><div><span>Me deben</span><b>${$$(c.deben)}</b></div><div><a href="finanzas-avanzado.html" class="lk">Ver deudas y abonar ›</a></div>`;
+ const cat={};S.M.filter(esSal).forEach(m=>{const k=(m.categoria||"Otros").trim()||"Otros";cat[k]=(cat[k]||0)+ +m.monto});
+ let it=Object.entries(cat).sort((a,b)=>b[1]-a[1]);if(it.length>6){const o=it.slice(6).reduce((t,x)=>t+x[1],0);it=it.slice(0,6);it.push(["Otros",o])}
+ $("vGraf").innerHTML=donut(it);
+ $("fBar").querySelectorAll("[data-q]").forEach(b=>b.classList.toggle("on",b.dataset.q===S.q));
+ lista()}
+
+function lista(){
+ const q=norm($("mQ").value);
+ const L=S.M.filter(m=>(S.f==="all"||(S.f==="in"?m.tipo==="ingreso":m.tipo!=="ingreso"))&&(!q||norm((m.categoria||"")+" "+(m.descripcion||"")).includes(q)));
+ $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.f));
+ $("mL").innerHTML=L.length?L.slice(0,80).map(m=>{const ent=m.tipo==="ingreso";return `<div class="rw mv" data-id="${m.id}"><div class="ti"><b>${esc(m.categoria||"")}</b><small>${esc(m.descripcion||"")}</small><small>${fdate(m.fecha)}${ent?"":" · "+(m.origen==="propio"?"mi bolsillo / tarjeta":"de las ventas")}</small></div><div class="am2"><b class="${ent?"pos":"neg"}">${ent?"+":"−"}${$$(+m.monto)}</b></div></div>`}).join("")+(L.length>80?`<p class="hint">Mostrando 80 de ${L.length}. Usa el buscador o acorta el periodo.</p>`:""):`<div class="empty card">No hay movimientos.</div>`}
+
+function anotar(m){
+ m=m||{tipo:"gasto",fecha:ymd(new Date()),categoria:"",descripcion:"",monto:"",origen:"ventas"};
+ let ent=m.tipo==="ingreso",or=m.origen==="propio"?"propio":"ventas";
+ const d=modal(m.id?"Editar movimiento":"Anotar",`
+  <div class="tp" id="aT"><button type="button" data-e="0" class="${ent?"":"on"}">Salió dinero</button><button type="button" data-e="1" class="${ent?"on":""}">Entró dinero</button></div>
+  <div class="fg"><div><label>Monto ($)</label><input name="mo" type="number" min="0.01" step="0.01" inputmode="decimal" value="${m.monto}" autofocus></div><div><label>Fecha</label><input name="f" type="date" value="${m.fecha}"></div>
+  <div class="full"><label>¿En qué? <small>(elige o escribe)</small></label><input name="c" list="dlC" maxlength="60" value="${esc(m.categoria)}"><datalist id="dlC"></datalist></div>
+  <div class="full" id="aO"><label>¿De dónde salió el dinero?</label><div class="tp" id="aOr"><button type="button" data-o="ventas" class="${or==="ventas"?"on":""}">De las ventas</button><button type="button" data-o="propio" class="${or==="propio"?"on":""}">De mi bolsillo / tarjeta</button></div></div>
+  <div class="full"><label>Nota <small>(opcional)</small></label><input name="d" maxlength="160" value="${esc(m.descripcion||"")}"></div></div><div class="err2" id="aE" role="alert"></div>`,
+  {foot:`${m.id?'<button class="btn g" id="aDel" style="color:var(--bad);margin-right:auto">Eliminar</button>':""}<button class="btn g" data-x>Cancelar</button><button class="btn" id="aOk">Guardar</button>`});
+ const ref=()=>{d.q("#dlC").innerHTML=(ent?CAT_IN:CAT_OUT).map(c=>`<option>${esc(c)}`).join("");d.q("#aO").style.display=ent?"none":"";d.el.querySelectorAll("#aT button").forEach(b=>b.classList.toggle("on",(b.dataset.e==="1")===ent))};ref();
+ d.q("#aT").addEventListener("click",e=>{const b=e.target.closest("[data-e]");if(!b)return;ent=b.dataset.e==="1";ref()});
+ d.q("#aOr").addEventListener("click",e=>{const b=e.target.closest("[data-o]");if(!b)return;or=b.dataset.o;d.el.querySelectorAll("#aOr button").forEach(x=>x.classList.toggle("on",x===b))});
+ const g=n=>d.q(`[name=${n}]`).value.trim();
+ d.q("#aOk").onclick=async()=>{const mo=Number(g("mo"));if(!(mo>0)){d.q("#aE").textContent="Escribe un monto mayor a cero.";return}if(!g("f")){d.q("#aE").textContent="Elige la fecha.";return}if(!g("c")){d.q("#aE").textContent="Escribe en qué fue.";return}
+  const row={tipo:ent?"ingreso":(m.tipo&&m.tipo!=="ingreso"?m.tipo:"gasto"),fecha:g("f"),monto:r2(mo),categoria:g("c"),descripcion:g("d")||null,origen:ent?"ventas":or};
+  const ok=await espera(async()=>{const {error}=m.id?await db.from("fin_movimientos").update(row).eq("id",m.id):await db.from("fin_movimientos").insert({...row,metodo:"Efectivo",creado_por:me.id});if(error)throw new Error(error.message);return true});
+  if(ok){d.close();toast("Guardado");await refrescar()}};
+ const del=d.q("#aDel");if(del)del.onclick=async()=>{if(!await pedirClave("Vas a eliminar este movimiento."))return;
+  const ok=await espera(async()=>{const {error}=await db.from("fin_movimientos").delete().eq("id",m.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Eliminado");await refrescar()}}}
+
+async function refrescar(){await espera(async()=>{await cargar();return true});pintar()}
+$("aNew").onclick=()=>anotar();
 $("fBar").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(!b)return;S.q=b.dataset.q;refrescar()});
-["fD","fH"].forEach(i=>$(i).addEventListener("change",()=>{if($("fD").value&&$("fH").value&&$("fD").value<=$("fH").value){S.q="custom";S.desde=$("fD").value;S.hasta=$("fH").value;refrescar()}else toast("Revisa las fechas")}));
-pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Cuentas",IC.cue],["inf","Informes",IC.inf],["ban","Banco",IC.ban],["cap","Capital",IC.cap],["prov","Proveedores",IC.prov]],k=>{$("fBar").parentElement.classList.toggle("hidden",!["res","mov","inf"].includes(k))});
+$("mSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.f=b.dataset.t;lista()}});
+$("mQ").addEventListener("input",deb(lista,150));
+$("mL").addEventListener("click",e=>{const r=e.target.closest("[data-id]");if(r)anotar(S.M.find(x=>x.id===r.dataset.id))});
+$("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")])}]);
 await refrescar();
-/* Excel con TODO lo de Finanzas (todo el tiempo), para respaldo o para revisarlo con alguien */
-$("rXls").onclick=async()=>{
- const [mv,bn]=await Promise.all([fetchAll(()=>db.from("fin_movimientos").select("*,proveedores(nombre)").order("fecha",{ascending:false})).catch(()=>S.M),fetchAll(()=>db.from("fin_banco").select("*").order("fecha",{ascending:false})).catch(()=>S.B)]);
- const sm=t=>mv.filter(m=>m.tipo===t).reduce((a,m)=>a+ +m.monto,0),ven=S.VA.reduce((a,x)=>a+ +x.ventas,0),cv=S.VA.reduce((a,x)=>a+ +x.costo,0);
- const ing=ven+sm("ingreso"),neto=ing-cv-sm("costo"),bal=neto-sm("gasto");
- excel("finanzas-completo",[
-  {n:"Resumen",c:[["Concepto",34],["Monto",16,"money"]],f:[["Ventas (completadas)",ven],["Otros ingresos",sm("ingreso")],["Total ingresos",ing],["Costo de lo vendido",cv],["Costos directos",sm("costo")],["Ingreso neto",neto],["Gastos operativos",sm("gasto")],["Balance final",bal],["Compras de mercadería (no restan)",sm("compra")],["Inversión total",sumK("inversion")],["Retiros",sumK("retiro")],["Préstamos recibidos",sumK("prestamo")],["Pagos de préstamos",sumK("pago_prestamo")],["Por cobrar",pend("cobrar")],["Deudas por pagar",pend("pagar")],["Inventario al costo",S.inv]]},
-  {n:"Ventas por mes",c:[["Mes",12],["Ventas",14,"money"],["Costo de ventas",16,"money"],["N.º de ventas",14]],f:S.VA.map(v=>[mkey(v.mes),+v.ventas,+v.costo,+v.n])},
-  {n:"Movimientos",c:[["Fecha",12],["Tipo",16],["Categoría",24],["Descripción",34],["Monto",12,"money"],["Método",14],["Proveedor",22],["Referencia",18]],f:mv.map(m=>[m.fecha,TN[m.tipo]?TN[m.tipo][0]:m.tipo,m.categoria||"",m.descripcion||"",+m.monto,m.metodo||"",m.proveedores?m.proveedores.nombre:"",m.referencia||""])},
-  {n:"Cuentas",c:[["Tipo",12],["Persona",26],["Concepto",30],["Monto",12,"money"],["Abonado",12,"money"],["Saldo",12,"money"],["Fecha",12],["Vence",12],["Estado",12]],f:S.C.map(c=>[c.tipo==="cobrar"?"Por cobrar":"Por pagar",c.tercero,c.concepto||"",+c.monto,+c.abonado,+c.monto-+c.abonado,c.fecha||"",c.vence||"",c.estado])},
-  {n:"Ventas por cobrar",c:[["Venta",10],["Cliente",26],["Fecha",12],["Total",12,"money"],["Abonado",12,"money"],["Pendiente",12,"money"]],f:S.PC.map(v=>[v.numero,v.cliente_nombre||"",fdate(v.created_at),+v.subtotal,+v.abonado,+v.pendiente_monto])},
-  {n:"Capital",c:[["Fecha",12],["Tipo",20],["Persona",24],["Descripción",32],["Monto",12,"money"],["Método",14]],f:S.K.map(k=>[k.fecha,KT[k.tipo]?KT[k.tipo][0]:k.tipo,k.tercero||"",k.descripcion||"",+k.monto,k.metodo||""])},
-  {n:"Banco",c:[["Fecha",12],["Saldo según banco",18,"money"],["Nota",34]],f:bn.map(b=>[b.fecha,+b.saldo_banco,b.nota||""])},
-  {n:"Proveedores",c:[["Nombre",28],["Teléfono",16],["Correo",28]],f:S.PR.map(p=>[p.nombre,p.telefono||"",p.correo||p.email||""])}])};
 })();
