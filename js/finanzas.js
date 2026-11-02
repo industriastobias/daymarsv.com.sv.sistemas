@@ -44,17 +44,27 @@ const pend=t=>S.C.filter(c=>c.tipo===t&&c.estado==="pendiente").reduce((s,c)=>s+
 /* ---------- Resumen ---------- */
 /* Gráfica: 4 series por mes (todas visibles al abrir; toca una leyenda para ocultarla o mostrarla) */
 const SER=[["ing","Ingreso neto","var(--wine)"],["ope","Gastos operativos","var(--gold)"],["dir","Gastos directos","#d9822b"],["bal","Balance","var(--ok)"]];
-let agr="mes";const serOn=new Set(SER.map(x=>x[0]));
-document.addEventListener("click",e=>{const g=e.target.closest("#rG [data-ag]");if(g){agr=g.dataset.ag;$("rG").innerHTML=grafico();return}const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
+let agr="mes",vista="pastel";const serOn=new Set(SER.map(x=>x[0]));
+document.addEventListener("click",e=>{const vv=e.target.closest("#rG [data-vw]");if(vv){vista=vv.dataset.vw;$("rG").innerHTML=grafico();return}const g=e.target.closest("#rG [data-ag]");if(g){agr=g.dataset.ag;$("rG").innerHTML=grafico();return}const b=e.target.closest("#rG [data-sr]");if(!b)return;const k=b.dataset.sr;if(serOn.has(k))serOn.delete(k);else serOn.add(k);$("rG").innerHTML=grafico()});
 function grafico(){
  const mp={};const gk=k=>agr==="anio"?k.slice(0,4):agr==="todo"?"todo":k;const mk=k=>{k=gk(k);return mp[k]=mp[k]||{ing:0,ope:0,dir:0,bal:0}};
  S.V.forEach(x=>{const o=mk(mkey(x.mes));o.ing+=+x.ventas;o.dir+=+x.costo});
  S.M.forEach(m=>{const o=mk(mkey(m.fecha));if(m.tipo==="ingreso")o.ing+=+m.monto;else if(m.tipo==="gasto")o.ope+=+m.monto;else if(m.tipo==="costo")o.dir+=+m.monto});
  const ks=Object.keys(mp).sort();ks.forEach(k=>{const o=mp[k];o.bal=o.ing-o.ope-o.dir});
- const ag=`<div class="lg agr">`+[["todo","Todo"],["anio","Por año"],["mes","Por mes"]].map(([k,n])=>`<button type="button" class="lgb ag${agr===k?" on":""}" data-ag="${k}">${n}</button>`).join("")+`</div>`;
+ const vw=`<div class="lg agr">`+[["pastel","Pastel"],["barras","Barras"]].map(([k,n])=>`<button type="button" class="lgb ag${vista===k?" on":""}" data-vw="${k}">${n}</button>`).join("")+`</div>`;
+ const ag=vw+(vista==="barras"?`<div class="lg agr">`+[["todo","Todo"],["anio","Por año"],["mes","Por mes"]].map(([k,n])=>`<button type="button" class="lgb ag${agr===k?" on":""}" data-ag="${k}">${n}</button>`).join("")+`</div>`:"");
  const lg=ag+`<div class="lg">`+SER.map(([k,n,c])=>`<button type="button" class="lgb${serOn.has(k)?"":" off"}" data-sr="${k}" aria-pressed="${serOn.has(k)}"><i style="background:${c}"></i>${n}</button>`).join("")+`</div>`;
  if(!ks.length)return lg+`<div class="empty">Sin movimientos en este periodo.</div>`;
  const act=SER.filter(x=>serOn.has(x[0]));if(!act.length)return lg+`<div class="empty">Toca una leyenda para mostrar datos.</div>`;
+ if(vista==="pastel"){
+  const T=ks.reduce((a,k)=>({ing:a.ing+mp[k].ing,ope:a.ope+mp[k].ope,dir:a.dir+mp[k].dir}),{ing:0,ope:0,dir:0}),bal=T.ing-T.ope-T.dir;
+  const parts=SER.filter(x=>x[0]!=="ing"&&(x[0]!=="bal"||bal>0)).map(([id,n,c])=>[id,n,c,id==="bal"?bal:T[id]]).filter(x=>serOn.has(x[0])&&x[3]>0);
+  const tot=parts.reduce((a,x)=>a+x[3],0);if(!tot)return lg+`<div class="empty">Sin datos para mostrar en este periodo.</div>`;
+  const R=80,r=50,cx=100,cy=100;let a0=-Math.PI/2,sv="";
+  parts.forEach(([id,n,c,v])=>{const f=v/tot,a1=a0+f*2*Math.PI-(f===1?1e-4:0),L=a1-a0>Math.PI?1:0,P=(rr,a)=>(cx+rr*Math.cos(a)).toFixed(2)+" "+(cy+rr*Math.sin(a)).toFixed(2);
+   sv+=`<path d="M${P(R,a0)} A${R} ${R} 0 ${L} 1 ${P(R,a1)} L${P(r,a1)} A${r} ${r} 0 ${L} 0 ${P(r,a0)}Z" style="fill:${c}"><title>${n} ${money(v)} (${(f*100).toFixed(1)}%)</title></path>`;a0=a1});
+  const lista=parts.map(([id,n,c,v])=>`<li><i style="background:${c}"></i><span>${n}</span><b>${money(v)}</b><small>${(v/tot*100).toFixed(1)}%</small></li>`).join("");
+  return lg+`<div class="pie"><svg viewBox="0 0 200 200" role="img" aria-label="Reparto del ingreso">${sv}<text x="100" y="94" text-anchor="middle" class="pc1">${bal>=0?"Balance":"Sin balance"}</text><text x="100" y="114" text-anchor="middle" class="pc2">${money(bal)}</text></svg><div><div class="pm">Ingreso neto: <b>${money(T.ing)}</b></div><ul>${lista}</ul>${bal<0?`<p class="pw">Gastaste más de lo que entró: el balance es ${money(bal)}.</p>`:""}</div></div>`}
  const vals=ks.flatMap(k=>act.map(x=>mp[k][x[0]]));
  const W=640,H=240,pl=48,pb=26,pt=10,ih=H-pb-pt,gp=(W-pl)/ks.length,bw=Math.min(24,gp/(act.length+1));
  const nice=v=>{if(v<=0)return 0;const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p};

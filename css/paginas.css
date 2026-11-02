@@ -63,3 +63,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 
 .lgb.ag{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:700;color:var(--mute)}
 .lgb.ag.on{background:var(--wine);border-color:var(--wine);color:#fff}
+
+.pie{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:8px}.pie svg{width:220px;max-width:100%;flex:none}
+.pie .pc1{font-size:11px;fill:var(--mute)}.pie .pc2{font-size:17px;font-weight:700;fill:var(--ink)}
+.pie>div{flex:1;min-width:220px}.pie .pm{font-size:13px;color:var(--mute);margin-bottom:6px}.pie .pm b{color:var(--ink)}
+.pie ul{list-style:none;margin:0;padding:0}.pie li{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.pie li i{width:12px;height:12px;border-radius:50%;flex:none}.pie li span{flex:1}.pie li small{color:var(--mute);min-width:48px;text-align:right}
