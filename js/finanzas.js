@@ -267,4 +267,18 @@ $("fBar").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(!
 ["fD","fH"].forEach(i=>$(i).addEventListener("change",()=>{if($("fD").value&&$("fH").value&&$("fD").value<=$("fH").value){S.q="custom";S.desde=$("fD").value;S.hasta=$("fH").value;refrescar()}else toast("Revisa las fechas")}));
 pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Cuentas",IC.cue],["inf","Informes",IC.inf],["ban","Banco",IC.ban],["cap","Capital",IC.cap],["prov","Proveedores",IC.prov]],k=>{$("fBar").parentElement.classList.toggle("hidden",!["res","mov","inf"].includes(k))});
 await refrescar();
+/* Excel con TODO lo de Finanzas (todo el tiempo), para respaldo o para revisarlo con alguien */
+$("rXls").onclick=async()=>{
+ const [mv,bn]=await Promise.all([fetchAll(()=>db.from("fin_movimientos").select("*,proveedores(nombre)").order("fecha",{ascending:false})).catch(()=>S.M),fetchAll(()=>db.from("fin_banco").select("*").order("fecha",{ascending:false})).catch(()=>S.B)]);
+ const sm=t=>mv.filter(m=>m.tipo===t).reduce((a,m)=>a+ +m.monto,0),ven=S.VA.reduce((a,x)=>a+ +x.ventas,0),cv=S.VA.reduce((a,x)=>a+ +x.costo,0);
+ const ing=ven+sm("ingreso"),neto=ing-cv-sm("costo"),bal=neto-sm("gasto");
+ excel("finanzas-completo",[
+  {n:"Resumen",c:[["Concepto",34],["Monto",16,"money"]],f:[["Ventas (completadas)",ven],["Otros ingresos",sm("ingreso")],["Total ingresos",ing],["Costo de lo vendido",cv],["Costos directos",sm("costo")],["Ingreso neto",neto],["Gastos operativos",sm("gasto")],["Balance final",bal],["Compras de mercadería (no restan)",sm("compra")],["Inversión total",sumK("inversion")],["Retiros",sumK("retiro")],["Préstamos recibidos",sumK("prestamo")],["Pagos de préstamos",sumK("pago_prestamo")],["Por cobrar",pend("cobrar")],["Deudas por pagar",pend("pagar")],["Inventario al costo",S.inv]]},
+  {n:"Ventas por mes",c:[["Mes",12],["Ventas",14,"money"],["Costo de ventas",16,"money"],["N.º de ventas",14]],f:S.VA.map(v=>[mkey(v.mes),+v.ventas,+v.costo,+v.n])},
+  {n:"Movimientos",c:[["Fecha",12],["Tipo",16],["Categoría",24],["Descripción",34],["Monto",12,"money"],["Método",14],["Proveedor",22],["Referencia",18]],f:mv.map(m=>[m.fecha,TN[m.tipo]?TN[m.tipo][0]:m.tipo,m.categoria||"",m.descripcion||"",+m.monto,m.metodo||"",m.proveedores?m.proveedores.nombre:"",m.referencia||""])},
+  {n:"Cuentas",c:[["Tipo",12],["Persona",26],["Concepto",30],["Monto",12,"money"],["Abonado",12,"money"],["Saldo",12,"money"],["Fecha",12],["Vence",12],["Estado",12]],f:S.C.map(c=>[c.tipo==="cobrar"?"Por cobrar":"Por pagar",c.tercero,c.concepto||"",+c.monto,+c.abonado,+c.monto-+c.abonado,c.fecha||"",c.vence||"",c.estado])},
+  {n:"Ventas por cobrar",c:[["Venta",10],["Cliente",26],["Fecha",12],["Total",12,"money"],["Abonado",12,"money"],["Pendiente",12,"money"]],f:S.PC.map(v=>[v.numero,v.cliente_nombre||"",fdate(v.created_at),+v.subtotal,+v.abonado,+v.pendiente_monto])},
+  {n:"Capital",c:[["Fecha",12],["Tipo",20],["Persona",24],["Descripción",32],["Monto",12,"money"],["Método",14]],f:S.K.map(k=>[k.fecha,KT[k.tipo]?KT[k.tipo][0]:k.tipo,k.tercero||"",k.descripcion||"",+k.monto,k.metodo||""])},
+  {n:"Banco",c:[["Fecha",12],["Saldo según banco",18,"money"],["Nota",34]],f:bn.map(b=>[b.fecha,+b.saldo_banco,b.nota||""])},
+  {n:"Proveedores",c:[["Nombre",28],["Teléfono",16],["Correo",28]],f:S.PR.map(p=>[p.nombre,p.telefono||"",p.correo||p.email||""])}])};
 })();
