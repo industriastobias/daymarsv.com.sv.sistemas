@@ -11,7 +11,7 @@ mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const $n=n=>n<0?"−"+$$(-n):$$(n);
 const S={q:"all",desde:"",hasta:"",V:[],M:[],K:[],C:[],PC:[],VD:[],f:"all"};
 const hoy=()=>ymd(new Date());
-const CAT_IN=["Venta","Otro ingreso"],CAT_OUT=["Productos","Insumos y empaques","Tarjetas y etiquetas","Envíos","Impuestos y aduanas","Publicidad","Pago de préstamo","Otros"];
+const CAT_IN=["Venta","Otro ingreso"],CAT_OUT=["Productos","Insumos y empaques","Tarjetas y etiquetas","Envíos","Impuestos y aduanas","Publicidad","Pago de préstamo","Salarios","Viáticos","Otros"];
 const COL=["#6B2D3E","#C9973F","#d9822b","#2f7d4f","#4a6fa5","#9b5de5","#8d8d8d"];
 
 async function cargar(){
@@ -69,7 +69,7 @@ function pintar(){
 
 function lista(){
  const q=norm($("mQ").value),R=[];
- S.M.forEach(m=>{const ent=m.tipo==="ingreso";const esV=ent&&/^venta/i.test(m.categoria||"");if(S.f==="in"&&(!ent||esV)||S.f==="ven"&&!esV||S.f==="out"&&ent)return;if(q&&!norm((m.categoria||"")+" "+(m.descripcion||"")).includes(q))return;R.push({k:"m",m,ts:new Date(m.fecha+"T12:00:00-06:00").getTime()})});
+ S.M.forEach(m=>{const ent=m.tipo==="ingreso";const esV=ent&&/^venta/i.test(m.categoria||""),esP=!ent&&/salari|viátic|viatic/i.test(m.categoria||"");if(S.f==="in"&&(!ent||esV)||S.f==="ven"&&!esV||S.f==="out"&&(ent||esP)||S.f==="pers"&&!esP)return;if(q&&!norm((m.categoria||"")+" "+(m.descripcion||"")).includes(q))return;R.push({k:"m",m,ts:new Date(m.fecha+"T12:00:00-06:00").getTime()})});
  if(S.f==="all"||S.f==="ven")S.VD.forEach(v=>{if(q&&!norm("venta "+v.numero+" "+(v.cliente_nombre||"")+" "+(v.metodo_pago||"")).includes(q))return;R.push({k:"v",v,ts:new Date(v.created_at).getTime()})});
  R.sort((a,b)=>b.ts-a.ts);
  $("mSg").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.t===S.f));
