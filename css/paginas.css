@@ -161,3 +161,12 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 .fs #mSg button{flex:none;width:auto;min-height:38px;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--mute);font-size:14px;font-weight:600;box-shadow:none}
 .fs #mSg button.on{background:var(--wine);border-color:var(--wine);color:#fff}
 @media(max-width:600px){.fs .head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}.fs .head .back{flex:none;white-space:nowrap}.fs .head>div:not(.hact){flex:1 1 auto;min-width:max-content}.fs .head h1{white-space:nowrap;font-size:22px;margin:0}.fs .head .hact{flex:none;margin-left:auto}.fs .hact .btn{min-height:38px;padding:6px 14px;font-size:14px;white-space:nowrap}.fs #mSg{gap:6px}.fs #mSg button{padding:7px 12px;font-size:13px;min-height:36px}}
+/* Deudas en tarjetas */
+#dL{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+#dL>.empty{grid-column:1/-1}
+.fs #dL .rw.dc{display:grid;grid-template-columns:1fr;gap:6px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line);border-top:4px solid var(--ok);box-shadow:0 1px 3px rgba(0,0,0,.05);margin:0;align-content:start}
+.fs #dL .rw.dc.d-o{border-top-color:var(--bad)}
+.fs #dL .rw.dc .am2{text-align:left;margin:0}.fs #dL .rw.dc .am2 b{font-size:22px;display:inline}.fs #dL .rw.dc .am2 small{display:inline;margin-left:6px;color:var(--mute)}
+.fs #dL .rw.dc .ti small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px}
+.fs #dL .rw.dc .btn{width:100%;min-height:40px;margin-top:4px}
+@media(max-width:520px){#dL{grid-template-columns:1fr}}
