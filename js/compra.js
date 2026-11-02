@@ -58,6 +58,18 @@ function renderInv(){const l=filtrar();
  $("inventoryList").innerHTML=l.length?l.map(p=>{const s=stT(p);return`<div class="pc" data-i="${p.id}">${pic(p,"ph")}<div class="pb"><b class="n">${esc(p.nombre)}</b><small>${esc(p.codigo)}${catName(p.categoria_id)?" · "+esc(catName(p.categoria_id)):""}</small><span class="pr">${$$(p.precio_venta)}</span><span class="tag ${s[0]}">${s[1]}: ${p.stock}</span><small>Código de barras: ${esc(p.codigo_barras||"—")}</small><div class="ac"><button class="btn sm" data-a="e" data-i="${p.id}">Editar</button><button class="btn g sm" data-a="t" data-i="${p.id}" title="Mostrar u ocultar este producto en la tienda en línea">${p.publicar_tienda===false?"Oculto en tienda":"En la tienda ✓"}</button><button class="btn g sm" data-a="d" data-i="${p.id}" aria-label="Enviar a la papelera">Papelera</button></div></div></div>`}).join("")
   :`<div class="empty">${inv.length?"No se encontraron productos con esos filtros.":"Aún no hay productos. Registra el primero con el formulario."}</div>`}
 ["searchBox","precioMin","precioMax"].forEach(i=>$(i).addEventListener("input",renderInv));$("categoryFilter").onchange=renderInv;$("stockBajo").onchange=renderInv;
+/* Publicar u ocultar en la tienda en bloque: aplica a los productos que se ven en la lista (según búsqueda, categoría y filtros) */
+async function tiendaMasivo(publicar){
+ const l=filtrar();if(!l.length){toast("No hay productos en la lista");return}
+ const cambia=l.filter(p=>(p.publicar_tienda!==false)!==publicar);if(!cambia.length){toast(publicar?"Todos esos ya se muestran en la tienda":"Todos esos ya están ocultos");return}
+ if(!await DAY.ask((publicar?"Se mostrarán en la tienda ":"Se ocultarán de la tienda ")+cambia.length+" producto"+(cambia.length===1?"":"s")+" de la lista actual"+(l.length===inv.length?" (todos los productos)":"")+". Puedes volver a cambiarlo cuando quieras.",{titulo:publicar?"Publicar en la tienda":"Ocultar de la tienda",ok:publicar?"Publicar":"Ocultar"}))return;
+ busy(true,"Actualizando…");
+ try{const ids=cambia.map(p=>p.id);
+  for(let i=0;i<ids.length;i+=100){const r=await db.from("productos").update({publicar_tienda:publicar}).in("id",ids.slice(i,i+100));
+   if(r.error){toast(r.error.message.includes("publicar_tienda")?"Falta aplicar la migración 057 (se aplica sola desde GitHub).":r.error.message);return}}
+  cambia.forEach(p=>p.publicar_tienda=publicar);renderInv();toast((publicar?"Publicados: ":"Ocultos: ")+cambia.length)}
+ finally{busy(false)}}
+$("tPub").onclick=()=>tiendaMasivo(true);$("tOcu").onclick=()=>tiendaMasivo(false);
 $("searchBox").addEventListener("blur",()=>histAdd($("searchBox").value.trim()));
 $("inventoryList").onclick=e=>{const b=e.target.closest("button"),c=e.target.closest(".pc");if(!c)return;const id=c.dataset.i;
  if(b&&b.dataset.a==="t"){const p=inv.find(x=>x.id===id);if(p){const nv=p.publicar_tienda===false;db.from("productos").update({publicar_tienda:nv}).eq("id",id).then(r=>{if(r.error){toast(r.error.message.includes("publicar_tienda")?"Falta aplicar la migración 057 (se aplica sola desde GitHub).":r.error.message);return}p.publicar_tienda=nv;renderInv();toast(nv?"Ahora se muestra en la tienda":"Oculto en la tienda")})}return}if(b&&b.dataset.a==="e")startEdit(id);else if(b&&b.dataset.a==="d")toTrash(id);else if(!b)openDetail(id)};
