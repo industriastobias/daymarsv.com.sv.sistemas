@@ -50,3 +50,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-conten
 #pAct .ctl #aQ{min-height:40px;height:40px}
 #aBorrar{flex:none;white-space:nowrap;min-height:40px}
 @media(min-width:900px){#pAct .fl{grid-template-columns:1.2fr 1.2fr 1fr 1fr}}
+
+/* Actividad más compacta */
+#pAct .fl{display:grid}
+#aSg{margin-bottom:8px;padding:3px}#aSg button{padding:7px 6px;font-size:13px;min-width:0}
+#pAct .kp>div{padding:6px 10px}
+@media(min-width:900px){#pAct .fl{grid-template-columns:1.2fr 1.2fr 1fr 1fr;align-items:end}}

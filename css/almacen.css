@@ -23,6 +23,11 @@ main.wide{padding-bottom:92px}
 
 /* Filtros del inventario */
 .fl{margin-bottom:8px}
+/* filtros en cuadrícula para las demás páginas (Almacenamiento usa .fr/.fm) */
+.fl:not(:has(.fr)){display:grid;gap:8px;grid-template-columns:1fr 1fr}
+.fl:not(:has(.fr)) .full{grid-column:1/-1}
+@media(min-width:900px){.fl:not(:has(.fr)){grid-template-columns:2fr 1.3fr 90px 90px 1.2fr 1fr auto auto;align-items:end}.fl:not(:has(.fr)) .full{grid-column:auto}}
+.fl:not(:has(.fr)) label{margin:0 0 3px;font-size:12px}
 .fr{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
 .fr #fSearch{grid-column:1/-1;min-height:42px}
 .fr select{min-height:40px;padding:6px 10px;min-width:0}
