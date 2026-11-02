@@ -56,7 +56,7 @@ main.wide{max-width:1280px}
 .hist .clr{border:0;background:none;text-decoration:underline;color:var(--mute)}
 .invh{display:flex;align-items:center;gap:8px;margin-bottom:10px}.invh h2{font-size:19px}
 .badge{background:var(--chip);color:var(--wine);border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700}
-.pg{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(165px,1fr))}
+.pg{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
 .pc{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer}
 .pc:hover{border-color:var(--wine)}
 .ph{aspect-ratio:1;width:100%;object-fit:cover;display:grid;place-items:center;font:700 40px "Bricolage Grotesque",sans-serif;color:#fff;background:linear-gradient(135deg,var(--wine),var(--gold))}
