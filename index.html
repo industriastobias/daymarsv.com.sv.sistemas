@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMARSV – Iniciar sesión</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="css/estilo.css?v=202611011610"><link rel="stylesheet" href="css/login.css?v=202610311459"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<link rel="stylesheet" href="css/estilo.css?v=202611011610"><link rel="stylesheet" href="css/login.css?v=202611012300"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
 <div class="lx"><i class="bm b1"></i><i class="bm b2"></i><i class="bm b3"></i>
 <header class="hero">
 <h1 class="wm" aria-label="DAYMARSV"><span class="" style="--i:0" aria-hidden="true"><b>D</b></span><span class="" style="--i:1" aria-hidden="true"><b>A</b></span><span class="" style="--i:2" aria-hidden="true"><b>Y</b></span><span class="" style="--i:3" aria-hidden="true"><b>M</b></span><span class="" style="--i:4" aria-hidden="true"><b>A</b></span><span class="" style="--i:5" aria-hidden="true"><b>R</b></span><span class="sv" style="--i:6" aria-hidden="true"><b>S</b></span><span class="sv" style="--i:7" aria-hidden="true"><b>V</b></span></h1><div class="rule"></div><div class="lc-sl">A Family Company</div>
@@ -15,7 +15,14 @@
  <div id="rg" class="hidden"><div class="fld"><input id="rn" autocomplete="name" maxlength="60" placeholder=" "><label for="rn">Tu nombre</label></div>
  <div class="fld"><input id="p2" type="password" autocomplete="new-password" placeholder=" "><label for="p2">Repite la contraseña</label></div></div>
  <div class="err" id="le" role="alert"></div><button class="btn" id="lb">Ingresar</button>
+  <button type="button" id="fg" class="tg">¿Olvidaste tu contraseña?</button>
   <button type="button" id="tg" class="tg hidden">¿Te invitaron? Crear cuenta</button>
+</form>
+<form class="lc hidden" id="rf">
+ <h2>Crea tu nueva contraseña</h2><p class="sub">Escribe una contraseña de al menos 8 caracteres.</p>
+ <div class="fld"><input id="n1" type="password" autocomplete="new-password" required placeholder=" "><label for="n1">Nueva contraseña</label></div>
+ <div class="fld"><input id="n2" type="password" autocomplete="new-password" required placeholder=" "><label for="n2">Repite la contraseña</label></div>
+ <div class="err" id="re" role="alert"></div><button class="btn" id="rb">Guardar contraseña</button>
 </form>
 <div class="lx-ft">© DAYMARSV · Acceso solo para usuarios autorizados</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
@@ -24,7 +31,24 @@
 (async()=>{const {db}=DAY,$=i=>document.getElementById(i);
 if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
 else if(location.search.indexOf("e=sesion")>-1){$("le").style.color="#ecd2d9";$("le").textContent="Tu sesión terminó (dura máximo 5 horas). Inicia sesión de nuevo."}
+else if(/type=recovery/.test(location.hash)||/[?&]recuperar=1/.test(location.search)){}
 else{const {data}=await db.auth.getSession();if(data.session)location.replace("menu.html")}
+
+const REC=/type=recovery/.test(location.hash);
+if(/error_code=otp_expired|error=access_denied/.test(location.hash)){$("le").textContent="El enlace venció o ya se usó. Pide otro con «¿Olvidaste tu contraseña?»."}
+if(REC){$("lf").classList.add("hidden");$("rf").classList.remove("hidden");$("le").textContent=""}
+$("fg").onclick=async()=>{const email=$("u").value.trim();$("le").style.color="";
+ if(!email){$("le").textContent="Escribe tu correo arriba y vuelve a pulsar «¿Olvidaste tu contraseña?».";$("u").focus();return}
+ $("fg").disabled=true;
+ const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});$("fg").disabled=false;
+ if(error&&/rate|seconds|limit/i.test(error.message)){$("le").textContent="Espera unos minutos antes de pedir otro enlace.";return}
+ $("le").style.color="var(--ok)";$("le").textContent="Si ese correo tiene cuenta, te enviamos un enlace para crear una nueva contraseña. Revisa también el spam."};
+$("rf").onsubmit=async e=>{e.preventDefault();const a=$("n1").value,b=$("n2").value;$("re").textContent="";
+ if(a.length<8){$("re").textContent="La contraseña debe tener al menos 8 caracteres.";return}
+ if(a!==b){$("re").textContent="Las contraseñas no coinciden.";return}
+ $("rb").disabled=true;const {error}=await db.auth.updateUser({password:a});$("rb").disabled=false;
+ if(error){$("re").textContent=/same|different/i.test(error.message)?"Usa una contraseña distinta a la anterior.":/session|jwt|expired/i.test(error.message)?"El enlace venció. Pide otro desde «¿Olvidaste tu contraseña?».":error.message;return}
+ history.replaceState(null,"",location.pathname);location.replace("menu.html")};
 let reg=false;
 const disp=(()=>{const u=navigator.userAgent,t=navigator.maxTouchPoints>1;
  const dispositivo=/iPad|Tablet/i.test(u)||(/Macintosh/.test(u)&&t)?"Tablet":/Mobi|iPhone|Android.*Mobile/i.test(u)?"Celular":"Computadora";
