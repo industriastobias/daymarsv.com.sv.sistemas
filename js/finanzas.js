@@ -139,13 +139,13 @@ $("iXls").onclick=()=>{const c=calc();excel("finanzas-informe",[
  {n:"Deudas",c:[["Tipo",12],["Persona",26],["Nota",30],["Monto",12,"money"],["Abonado",12,"money"],["Saldo",12,"money"],["Vence",12]],f:S.C.filter(x=>x.estado==="pendiente").map(x=>[x.tipo==="pagar"?"Debo":"Me deben",x.tercero,x.concepto||"",+x.monto,+x.abonado,+x.monto-+x.abonado,x.vence||""])}])};
 
 async function refrescar(){await espera(async()=>{await cargar();return true});pintar()}
-$("aNew").onclick=()=>anotar();$("aNew2").onclick=()=>anotar();
+$("aNew").onclick=()=>anotar();
 $("fBar").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(!b)return;S.q=b.dataset.q;refrescar()});
 $("mSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.f=b.dataset.t;lista()}});
 $("mQ").addEventListener("input",deb(lista,150));
 $("mL").addEventListener("click",e=>{const r=e.target.closest("[data-id]");if(r)anotar(S.M.find(x=>x.id===r.dataset.id))});
 $("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.VD.map(v=>[String(v.created_at).slice(0,10),"Entró","Venta #"+v.numero,v.cliente_nombre||"",+v.total,""]).concat(S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")]))}]);
 const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
-UI.pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Deudas",IC.cue],["inf","Informes",IC.inf]],k=>{$("fBar").classList.toggle("hidden",k==="cue");$("aNew").classList.toggle("hidden",k==="mov")});
+UI.pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Deudas",IC.cue],["inf","Informes",IC.inf]],k=>{$("fBar").classList.toggle("hidden",k==="cue");$("dNew").classList.toggle("hidden",k!=="cue")});
 await refrescar();
 })();

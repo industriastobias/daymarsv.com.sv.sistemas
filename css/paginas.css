@@ -183,3 +183,7 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 /* Deudas: 2 columnas en celular */
 @media(max-width:600px){.fs #dL{grid-template-columns:1fr 1fr!important;gap:10px}.fs #dL .rw.dc{padding:12px;border-radius:14px;border-top-width:4px;gap:4px}.fs #dL .rw.dc .ti{min-height:0}.fs #dL .rw.dc .ti b{font-size:14px}.fs #dL .rw.dc .ti small{font-size:12px}.fs #dL .rw.dc .am2 b{font-size:18px}.fs #dL .rw.dc .am2 small{display:block;margin:0}.fs #dL .rw.dc .btn{min-height:36px;font-size:14px}}
 .fs #mSg button.mnew{background:var(--wine);border-color:var(--wine);color:#fff;font-weight:700}
+.fs .fact{display:flex;gap:8px;align-items:center}.fs .fact .btn{min-height:42px;padding:8px 18px;border-radius:12px;white-space:nowrap}
+.fs .fact .btn.hidden{display:none}
+@media(max-width:959px){.fs .ftop{display:flex;flex-direction:column}.fs .ftop .fact{order:-1;margin:4px 0 8px}}
+@media(min-width:960px){.fs .ftop .fact{flex:none;margin-right:auto}}
