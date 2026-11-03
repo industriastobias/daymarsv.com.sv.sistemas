@@ -124,3 +124,10 @@ kbd{background:var(--chip);border:1px solid var(--line);border-radius:5px;paddin
 #inventoryList .pb .ac .tg.on{color:var(--ok)}.pb .ac .tg.on::before{background:var(--ok)}
 #inventoryList .pb .ac .tr{width:44px;padding:0;display:grid;place-items:center;color:var(--bad)}
 #inventoryList .pb .ac .tr:hover{background:color-mix(in srgb,var(--bad) 12%,var(--card))}
+
+.prevs .pv{position:relative;margin:0;width:84px;height:84px}.prevs .pv img{width:84px;height:84px}
+.prevs .pv.first img{border:2px solid var(--wine)}
+.prevs .pvx,.prevs .pvs{position:absolute;border:0;cursor:pointer;display:grid;place-items:center;font-weight:700;line-height:1}
+.prevs .pvx{top:-6px;right:-6px;width:26px;height:26px;border-radius:50%;background:var(--bad);color:#fff;font-size:17px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.prevs .pvs{bottom:4px;left:4px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--wine);font-size:13px}
+.prevs .pvp{position:absolute;bottom:4px;left:4px;background:var(--wine);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px}

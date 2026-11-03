@@ -8,7 +8,7 @@ $("app").classList.remove("hidden");mountSide($("side"),"compra",me.rol);
 
 const LIMITE=0,DIAS=30,BUCKET="productos",hoy=ymd(new Date());
 const CATS_BASE=["Accesorios para el cabello","Anillos","Aritos","Billeteras","Carteras","Case audifonos","Case telefonos","Chokers","Collares","General","Lentes de sol","Otros","Pulseras","Relojes"];
-let inv=[],trash=[],cats=[],edit=null,esLote=false,loteTemp=[],imgsTemp=[],regenMode="mixed",zero=[],prevUrls=[],loteUrls=[];
+let inv=[],trash=[],cats=[],edit=null,esLote=false,loteTemp=[],imgsTemp=[],regenMode="mixed",zero=[],prevUrls=[],loteUrls=[],galeria=[],galQuitar=[],galSucia=false;
 
 /* ---------- utilidades ---------- */
 const ERR=[[/productos_codigo_barras_uq/,"Ese código de barras ya lo tiene otro producto."],[/productos_codigo_key/,"Ese código SKU ya existe."]];
@@ -121,12 +121,16 @@ function recomprimir(o,max,q){
 async function comprimir(file,max,q){return recomprimir(await abrirImg(file),max,q)}
 /* una sola foto por imagen (1000 px): sirve para las tarjetas y para verla en grande */
 const par=async f=>{const o=await abrirImg(f);const m=await recomprimir(o,1000,.82);if(o.src.close)o.src.close();return {main:m,thumb:m}};
-function renderPrevs(urls){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=urls;$("prevs").innerHTML=urls.map((u,i)=>`<img src="${u}" alt="Vista previa ${i+1}">`).join("")}
+function renderPrevs(){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=galeria.map(g=>g.db?(g.thumb_url||g.url):URL.createObjectURL(g.thumb));
+ $("prevs").innerHTML=galeria.map((g,i)=>`<figure class="pv${i===0?" first":""}"><img src="${prevUrls[i]}" alt="Imagen ${i+1}">${i===0?'<span class="pvp">Principal</span>':`<button type="button" class="pvs" data-g="${i}" data-k="p" title="Hacer principal" aria-label="Hacer principal">★</button>`}<button type="button" class="pvx" data-g="${i}" data-k="x" title="Quitar esta imagen" aria-label="Quitar esta imagen">×</button></figure>`).join("")}
+$("prevs").addEventListener("click",e=>{const b=e.target.closest("button[data-g]");if(!b)return;const i=+b.dataset.g;
+ if(b.dataset.k==="x"){const [g]=galeria.splice(i,1);if(g&&g.db)galQuitar.push(g)}else{const [g]=galeria.splice(i,1);galeria.unshift(g)}
+ galSucia=true;renderPrevs()});
 async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.type&&f.type.startsWith("image/"));if(!fs.length)return false;
- busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));imgsTemp=acumular?imgsTemp.concat(n):n;renderPrevs(imgsTemp.map(i=>URL.createObjectURL(i.thumb)))}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
+ busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));n.forEach(x=>galeria.push({db:false,main:x.main,thumb:x.thumb}));galSucia=true;renderPrevs()}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
 $("upArea").onclick=e=>{if(e.target.id!=="imageFile")$("imageFile").click()};
 $("upArea").onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();$("imageFile").click()}};
-$("imageFile").onchange=e=>addImgs(e.target.files,false);
+$("imageFile").onchange=e=>{addImgs(e.target.files,true);e.target.value=""};
 /* pegar imágenes: funciona en toda la página (no solo con el recuadro enfocado) y también con imágenes copiadas desde otra página */
 async function imagenesPegadas(cd){
  const fs=[...(cd&&cd.files||[])].filter(f=>f.type.startsWith("image/"));
@@ -140,6 +144,18 @@ document.addEventListener("paste",async e=>{
  const t=e.target;if(t&&t!==$("upArea")&&(/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||t.isContentEditable))return;
  if(document.querySelector("dialog[open]"))return;
  const fs=await imagenesPegadas(e.clipboardData);if(!fs.length)return;e.preventDefault();if(await addImgs(fs,true))toast(fs.length+" imagen(es) pegada(s)")});
+
+/* guarda los cambios de la galería: quita, sube y ordena (la primera es la principal) */
+async function guardarGaleria(id){
+ const q=galQuitar;galQuitar=[];
+ if(q.length){const paths=[...new Set(q.flatMap(o=>[o.path,o.thumb_path]).filter(Boolean))];if(paths.length)await DAY.fotosAlm.quitar(paths);await ok(db.from("producto_imagenes").delete().in("id",q.map(o=>o.id)))}
+ let first=null;
+ for(let i=0;i<galeria.length;i++){const g=galeria[i];
+  if(g.db){await ok(db.from("producto_imagenes").update({orden:i}).eq("id",g.id));if(i===0)first=g.thumb_url||g.url}
+  else{const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",una=!g.thumb||g.thumb===g.main,p2=una?p1:base+"_t.jpg";
+   const [u1,u2]=await Promise.all([DAY.fotosAlm.subir(p1,g.main),una?null:DAY.fotosAlm.subir(p2,g.thumb)]);
+   await ok(db.from("producto_imagenes").insert({producto_id:id,url:u1,thumb_url:una?u1:u2,path:p1,thumb_path:p2,orden:i}));if(i===0)first=una?u1:u2}}
+ await ok(db.from("productos").update({foto_url:first}).eq("id",id))}
 
 /* subir imágenes de un producto a Storage */
 async function subirImagenes(id,list,reemplazar){
@@ -192,12 +208,12 @@ $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
    if(trash.some(p=>p.codigo===it.codigo)){await DAY.say("Ese código está en la papelera. Restáuralo o elimínalo definitivamente.");busy(false);$("bSave").disabled=false;return}
    if(ex){if(await DAY.ask("Ese código ya existe. ¿Quieres sumar este stock al producto existente?"))it.sumar=true;else it.codigo=it.codigo+"_"+Date.now().toString().slice(-4)}
    const r=await ok(db.rpc("registrar_compra",{p_items:[it]}));id=r[0].id}
-  if(imgsTemp.length)await subirImagenes(id,imgsTemp,true);
+  if(galSucia)await guardarGaleria(id);
   await refresh();resetForm(true);beep();toast("Producto guardado")
  }catch(x){}finally{busy(false);$("bSave").disabled=false}});
 
 function resetForm(guardado){
- $("purchaseForm").reset();edit=null;VARS_DB=[];varSet([]);imgsTemp=[];renderPrevs([]);$("barcodeCanvas").style.display="none";
+ $("purchaseForm").reset();edit=null;VARS_DB=[];varSet([]);galeria=[];galQuitar=[];galSucia=false;renderPrevs();$("barcodeCanvas").style.display="none";
  $("fechaCompra").value=hoy;$("porcentajeGanancia").value=60;$("discount").value=0;$("code").readOnly=false;$("code").style.background="";
  $("editFlag").classList.remove("on");$("bCancelEdit2").classList.add("hidden");$("formTitle").textContent="Nuevo producto";$("bSave").textContent="Guardar producto";
  $("moreOpts").open=false;setTab("normal");calcSug();$("recBanner").classList.remove("on");if(guardado!==undefined)draftClear()}
@@ -210,13 +226,13 @@ async function startEdit(id){const p=inv.find(x=>x.id===id);if(!p)return;
  $("quantity").value=p.stock;$("description").value=p.descripcion||"";$("category").value=p.categoria_id||"";
  const lote=p.tipo_compra==="lote"&&num(p.lotes)>0;setTab(lote?"lote":"normal");
  if(lote){$("lotQuantity").value=p.lotes;$("unitsPerLot").value=p.unidades_por_lote}
- $("moreOpts").open=true;calcSug();showBarcode(p.codigo_barras);imgsTemp=[];VARS_DB=[];varSet([]);
+ $("moreOpts").open=true;calcSug();showBarcode(p.codigo_barras);galeria=[];galQuitar=[];galSucia=false;renderPrevs();VARS_DB=[];varSet([]);
  ok(db.from("producto_variantes").select("id,nombre,stock,codigo_barras").eq("producto_id",id).order("orden").order("nombre")).then(L=>{if(edit!==id||!L.length)return;VARS_DB=L;
   varSet(L.map(v=>({id:v.id,nombre:v.nombre,cantidad:v.stock,codigo_barras:v.codigo_barras||""})));
   const s=L.reduce((a,v)=>a+v.stock,0);if(p.stock>s)toast("Hay "+(p.stock-s)+" unidades sin color; al guardar el total se ajusta a la suma de los colores.")}).catch(()=>{});
  $("formTitle").textContent="Editar producto";$("bSave").textContent="Actualizar producto";$("editFlag").classList.add("on");$("bCancelEdit2").classList.remove("hidden");
  setPane("f");scrollTo({top:0,behavior:"smooth"});
- try{const im=await ok(db.from("producto_imagenes").select("thumb_url,url,orden").eq("producto_id",id).order("orden"));if(edit===id)renderPrevs(im.map(i=>i.thumb_url||i.url))}catch(e){}}
+ try{const im=await ok(db.from("producto_imagenes").select("id,path,thumb_path,thumb_url,url,orden").eq("producto_id",id).order("orden"));if(edit===id&&!galSucia){galeria=im.map(i=>({db:true,...i}));renderPrevs()}}catch(e){}}
 
 /* ---------- categorías ---------- */
 $("bNewCat").onclick=async()=>{const n=(await DAY.input("Nombre de la nueva categoría:")||"").trim();if(!n)return;
