@@ -145,7 +145,7 @@ async function togTienda(p){const rid=p.real||p.id,nv=p.publicar_tienda===false;
  const {error}=await db.from("productos").update({publicar_tienda:nv}).eq("id",rid);
  if(error){toast(error.message.includes("publicar_tienda")?"Falta aplicar la migración 057 (se aplica sola desde GitHub).":error.message);return}
  [...S.all,...S.prods,...S.byId.values()].forEach(x=>{if((x.real||x.id)===rid)x.publicar_tienda=nv});filtrar(true);toast(nv?"Ahora se muestra en la tienda":"Oculto en la tienda")}
-function btns(p){return `<button class="btn sm" data-a="sell" data-id="${p.id}" title="Vender">Vender</button>`+(ADM?`<button class="btn g sm" data-a="price" data-id="${p.id}" title="Editar precio">Precio</button><button class="btn g sm" data-a="stock" data-id="${p.id}" title="Editar stock">Stock</button><button class="btn g sm tgt ${p.publicar_tienda===false?"off":"on"}" data-a="shop" data-id="${p.id}" title="Mostrar u ocultar este producto en la tienda en línea">${p.publicar_tienda===false?"Oculto":"En tienda"}</button>`:"")}
+function btns(p){return `<button class="btn sm" data-a="sell" data-id="${p.id}" title="Vender">Vender</button>`+(ADM?`<button class="btn g sm" data-a="price" data-id="${p.id}" title="Editar precio">Precio</button><button class="btn g sm" data-a="stock" data-id="${p.id}" title="Editar stock">Stock</button><button class="btn g sm tgt ${p.publicar_tienda===false?"shop-off":"shop-on"}" data-a="shop" data-id="${p.id}" title="Mostrar u ocultar este producto en la tienda en línea">${p.publicar_tienda===false?"Oculto":"En tienda"}</button>`:"")}
 function pintarInv(){
  const q=$("fSearch").value.trim(),tot=Math.max(1,Math.ceil(S.filt.length/S.size));if(S.page>tot)S.page=tot;
  const a=(S.page-1)*S.size,items=S.filt.slice(a,a+S.size);

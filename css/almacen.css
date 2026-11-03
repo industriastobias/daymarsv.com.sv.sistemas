@@ -238,4 +238,9 @@ main.wide{min-width:0;max-width:100%}
 
 .rsv{display:inline-block;font-size:12px;font-weight:700;color:var(--wine);background:color-mix(in srgb,var(--gold) 28%,var(--card));border-radius:99px;padding:2px 9px;text-decoration:none;margin-top:2px}
 a.rsv:hover{text-decoration:underline}
-.btn.tgt.on{color:var(--ok)}.btn.tgt::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mute);margin-right:6px;vertical-align:middle}.btn.tgt.on::before{background:var(--ok)}
+.btn.tgt{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.tgt::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mute);flex:none}
+.btn.tgt.shop-on{color:var(--ok)}.btn.tgt.shop-on::before{background:var(--ok)}
+.pc .pb .ac{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc .pb .ac .btn{min-width:0;min-height:40px;word-break:normal;overflow-wrap:normal;white-space:nowrap;padding:8px 6px;border-radius:10px;font-size:14px}
+.pc .pb .ac [data-a="sell"],.pc .pb .ac .tgt{grid-column:1/-1}
