@@ -61,7 +61,7 @@ try{S.hist=JSON.parse(LS("dms_hist2")||"[]")}catch(e){}
 
 async function cargarProductos(){
  S.sv=await DAY.catsSinValor(true);
- const rows=await fetchAll(()=>db.from("productos").select("id,codigo,nombre,precio_venta,precio_costo,descuento_pct,stock,stock_minimo,foto_url,codigo_barras,descripcion,fecha_compra,created_at,categorias(nombre)").eq("activo",true).order("nombre"));
+ const rows=await fetchAll(()=>db.from("productos").select("id,codigo,nombre,precio_venta,precio_costo,descuento_pct,stock,stock_minimo,foto_url,codigo_barras,descripcion,fecha_compra,created_at,publicar_tienda,categorias(nombre)").eq("activo",true).order("nombre"));
  let vs=[];try{vs=await fetchAll(()=>db.from("producto_variantes").select("id,producto_id,nombre,codigo_barras,stock,orden").order("orden").order("nombre"))}catch(e){}
  const VB={};vs.forEach(v=>(VB[v.producto_id]=VB[v.producto_id]||[]).push(v));
  const RP={},RV={};try{const rr=await db.rpc("reservas_pedidos_linea");(rr.data||[]).forEach(r=>{RP[r.producto_id]=(RP[r.producto_id]||0)+r.cant;if(r.variante_id)RV[r.variante_id]=r.cant})}catch(e){}
@@ -141,7 +141,11 @@ const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(cls==="ph"
 const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>DAY.colorDot(v.vnom)+esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
 const selQ=p=>p.vars?p.vars.reduce((s,v)=>s+(S.sel.get(v.id)||0),0):(S.sel.get(p.id)||0);
 function chk(p){return S.multi?`<label class="mchk"><input type="checkbox" data-a="sel" data-id="${p.id}" ${selQ(p)?"checked":""} ${p.stock<1?"disabled":""}> Vender${selQ(p)?` <b data-qs="${p.id}" class="qb">×${selQ(p)}</b>`:""}</label>`:""}
-function btns(p){return `<button class="btn sm" data-a="sell" data-id="${p.id}" title="Vender">Vender</button>`+(ADM?`<button class="btn g sm" data-a="price" data-id="${p.id}" title="Editar precio">Precio</button><button class="btn g sm" data-a="stock" data-id="${p.id}" title="Editar stock">Stock</button>`:"")}
+async function togTienda(p){const rid=p.real||p.id,nv=p.publicar_tienda===false;
+ const {error}=await db.from("productos").update({publicar_tienda:nv}).eq("id",rid);
+ if(error){toast(error.message.includes("publicar_tienda")?"Falta aplicar la migración 057 (se aplica sola desde GitHub).":error.message);return}
+ [...S.all,...S.prods,...S.byId.values()].forEach(x=>{if((x.real||x.id)===rid)x.publicar_tienda=nv});filtrar(true);toast(nv?"Ahora se muestra en la tienda":"Oculto en la tienda")}
+function btns(p){return `<button class="btn sm" data-a="sell" data-id="${p.id}" title="Vender">Vender</button>`+(ADM?`<button class="btn g sm" data-a="price" data-id="${p.id}" title="Editar precio">Precio</button><button class="btn g sm" data-a="stock" data-id="${p.id}" title="Editar stock">Stock</button><button class="btn g sm tgt ${p.publicar_tienda===false?"off":"on"}" data-a="shop" data-id="${p.id}" title="Mostrar u ocultar este producto en la tienda en línea">${p.publicar_tienda===false?"Oculto":"En tienda"}</button>`:"")}
 function pintarInv(){
  const q=$("fSearch").value.trim(),tot=Math.max(1,Math.ceil(S.filt.length/S.size));if(S.page>tot)S.page=tot;
  const a=(S.page-1)*S.size,items=S.filt.slice(a,a+S.size);
@@ -1367,7 +1371,7 @@ $("invList").addEventListener("click",e=>{
  if(e.target.closest(".mchk"))return;
  const a=e.target.closest("[data-a]"),row=e.target.closest("[data-id]");
  if(S.multi&&!a&&row&&!e.target.closest("button,a,input")){const pp=S.byId.get(row.dataset.id);if(pp&&pp.stock>=1){togSel(pp.id,pp.vars?true:!S.sel.has(pp.id));pintarInv()}return}const id=a?a.dataset.id:row&&row.dataset.id;const p=id&&S.byId.get(id);if(!p)return;
- if(a){if(a.dataset.a==="sell")abrirVenta(p);else if(a.dataset.a==="price")editarPrecio(p);else if(a.dataset.a==="stock")editarStock(p);return}
+ if(a){if(a.dataset.a==="sell")abrirVenta(p);else if(a.dataset.a==="price")editarPrecio(p);else if(a.dataset.a==="stock")editarStock(p);else if(a.dataset.a==="shop")togTienda(p);return}
  if(S.multi)return;detalle(p)});
 
 $("bnav").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(b)tab(b.dataset.p)});
