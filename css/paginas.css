@@ -187,3 +187,8 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 .fs .fact .btn.hidden{display:none}
 @media(max-width:959px){.fs .ftop{display:flex;flex-direction:column}.fs .ftop .fact{order:-1;margin:4px 0 8px}}
 @media(min-width:960px){.fs .ftop .fact{flex:none;margin-right:auto}}
+/* Deudas: Abonar y Editar en la misma línea */
+.fs #dL .rw.dc{grid-template-columns:1fr 1fr!important}
+.fs #dL .rw.dc .ti,.fs #dL .rw.dc .am2{grid-column:1/-1}
+.fs #dL .rw.dc .btn{width:100%;margin-top:4px;padding-left:6px;padding-right:6px}
+.fs #dL .rw.dc .btn:nth-child(3):last-child{grid-column:1/-1}
