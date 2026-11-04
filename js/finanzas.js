@@ -5,7 +5,9 @@
 "use strict";
 const {db,esc,$$,ymd,toast,mountSide,requireSession}=DAY;
 const {$,r2,norm,fdate,fetchAll,espera,modal,pedirClave,excel,rango,deb}=UI;
-const me=await requireSession();if(!me)return;
+const me=await requireSession();
+let ESP=false;try{ESP=((await db.auth.getSession()).data.session.user.email||"").toLowerCase()==="aehtobias@gmail.com"}catch(e){}
+if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");
 const $n=n=>n<0?"−"+$$(-n):$$(n);
@@ -103,9 +105,15 @@ function anotar(m){
 /* ---------- Deudas: lo que debo y lo que me deben ---------- */
 function deudas(){
  const P=S.C.filter(c=>c.estado==="pendiente"),pcs=S.PC.filter(v=>+v.pendiente_monto>0);
- $("dL").innerHTML=(!P.length&&!pcs.length?`<div class="empty">No hay deudas pendientes.</div>`:"")+P.map(c=>{const venc=c.vence&&c.vence<hoy(),pag=c.tipo==="pagar";return `<div class="rw dc ${pag?"d-o":"d-c"}"><div class="ti"><b>${pag?"Debo":"Me deben"} · ${esc(c.tercero)}</b><small>${esc(c.concepto||"")}${c.vence?" · vence "+fdate(c.vence):""}${venc?' · <span class="neg">vencida</span>':""}</small></div><div class="am2"><b class="${pag?"neg":"pos"}">${$$(c.monto-c.abonado)}</b><small>de ${$$(c.monto)}</small></div><button class="btn sm" data-ab="${c.id}">${pag?"Abonar":"Cobrar"}</button></div>`}).join("")
+ $("dL").innerHTML=(!P.length&&!pcs.length?`<div class="empty">No hay deudas pendientes.</div>`:"")+P.map(c=>{const venc=c.vence&&c.vence<hoy(),pag=c.tipo==="pagar";return `<div class="rw dc ${pag?"d-o":"d-c"}"><div class="ti"><b>${pag?"Debo":"Me deben"} · ${esc(c.tercero)}</b><small>${esc(c.concepto||"")}${c.vence?" · vence "+fdate(c.vence):""}${venc?' · <span class="neg">vencida</span>':""}</small></div><div class="am2"><b class="${pag?"neg":"pos"}">${$$(c.monto-c.abonado)}</b><small>de ${$$(c.monto)}</small></div><button class="btn sm" data-ab="${c.id}">${pag?"Abonar":"Cobrar"}</button>${ESP?`<button class="btn g sm" data-ed="${c.id}">Editar</button>`:""}</div>`}).join("")
  +pcs.map(v=>`<div class="rw dc"><div class="ti"><b>Me deben · ${esc(v.cliente_nombre||"Cliente")}</b><small>Venta #${v.numero} con cobro pendiente</small></div><div class="am2"><b class="pos">${$$(+v.pendiente_monto)}</b></div></div>`).join("")}
-$("dL").addEventListener("click",e=>{const b=e.target.closest("[data-ab]");if(!b)return;const c=S.C.find(x=>x.id===b.dataset.ab);if(!c)return;const sal=r2(c.monto-c.abonado),pag=c.tipo==="pagar";
+$("dL").addEventListener("click",e=>{const be=e.target.closest("[data-ed]");if(be){if(!ESP)return;const c=S.C.find(x=>x.id===be.dataset.ed);if(!c)return;
+ const d=modal("Editar deuda",`<div class="fg"><div class="full"><label>¿A quién?</label><input name="t" maxlength="80" value="${esc(c.tercero||"")}"></div><div><label>Monto total ($)</label><input name="m" type="number" min="0.01" step="0.01" inputmode="decimal" value="${c.monto}"></div><div><label>Vence <small>(opcional)</small></label><input name="v" type="date" value="${c.vence||""}"></div><div class="full"><label>Nota <small>(opcional)</small></label><input name="c" maxlength="120" value="${esc(c.concepto||"")}"></div></div><p class="hint">Ya se ha abonado ${$$(c.abonado)}.</p><div class="err2" id="edE" role="alert"></div>`,{foot:'<button class="btn g" id="edDel" style="color:var(--bad);margin-right:auto">Eliminar</button><button class="btn g" data-x>Cancelar</button><button class="btn" id="edOk">Guardar</button>'});
+ const g=n=>d.q(`[name=${n}]`).value.trim();
+ d.q("#edOk").onclick=async()=>{const mo=r2(Number(g("m")));if(!g("t")){d.q("#edE").textContent="Escribe a quién.";return}if(!(mo>0)||mo<c.abonado){d.q("#edE").textContent="El monto debe ser mayor a cero y no menor a lo ya abonado ("+$$(c.abonado)+").";return}
+  const ok=await espera(async()=>{const upd={tercero:g("t"),monto:mo,vence:g("v")||null,concepto:g("c")||null};if(mo<=c.abonado+0.004)upd.estado="pagada";const {error}=await db.from("fin_cuentas").update(upd).eq("id",c.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Guardado");await refrescar()}};
+ d.q("#edDel").onclick=async()=>{if(!await pedirClave("Vas a eliminar esta deuda."))return;const ok=await espera(async()=>{const {error}=await db.from("fin_cuentas").delete().eq("id",c.id);if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Eliminada");await refrescar()}};return}
+ const b=e.target.closest("[data-ab]");if(!b)return;const c=S.C.find(x=>x.id===b.dataset.ab);if(!c)return;const sal=r2(c.monto-c.abonado),pag=c.tipo==="pagar";
  const d=modal(pag?"Abonar a la deuda":"Registrar cobro",`<p style="margin-top:0"><b>${esc(c.tercero)}</b> · saldo ${$$(sal)}</p><label>Monto ($)</label><input name="a" type="number" min="0.01" step="0.01" max="${sal}" value="${sal}" inputmode="decimal"><p class="hint">${pag?"Se anota como salida de las ventas.":"Se anota como entrada."}</p><div class="err2" id="abE" role="alert"></div>`,{foot:'<button class="btn g" data-x>Cancelar</button><button class="btn" id="abOk">Guardar</button>'});
  d.q("#abOk").onclick=async()=>{const a=r2(Number(d.q("[name=a]").value));if(!(a>0)||a>sal){d.q("#abE").textContent="El monto debe ser mayor a cero y no pasar de "+$$(sal);return}
   const ok=await espera(async()=>{const {error}=await db.rpc("abonar_cuenta",{p_id:c.id,p_monto:a});if(error)throw new Error(error.message);return true});if(ok){d.close();toast("Guardado");await refrescar()}}});
@@ -143,7 +151,7 @@ $("aNew").onclick=()=>anotar();
 $("fBar").addEventListener("click",e=>{const b=e.target.closest("[data-q]");if(!b)return;S.q=b.dataset.q;refrescar()});
 $("mSg").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(b){S.f=b.dataset.t;lista()}});
 $("mQ").addEventListener("input",deb(lista,150));
-$("mL").addEventListener("click",e=>{const r=e.target.closest("[data-id]");if(r)anotar(S.M.find(x=>x.id===r.dataset.id))});
+$("mL").addEventListener("click",e=>{if(!ESP)return;const r=e.target.closest("[data-id]");if(r)anotar(S.M.find(x=>x.id===r.dataset.id))});
 $("mXls").onclick=()=>excel("finanzas-movimientos",[{n:"Movimientos",c:[["Fecha",12],["Entró / Salió",14],["En qué",26],["Nota",36],["Monto",12,"money"],["De dónde salió",20]],f:S.VD.map(v=>[String(v.created_at).slice(0,10),"Entró","Venta #"+v.numero,v.cliente_nombre||"",+v.total,""]).concat(S.M.map(m=>[m.fecha,m.tipo==="ingreso"?"Entró":"Salió",m.categoria||"",m.descripcion||"",+m.monto,m.tipo==="ingreso"?"":(m.origen==="propio"?"Mi bolsillo / tarjeta":"De las ventas")]))}]);
 const IC={res:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',mov:'<path d="M7 7h13l-3-3M17 17H4l3 3"/>',cue:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/>',inf:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>'};
 UI.pestanas([["res","Resumen",IC.res],["mov","Movimientos",IC.mov],["cue","Deudas",IC.cue],["inf","Informes",IC.inf]],k=>{$("fBar").classList.toggle("hidden",k==="cue");$("dNew").classList.toggle("hidden",k!=="cue")});
