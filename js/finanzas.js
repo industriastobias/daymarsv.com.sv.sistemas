@@ -84,11 +84,12 @@ function anotar(m){
  let ent=m.tipo==="ingreso",or=m.origen==="propio"?"propio":"ventas";
  const d=modal(m.id?"Editar movimiento":"Anotar",`
   <div class="tp" id="aT"><button type="button" data-e="0" class="${ent?"":"on"}">Salió dinero</button><button type="button" data-e="1" class="${ent?"on":""}">Entró dinero</button></div>
-  <div class="fg"><div><label>Monto ($)</label><input name="mo" type="number" min="0.01" step="0.01" inputmode="decimal" value="${m.monto}" autofocus></div><div><label>Fecha</label><input name="f" type="date" value="${m.fecha}"></div>
+  <div class="fg"><div><label>Monto ($)</label><input name="mo" type="number" min="0.01" step="0.01" inputmode="decimal" value="${m.monto}"${m.id?"":" autofocus"}></div><div><label>Fecha</label><input name="f" type="date" value="${m.fecha}"></div>
   <div class="full"><label>¿En qué? <small>(elige o escribe)</small></label><input name="c" list="dlC" maxlength="60" value="${esc(m.categoria)}"><datalist id="dlC"></datalist><div class="chs" id="aCh"></div></div>
   <div class="full" id="aO"><label>¿De dónde salió el dinero?</label><div class="tp" id="aOr"><button type="button" data-o="ventas" class="${or==="ventas"?"on":""}">De las ventas</button><button type="button" data-o="propio" class="${or==="propio"?"on":""}">De mi bolsillo / tarjeta</button></div></div>
   <div class="full"><label>Nota <small>(opcional)</small></label><input name="d" maxlength="160" value="${esc(m.descripcion||"")}"></div></div><div class="err2" id="aE" role="alert"></div>`,
   {foot:`${m.id?'<button class="btn g" id="aDel" style="color:var(--bad);margin-right:auto">Eliminar</button>':""}<button class="btn g" data-x>Cancelar</button><button class="btn" id="aOk">Guardar</button>`});
+ if(m.id)setTimeout(()=>{try{document.activeElement.blur()}catch(e){}},0);
  const ref=()=>{d.q("#dlC").innerHTML=(ent?CAT_IN:CAT_OUT).map(c=>`<option>${esc(c)}`).join("");d.q("#aO").style.display=ent?"none":"";const cs=ent?CAT_IN:CAT_OUT;d.q("#aCh").innerHTML=cs.map(c=>`<button type="button" data-c="${esc(c)}">${esc(c)}</button>`).join("");d.el.querySelectorAll("#aT button").forEach(b=>b.classList.toggle("on",(b.dataset.e==="1")===ent))};ref();
  d.q("#aCh").addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(b)d.q("[name=c]").value=b.dataset.c});
  d.q("#aT").addEventListener("click",e=>{const b=e.target.closest("[data-e]");if(!b)return;ent=b.dataset.e==="1";ref()});
