@@ -145,3 +145,6 @@ img,canvas,video,svg{max-width:100%}
 .nbd.hidden{display:none}
 a.tile{position:relative}
 a.tile .nbd{position:absolute;top:10px;right:10px;margin:0}
+/* con un cuadro abierto, el fondo no se desliza */
+html:has(dialog[open]),body:has(dialog[open]){overflow:hidden;overscroll-behavior:none}
+dialog[open],dialog[open] *{overscroll-behavior:contain}
