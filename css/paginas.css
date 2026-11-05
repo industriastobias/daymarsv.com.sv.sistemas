@@ -192,3 +192,9 @@ details.pan>summary{cursor:pointer;font-weight:700;color:var(--wine)}details.pan
 .fs #dL .rw.dc .ti,.fs #dL .rw.dc .am2{grid-column:1/-1}
 .fs #dL .rw.dc .btn{width:100%;margin-top:4px;padding-left:6px;padding-right:6px}
 .fs #dL .rw.dc .btn:nth-child(3):last-child{grid-column:1/-1}
+/* Actividad: elegir qué borrar */
+.selc{display:grid;place-items:center;flex:none;padding:0 6px 0 0}.selc input{width:22px;height:22px;accent-color:var(--wine)}
+.selbar{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:60;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:0 8px 28px rgba(0,0,0,.28);max-width:calc(100vw - 24px)}
+.selbar.hidden{display:none}.selbar b{margin-right:4px;white-space:nowrap}
+@media(min-width:960px){.selbar{bottom:24px}}
+#aSel.on{background:var(--wine);color:#fff}

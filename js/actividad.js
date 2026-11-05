@@ -10,13 +10,14 @@ document.querySelector("main").style.paddingBottom="30px";
 const TB={cot_lotes:"Lote de cotización",ventas:"Venta",productos:"Producto",clientes:"Cliente",proveedores:"Proveedor",categorias:"Categoría",fin_movimientos:"Movimiento financiero",fin_cuentas:"Cuenta",facturas:"Factura",promo_codigos:"Código promo",cierres_caja:"Cierre de caja",config_negocio:"Datos del negocio",capital_movs:"Capital",reservas:"Reserva",reserva_abonos:"Abono de reserva",profiles:"Usuario",inventarios:"Conteo físico"};
 const AC={crear:["Creó","ok"],editar:["Editó","wa"],eliminar:["Eliminó","or"],anular:["Anuló","or"],eliminar_venta:["Eliminó una venta","or"],borrar_actividad:["Borró la actividad","or"]};
 const CAMPO={nombre:"Nombre",precio_costo:"Costo",precio_venta:"Precio",stock_minimo:"Stock mínimo",activo:"Activo",descuento_pct:"Descuento %",estado:"Estado",rol:"Rol",monto:"Monto",total:"Total",categoria_id:"Categoría",proveedor_id:"Proveedor"};
-let PA={},U=[],L=[],ult=[],lim=100,fin=false;
+let PA={},U=[],L=[],ult=[],lim=100,fin=false,SEL=false,ES=false;
+const chk=ids=>SEL?`<label class="selc"><input type="checkbox" data-ids="${ids.join(",")}" aria-label="Marcar"></label>`:"";
 const v=x=>x===null||x===undefined?"—":typeof x==="boolean"?(x?"Sí":"No"):String(x);
 const OCULTOS=["eliminado_en","updated_at","created_at"];
 const corto=s=>s.length>70?s.slice(0,67)+"…":s;
 function cambios(c){if(!c)return"";return Object.keys(c).filter(k=>!OCULTOS.includes(k)).map(k=>k==="foto_url"?`<div class="df2"><span>Foto</span> <b>actualizada</b></div>`:`<div class="df2"><span>${esc(CAMPO[k]||k)}</span> <s>${esc(corto(v(c[k].antes)))}</s> → <b>${esc(corto(v(c[k].despues)))}</b></div>`).join("")}
 function fila(b){const a=AC[b.accion]||[b.accion,"mu"];
- return `<div class="rw">${DAY.avatarHTML({nombre:b.usuario_nombre,avatar:(PA[b.usuario_id]||{}).avatar})}<div class="ti"><b>${esc(b.usuario_nombre||"Sistema")}</b> <span class="bd ${a[1]}">${a[0]}</span> ${b.accion==="eliminar_venta"||b.accion==="borrar_actividad"?"":esc(TB[b.tabla]||b.tabla)}
+ return `<div class="rw">${chk([b.id])}${DAY.avatarHTML({nombre:b.usuario_nombre,avatar:(PA[b.usuario_id]||{}).avatar})}<div class="ti"><b>${esc(b.usuario_nombre||"Sistema")}</b> <span class="bd ${a[1]}">${a[0]}</span> ${b.accion==="eliminar_venta"||b.accion==="borrar_actividad"?"":esc(TB[b.tabla]||b.tabla)}
  <small>${b.resumen?esc(b.resumen)+" · ":""}${fdate(b.created_at)} ${ftime(b.created_at)}</small>${cambios(b.cambios)}</div></div>`}
 async function cargar(){
  const u=$("aU").value,t=$("aT").value,d=$("aD").value,h=$("aH").value;
@@ -32,7 +33,7 @@ function agrupar(R){const out=[];for(const b of R){const f=firma(b),g=out[out.le
   if(f&&g&&g.f===f&&Math.abs(new Date(g.items[0].created_at)-new Date(b.created_at))<=15*60000){g.items.push(b)}else out.push({f,items:[b]})}
  return out}
 function filaGrupo(g){if(g.items.length<2)return fila(g.items[0]);const b=g.items[0],n=g.items.length,nom=(TB[b.tabla]||b.tabla).toLowerCase()+"s";
- return `<div class="rw">${DAY.avatarHTML({nombre:b.usuario_nombre,avatar:(PA[b.usuario_id]||{}).avatar})}<div class="ti"><b>${esc(b.usuario_nombre||"Sistema")}</b> <span class="bd wa">Editó</span> ${n} ${esc(nom)}
+ return `<div class="rw">${chk(g.items.map(x=>x.id))}${DAY.avatarHTML({nombre:b.usuario_nombre,avatar:(PA[b.usuario_id]||{}).avatar})}<div class="ti"><b>${esc(b.usuario_nombre||"Sistema")}</b> <span class="bd wa">Editó</span> ${n} ${esc(nom)}
  <small>${fdate(b.created_at)} ${ftime(b.created_at)}</small>${cambios(b.cambios)}
  <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--wine);font-weight:700">Ver los ${n} ${esc(nom)}</summary><div style="margin-top:4px">${g.items.map(x=>`<small style="display:block">${esc(x.resumen||"—")}</small>`).join("")}</div></details></div></div>`}
 function pintar(){
@@ -60,7 +61,7 @@ function pintarAcc(){const u=$("aU").value;
  const R=AC2.filter(x=>!u||x.usuario_id===u);
  const nuevos=AC2.filter(x=>x.nuevo&&x.exito&&Date.now()-new Date(x.created_at)<7*864e5),fall=AC2.filter(x=>!x.exito&&Date.now()-new Date(x.created_at)<864e5);
  $("aAl").innerHTML=(nuevos.length?`<div class="alert warn"><div><b>${nuevos.length} inicio(s) desde un dispositivo nuevo esta semana</b>${nuevos.slice(0,3).map(x=>esc(x.nombre||x.email)+" ("+esc(x.dispositivo)+" · "+esc(x.navegador)+")").join(", ")}${nuevos.length>3?"…":""}. Si no los reconoces, cambia la contraseña de esa cuenta.</div></div>`:"")+(fall.length>=3?`<div class="alert bad"><div><b>${fall.length} intentos fallidos en las últimas 24 horas</b>Revisa la lista de abajo.</div></div>`:"");
- $("aAcc").innerHTML=R.length?R.map(x=>`<div class="rw"><div class="th ph">${ICO[x.dispositivo]||"💻"}</div><div class="ti"><b>${esc(x.nombre||x.email||"—")}</b> ${x.exito?"":'<span class="bd or">Intento fallido</span>'} ${x.nuevo&&x.exito?'<span class="bd wa">Dispositivo nuevo</span>':""}
+ $("aAcc").innerHTML=R.length?R.map(x=>`<div class="rw">${chk([x.id])}<div class="th ph">${ICO[x.dispositivo]||"💻"}</div><div class="ti"><b>${esc(x.nombre||x.email||"—")}</b> ${x.exito?"":'<span class="bd or">Intento fallido</span>'} ${x.nuevo&&x.exito?'<span class="bd wa">Dispositivo nuevo</span>':""}
   <small style="display:block">${esc(x.dispositivo||"")} · ${esc(x.sistema||"")} · ${esc(x.navegador||"")}</small><small style="display:block">${fdate(x.created_at)} ${ftime(x.created_at)}${x.ip?" · IP "+esc(x.ip):""}</small></div></div>`).join(""):`<div class="empty card">Aún no hay inicios de sesión registrados. Se irán anotando desde ahora.</div>`;
  const nb=$("aNb"),n=nuevos.length;nb.textContent=n;nb.classList.toggle("hidden",!n)}
 async function cargarAcc(){const {data,error}=await db.from("accesos").select("*").order("created_at",{ascending:false}).limit(300);if(!error)AC2=data||[];pintarAcc()}
@@ -72,6 +73,21 @@ await todo();cargarAcc();
 /* Solo el administrador principal puede borrar la actividad */
 db.rpc("es_principal").then(r=>{if(!r||r.data!==true)return;
  const b=document.createElement("button");b.className="btn g sm";b.type="button";b.id="aBorrar";b.style.color="var(--bad)";b.textContent="Borrar";b.title="Borrar actividad";b.setAttribute("aria-label","Borrar actividad");const bar=document.querySelector("#pAct .ctl");bar.insertBefore(b,bar.firstChild.nextSibling);
+ ES=true;
+ const sb=document.createElement("button");sb.className="btn g sm";sb.type="button";sb.id="aSel";sb.textContent="Elegir";sb.title="Elegir cuáles borrar";b.after(sb);
+ const barra=document.createElement("div");barra.id="aBar";barra.className="selbar hidden";barra.innerHTML='<b id="aBn">0 elegidos</b><button type="button" class="btn g sm" id="aBt">Todos</button><button type="button" class="btn dg sm" id="aBd">Borrar</button><button type="button" class="btn g sm" id="aBx">Cancelar</button>';document.body.appendChild(barra);
+ const acc=()=>!$("pAcc").classList.contains("hidden");
+ const marcados=()=>{const root=acc()?$("pAcc"):$("pAct");return [...root.querySelectorAll(".selc input:checked")].flatMap(i=>i.dataset.ids.split(","))};
+ const cuenta=()=>{const n=marcados().length;$("aBn").textContent=n+(n===1?" elegido":" elegidos")};
+ const modo=on=>{SEL=on;barra.classList.toggle("hidden",!on);sb.classList.toggle("on",on);pintar();pintarAcc();cuenta()};
+ sb.onclick=()=>modo(!SEL);$("aBx").onclick=()=>modo(false);
+ document.addEventListener("change",e=>{if(e.target.closest(".selc"))cuenta()});
+ $("aBt").onclick=()=>{const root=acc()?$("pAcc"):$("pAct"),bx=[...root.querySelectorAll(".selc input")],todos=bx.every(x=>x.checked);bx.forEach(x=>x.checked=!todos);cuenta()};
+ $("aSg").addEventListener("click",()=>{if(SEL)setTimeout(()=>{pintar();pintarAcc();cuenta()},0)});
+ $("aBd").onclick=async()=>{const ids=marcados();if(!ids.length){DAY.toast("Marca primero lo que quieras borrar.");return}
+  if(!await UI.confirmar("Se borra solo lo que marcaste ("+ids.length+(ids.length===1?" registro":" registros")+"). Es permanente.",{titulo:"Borrar lo elegido",ok:"Borrar",peligro:true}))return;
+  const ok=await espera(async()=>{const {error}=await db.rpc("borrar_actividad_ids",{p_tabla:acc()?"accesos":"bitacora",p_ids:ids,p_confirmacion:"BORRAR"});if(error)throw new Error(error.message);return true});
+  if(ok){DAY.toast("Borrado");SEL=false;barra.classList.add("hidden");sb.classList.remove("on");await todo();await cargarAcc()}};
  b.onclick=()=>{const m=UI.modal("Borrar actividad",`<p class="pw" style="margin-top:0">Solo se borra el historial para liberar espacio: las ventas, productos y demás datos no se tocan. Es permanente y solo tú, como administrador principal, puedes hacerlo. Quedará una nota de que lo hiciste.</p>
   <label class="chk"><input type="checkbox" id="bC" checked> Historial de cambios</label>
   <label class="chk" style="flex-wrap:wrap"><input type="checkbox" id="bA"> Inicios de sesión <small style="color:var(--mute);flex-basis:100%;margin-left:30px">Después, todos los dispositivos aparecerán como nuevos.</small></label>
