@@ -358,7 +358,15 @@ async function tras(o,t,lines){ /* refresco local tras una venta */
  (lines||[]).forEach(l=>{const p=S.byId.get(l.id);if(p){p.stock-=l.q;if(p.base)p.base.stock-=l.q}});
  filtrar(true);stats();toast(MSG(o,t));snd("ok");
  if(o.tipo!=="inmediata")cargarPend().catch(()=>{});else badges().catch(()=>{});
- ticketUltima()}
+ await ticketUltima();
+ if(o.tipo!=="inmediata")codigoUltima()}
+/* Tras registrar una venta a distancia (Instagram, WhatsApp, contra entrega...) se muestra el número de seguimiento para pasárselo al cliente */
+async function codigoUltima(){
+ try{const {data}=await db.from("ventas").select("id,codigo,cliente_nombre").eq("usuario_id",me.id).order("created_at",{ascending:false}).limit(1);
+  const v=data&&data[0];if(!v||!v.codigo)return;
+  const m=modal("Número de seguimiento",`<p class="pw" style="margin-top:0">Pásale este número al cliente: con él puede ver cómo va su pedido en la tienda, en el botón «Mi pedido».</p><div style="text-align:center;font:800 26px monospace;letter-spacing:1px;margin:12px 0;padding:14px;border:2px dashed var(--line);border-radius:14px">${esc(v.codigo)}</div><p class="pw" style="font-size:13px">Después puedes ir marcando En preparación, Listo para retirar o En camino desde Pendientes.</p>`,
+   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="cvC">Copiar mensaje</button><a class="btn" id="cvW" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msgSeg(v))}">Enviar por WhatsApp</a>`});
+  m.q("#cvC").onclick=async()=>{try{await navigator.clipboard.writeText(msgSeg(v));toast("Mensaje copiado")}catch(e){await DAY.input("Copia este mensaje",msgSeg(v),{titulo:"Mensaje para el cliente"})}}}catch(e){}}
 
 /* factura automática al vender a un cliente registrado con correo */
 /* Busca el correo del cliente de una venta en todos los lugares donde pudo quedar guardado */
