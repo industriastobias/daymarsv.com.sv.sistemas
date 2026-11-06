@@ -365,8 +365,8 @@ async function codigoUltima(){
  try{const {data}=await db.from("ventas").select("id,codigo,cliente_nombre").eq("usuario_id",me.id).order("created_at",{ascending:false}).limit(1);
   const v=data&&data[0];if(!v||!v.codigo)return;
   const m=modal("Número de seguimiento",`<p class="pw" style="margin-top:0">Pásale este número al cliente: con él puede ver cómo va su pedido en la tienda, en el botón «Mi pedido».</p><div style="text-align:center;font:800 26px monospace;letter-spacing:1px;margin:12px 0;padding:14px;border:2px dashed var(--line);border-radius:14px">${esc(v.codigo)}</div><p class="pw" style="font-size:13px">Después puedes ir marcando En preparación, Listo para retirar o En camino desde Pendientes.</p>`,
-   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="cvC">Copiar mensaje</button><a class="btn" id="cvW" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msgSeg(v))}">Enviar por WhatsApp</a>`});
-  m.q("#cvC").onclick=async()=>{try{await navigator.clipboard.writeText(msgSeg(v));toast("Mensaje copiado")}catch(e){await DAY.input("Copia este mensaje",msgSeg(v),{titulo:"Mensaje para el cliente"})}}}catch(e){}}
+   {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="cvC">Copiar número</button><a class="btn" id="cvW" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msgSeg(v))}">Enviar por WhatsApp</a>`});
+  m.q("#cvC").onclick=async()=>{try{await navigator.clipboard.writeText(v.codigo);toast("Número copiado: "+v.codigo)}catch(e){await DAY.input("Copia este número",v.codigo,{titulo:"Número de pedido"})}}}catch(e){}}
 
 /* factura automática al vender a un cliente registrado con correo */
 /* Busca el correo del cliente de una venta en todos los lugares donde pudo quedar guardado */
@@ -558,7 +558,7 @@ function pintarPend(){
 const SEGV={preparacion:"En preparación",listo:"Listo para retirar",envio:"En camino"};
 const TIENDA_URL="https://industriastobias.github.io/klohesvtiendaonline/";
 const msgSeg=v=>`Hola${v.cliente_nombre?" "+v.cliente_nombre:""}, tu número de pedido DAYMAR es ${v.codigo}. Puedes ver cómo va tu pedido en ${TIENDA_URL} (botón «Mi pedido»).`;
-const segHtml=v=>v.codigo?`<div class="sgb"><div class="sgc"><span>Número de pedido para el cliente</span><b>${esc(v.codigo)}</b><button type="button" class="btn g" data-a="cpcod" data-v="${v.id}">Copiar mensaje</button><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msgSeg(v))}">Enviar por WhatsApp</a></div><div class="sgs">${Object.keys(SEGV).map(k=>`<button type="button" class="btn ${v.seguimiento===k?"":"g"}" data-a="seg:${k}" data-v="${v.id}">${SEGV[k]}</button>`).join("")}</div></div>`:"";
+const segHtml=v=>v.codigo?`<div class="sgb"><div class="sgc"><span>Número de pedido para el cliente</span><b>${esc(v.codigo)}</b><button type="button" class="btn g" data-a="cpcod" data-v="${v.id}">Copiar número</button><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msgSeg(v))}">Enviar por WhatsApp</a></div><div class="sgs">${Object.keys(SEGV).map(k=>`<button type="button" class="btn ${v.seguimiento===k?"":"g"}" data-a="seg:${k}" data-v="${v.id}">${SEGV[k]}</button>`).join("")}</div></div>`:"";
 function cardPend(v){
  const pen=v.estado==="pendiente",t=v.tipo;let am="",bt="";
  const ent=t==="cod"&&v.entregado_en?`<div class="entb" style="margin:6px 0;font-size:13px;color:var(--mute)">📦 Entregado el ${fdate(v.entregado_en)}${v.empresa_envio?" · "+esc(v.empresa_envio):""} · esperando que liquiden el dinero</div>`:"";
@@ -577,7 +577,7 @@ function cardPend(v){
 
 async function accionPend(a,id){
  const v=S.pend.find(x=>x.id===id);if(!v){toast("Pedido no encontrado");return}
- if(a==="cpcod"){const t=msgSeg(v);try{await navigator.clipboard.writeText(t);toast("Mensaje copiado")}catch(e){await DAY.input("Copia este mensaje",t,{titulo:"Mensaje para el cliente"})}return}
+ if(a==="cpcod"){try{await navigator.clipboard.writeText(v.codigo);toast("Número copiado: "+v.codigo)}catch(e){await DAY.input("Copia este número",v.codigo,{titulo:"Número de pedido"})}return}
  if(a.startsWith("seg:")){const k=a.slice(4)===v.seguimiento?"":a.slice(4);
   const ok=await espera(async()=>{await rpc("venta_seguimiento",{p_id:id,p_seg:k});return true},"Guardando…");if(ok){toast(k?"Marcado: "+SEGV[k]:"Seguimiento quitado");await cargarPend();pintarPend()}return}
  if(a==="rem")return recordatorio(v);
