@@ -66,3 +66,5 @@ dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
 .df:has(#pPv) .btn{width:100%;margin:0;justify-content:center;text-align:center}
 .df:has(#pPv) #pPv{grid-column:1/-1}
 @media(min-width:760px){.df:has(#pPv){grid-template-columns:repeat(5,auto);justify-content:end}.df:has(#pPv) #pPv{grid-column:auto}.df:has(#pPv) .btn{width:auto}}
+.pl-seg{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.pl-seg .btn{flex:1 1 30%;min-width:0;padding:10px 8px;font-size:13px}
