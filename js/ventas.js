@@ -23,7 +23,7 @@ async function cargar(){
  $("vU").innerHTML='<option value="">Todos</option>'+us.map(([i,n])=>`<option value="${i}">${esc(n)}</option>`).join("");$("vU").value=us.some(x=>x[0]===cur)?cur:""}
 function filtradas(){
  const t=norm($("vQ").value),e=$("vE").value,p=$("vP").value,ty=$("vT").value,u=$("vU").value;
- return V.filter(v=>(!e||v.estado===e)&&(!p||v.metodo_pago===p)&&(!ty||v.tipo===ty)&&(!u||v.usuario_id===u)&&(!t||norm([v.numero,v.cliente_nombre,...its(v).map(i=>i.nombre)].join(" ")).includes(t)))}
+ return V.filter(v=>(!e||v.estado===e)&&(!p||v.metodo_pago===p)&&(!ty||v.tipo===ty)&&(!u||v.usuario_id===u)&&(!t||norm([v.numero,v.codigo,v.cliente_nombre,...its(v).map(i=>i.nombre)].join(" ")).includes(t)))}
 function pintar(){
  const L=filtradas(),ok=L.filter(v=>v.estado==="completada"),tot=ok.reduce((s,v)=>s+ +v.total,0);
  const pg=m=>ok.filter(v=>v.metodo_pago===m).reduce((s,v)=>s+ +v.total,0);
@@ -36,14 +36,14 @@ function pintar(){
 function fila(v){
  const L=its(v).slice(0,1),f=L[0]&&L[0].productos&&L[0].productos.foto_url,E=ESTBD[v.estado]||[v.estado,"mu"];
  return `<div class="vr2 ${v.estado==="anulada"?"an":""}" data-id="${v.id}"><div class="vth">${f?`<img src="${esc(f)}" alt="" loading="lazy">`:`<div class="ph0">${esc(ini((its(v)[0]||{}).nombre))}</div>`}</div>
- <div class="vtx"><b>${esc(resumen(v))}</b><small>#${v.numero} · ${fdate(v.created_at)} ${ftime(v.created_at)}</small>${v.cliente_nombre?`<small>${esc(v.cliente_nombre)}</small>`:""}</div>
+ <div class="vtx"><b>${esc(resumen(v))}</b><small>#${v.numero}${v.codigo?" · "+esc(v.codigo):""} · ${fdate(v.created_at)} ${ftime(v.created_at)}</small>${v.cliente_nombre?`<small>${esc(v.cliente_nombre)}</small>`:""}</div>
  <div class="vmt"><b>${$$(v.total)}</b></div>
  <div class="vbd"><span class="bd ${E[1]}">${E[0]}</span><span class="bd bl2">${esc(v.metodo_pago||"")}</span>${v.tipo&&v.tipo!=="inmediata"?`<span class="bd wa">${esc(TIPO[v.tipo]||v.tipo)}</span>`:""}${v.profiles?`<span class="bd mu">${esc(v.profiles.nombre)}</span>`:""}</div></div>`}
 function detalle(v){
  const E=ESTBD[v.estado]||[v.estado,"mu"],L=its(v);
  const lin=L.map(i=>`<div class="rw">${i.productos&&i.productos.foto_url?`<img class="im" src="${esc(i.productos.foto_url)}" alt="">`:""}<div class="ti"><b>${esc(i.nombre||"Producto")}</b><small>${i.cantidad} × ${$$(i.precio_unit)}</small></div><div class="am2"><b>${$$(r2(i.cantidad*i.precio_unit))}</b></div></div>`).join("");
  const extra=r2(+v.total-+v.subtotal);
- const m=modal("Venta #"+v.numero,`<div class="vdt"><p class="hint" style="margin-top:0">${fdate(v.created_at)} ${ftime(v.created_at)}${v.profiles?" · Vendió "+esc(v.profiles.nombre):""}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</p>
+ const m=modal("Venta #"+v.numero,`<div class="vdt"><p class="hint" style="margin-top:0">${v.codigo?"<b>"+esc(v.codigo)+"</b> · ":""}${fdate(v.created_at)} ${ftime(v.created_at)}${v.profiles?" · Vendió "+esc(v.profiles.nombre):""}${v.cliente_nombre?" · "+esc(v.cliente_nombre):""}</p>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="bd ${E[1]}">${E[0]}</span><span class="bd bl2">${esc(v.metodo_pago||"")}</span><span class="bd wa">${esc(TIPO[v.tipo]||"Venta normal")}</span></div>
   ${lin||'<div class="empty">Sin productos.</div>'}
   <div style="margin-top:8px"><div class="vtt"><span>Subtotal</span><span>${$$(v.subtotal)}</span></div>${+v.descuento_pct?`<div class="vtt"><span>Descuento</span><span>${+v.descuento_pct}%</span></div>`:""}${Math.abs(extra)>0.004&&!+v.descuento_pct?`<div class="vtt"><span>Envío, comisión u otros</span><span>${extra>0?"+":"−"}${$$(Math.abs(extra))}</span></div>`:""}<div class="vtt g"><span>Total</span><span>${$$(v.total)}</span></div></div></div>`,

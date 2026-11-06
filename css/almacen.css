@@ -244,3 +244,10 @@ a.rsv:hover{text-decoration:underline}
 .pc .pb .ac{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pc .pb .ac .btn{min-width:0;min-height:40px;word-break:normal;overflow-wrap:normal;white-space:nowrap;padding:8px 6px;border-radius:10px;font-size:14px}
 .pc .pb .ac [data-a="sell"],.pc .pb .ac .tgt{grid-column:1/-1}
+.po .sgb{margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:12px;background:var(--bg,transparent)}
+.po .sgc{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.po .sgc span{width:100%;font-size:12px;color:var(--mute)}
+.po .sgc b{font:700 15px monospace;letter-spacing:.5px;margin-right:auto}
+.po .sgs{display:flex;gap:6px;margin-top:8px}
+.po .sgs .btn,.po .sgc .btn{min-height:36px;padding:6px 10px;font-size:12.5px}
+.po .sgs .btn{flex:1 1 0;min-width:0}

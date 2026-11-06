@@ -547,6 +547,10 @@ function pintarPend(){
  const resumenE=liqs.length?`<div class="card" style="margin-bottom:10px"><b>Lo que te deben las empresas de envío</b><div style="margin-top:6px">${Object.keys(porE).sort((a,b)=>porE[b].t-porE[a].t).map(k=>{const o=porE[k],dias=Math.max(0,Math.floor((Date.now()-new Date(o.d))/864e5));return `<div class="rw"><div class="ti"><b>${esc(k)}</b><small>${o.n} paquete${o.n===1?"":"s"} entregado${o.n===1?"":"s"} · el más antiguo hace ${dias} día${dias===1?"":"s"}</small></div><div class="am2"><b style="color:${dias>=15?"var(--bad)":"inherit"}">${$$(o.t)}</b></div></div>`}).join("")}<div class="rw"><div class="ti"><b>Total por liquidar</b></div><div class="am2"><b>${$$(liqs.reduce((s,v)=>s+(+v.total||0),0))}</b></div></div></div></div>`:"";
  const filtro=resumenE+(t==="cod"&&pe.some(v=>v.entregado_en)?`<div class="seg2" style="margin-bottom:8px">${[["todos","Todos"],["ent","Por entregar"],["liq","Entregados · por liquidar"]].map(x=>`<button type="button" data-pf="${x[0]}" class="${fl===x[0]?"on":""}">${x[1]}</button>`).join("")}</div>`:"");
  $("pendList").innerHTML=filtro+(lista.length?lista.map(cardPend).join(""):`<div class="empty card">${{cod:"No hay pedidos contra entrega pendientes",entrega_pendiente:"No hay ventas pendientes de entrega",cobro_pendiente:"No hay ventas pendientes de cobro"}[t]}</div>`)}
+const SEGV={preparacion:"En preparación",listo:"Listo para retirar",envio:"En camino"};
+const TIENDA_URL="https://industriastobias.github.io/klohesvtiendaonline/";
+const msgSeg=v=>`Hola${v.cliente_nombre?" "+v.cliente_nombre:""}, tu número de pedido DAYMAR es ${v.codigo}. Puedes ver cómo va tu pedido en ${TIENDA_URL} (botón «Mi pedido»).`;
+const segHtml=v=>v.codigo?`<div class="sgb"><div class="sgc"><span>Número de pedido para el cliente</span><b>${esc(v.codigo)}</b><button type="button" class="btn g" data-a="cpcod" data-v="${v.id}">Copiar mensaje</button><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msgSeg(v))}">Enviar por WhatsApp</a></div><div class="sgs">${Object.keys(SEGV).map(k=>`<button type="button" class="btn ${v.seguimiento===k?"":"g"}" data-a="seg:${k}" data-v="${v.id}">${SEGV[k]}</button>`).join("")}</div></div>`:"";
 function cardPend(v){
  const pen=v.estado==="pendiente",t=v.tipo;let am="",bt="";
  const ent=t==="cod"&&v.entregado_en?`<div class="entb" style="margin:6px 0;font-size:13px;color:var(--mute)">📦 Entregado el ${fdate(v.entregado_en)}${v.empresa_envio?" · "+esc(v.empresa_envio):""} · esperando que liquiden el dinero</div>`:"";
@@ -561,10 +565,13 @@ function cardPend(v){
   if(ADM)bt=`<button class="btn g" style="color:var(--bad)" data-a="del" data-v="${v.id}">Eliminar</button>`+bt}
  else bt=`<span class="bd ok">${COMPLETADO[t]}</span>`;
  return `<div class="po"><div class="ph1"><span>${fdate(v.created_at)} ${ftime(v.created_at)}</span>${pagoBd(v.metodo_pago)}<span class="grow"></span><span class="bd ${pen?"wa":"ok"}">${pen?(t==="cod"&&v.entregado_en?"Entregado · por liquidar":"Pendiente"):COMPLETADO[t]}</span></div>
-  ${lineas(v)}${ent}<div class="am">${am}</div><div class="bt">${bt}</div></div>`}
+  ${lineas(v)}${ent}<div class="am">${am}</div>${pen?segHtml(v):""}<div class="bt">${bt}</div></div>`}
 
 async function accionPend(a,id){
  const v=S.pend.find(x=>x.id===id);if(!v){toast("Pedido no encontrado");return}
+ if(a==="cpcod"){const t=msgSeg(v);try{await navigator.clipboard.writeText(t);toast("Mensaje copiado")}catch(e){await DAY.input("Copia este mensaje",t,{titulo:"Mensaje para el cliente"})}return}
+ if(a.startsWith("seg:")){const k=a.slice(4)===v.seguimiento?"":a.slice(4);
+  const ok=await espera(async()=>{await rpc("venta_seguimiento",{p_id:id,p_seg:k});return true},"Guardando…");if(ok){toast(k?"Marcado: "+SEGV[k]:"Seguimiento quitado");await cargarPend();pintarPend()}return}
  if(a==="rem")return recordatorio(v);
  if(a==="edit")return editarPedido(v);
  if(a==="ent"){const emp=await DAY.input("¿Qué empresa de envíos lo entregó? (opcional)",v.empresa_envio||"",{titulo:"Marcar como entregado"});if(emp===null)return;
