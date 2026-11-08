@@ -22,7 +22,7 @@ function pintar(){
  $("uList").innerHTML=U.map(u=>{const pr=(u.email||"").toLowerCase()===PRINCIPAL;
   return `<div class="rw">${u.avatar?`<div class="th" style="padding:0;overflow:hidden"><img src="${esc(u.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>`:`<div class="th ph">${esc((u.nombre||"?")[0].toUpperCase())}</div>`}<div class="ti"><b>${esc(u.nombre)}${pr?' <span class="bd ok">Principal</span>':""}</b><small>${esc(u.email||"sin correo")} · desde ${fdate(u.created_at)}</small></div>
   <span class="bd ${u.rol==="admin"?"pu":"bl2"}">${u.rol==="admin"?"Administrador":"Vendedor"}</span>${u.activo?"":'<span class="bd mu">Desactivado</span>'}
-  ${ESP&&!pr?`<button class="btn g sm" data-rol="${u.id}">Hacer ${u.rol==="admin"?"vendedor":"administrador"}</button><button class="btn g sm" data-act="${u.id}" ${u.activo?'style="color:var(--bad)"':""}>${u.activo?"Desactivar":"Activar"}</button>`:""}</div>`}).join("")}
+  ${ESP&&!pr?`<button class="btn g sm" data-rol="${u.id}">Hacer ${u.rol==="admin"?"vendedor":"administrador"}</button><button class="btn g sm" data-ses="${u.id}">Cerrar sesión</button><button class="btn g sm" data-act="${u.id}" ${u.activo?'style="color:var(--bad)"':""}>${u.activo?"Desactivar":"Activar"}</button>`:""}</div>`}).join("")}
 $("iAdd").onclick=async()=>{const em=$("iEm").value.trim().toLowerCase(),rol=$("iRol").value;
  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast("Escribe un correo válido");return}
  const ok=await espera(async()=>{await rpc("invitar_usuario",{p_email:em,p_rol:rol,p_nombre:$("iNom").value.trim()||null});return true});
@@ -31,12 +31,18 @@ $("iList").addEventListener("click",async e=>{const b=e.target.closest("[data-qi
  if(!await confirmar("Se quitará la invitación de <b>"+esc(b.dataset.qi)+"</b>. Ya no podrá crear su cuenta.",{titulo:"Quitar invitación",ok:"Quitar",peligro:true}))return;
  const ok=await espera(async()=>{await rpc("quitar_invitacion",{p_email:b.dataset.qi});return true});if(ok){await cargar();pintar()}});
 $("uList").addEventListener("click",async e=>{
- const r=e.target.closest("[data-rol]"),a=e.target.closest("[data-act]");
+ const r=e.target.closest("[data-rol]"),a=e.target.closest("[data-act]"),c=e.target.closest("[data-ses]");
+ if(c){const u=U.find(x=>x.id===c.dataset.ses);
+  if(!await confirmar(`Se cerrará la sesión de <b>${esc(u.nombre)}</b> en todos sus dispositivos. Podrá volver a entrar con su clave.`,{titulo:"Cerrar sesión",ok:"Cerrar sesión",peligro:true}))return;
+  const ok=await espera(async()=>{await rpc("cerrar_sesion_usuario",{p_id:u.id});return true});if(ok)toast("Sesión de "+u.nombre+" cerrada");return}
  if(r){const u=U.find(x=>x.id===r.dataset.rol),nr=u.rol==="admin"?"vendedor":"admin";
   if(!await pedirClave("Vas a cambiar el rol de "+u.nombre+" a "+(nr==="admin"?"administrador":"vendedor")+"."))return;
   const ok=await espera(async()=>{await rpc("cambiar_rol_usuario",{p_id:u.id,p_rol:nr});return true});if(ok){toast("Rol actualizado");await cargar();pintar()}}
  if(a){const u=U.find(x=>x.id===a.dataset.act);
   if(!await confirmar(u.activo?`<b>${esc(u.nombre)}</b> ya no podrá entrar al sistema. Sus ventas se conservan.`:`<b>${esc(u.nombre)}</b> podrá volver a entrar.`,{titulo:u.activo?"Desactivar cuenta":"Activar cuenta",ok:u.activo?"Desactivar":"Activar",peligro:u.activo}))return;
   const ok=await espera(async()=>{await rpc("activar_usuario",{p_id:u.id,p_activo:!u.activo});return true});if(ok){toast(u.activo?"Cuenta desactivada":"Cuenta activada");await cargar();pintar()}}});
+if(ESP){const bt=document.createElement("button");bt.className="btn g sm";bt.id="cTodas";bt.style.cssText="color:var(--bad);margin:0 0 10px";bt.textContent="Cerrar la sesión de todos los demás";$("uList").parentNode.insertBefore(bt,$("uList"));
+ bt.onclick=async()=>{if(!await confirmar("Se cerrará la sesión de <b>todas las demás personas</b> en todos sus dispositivos. La tuya no se cierra.",{titulo:"Cerrar todas las sesiones",ok:"Cerrar todas",peligro:true}))return;
+  const ok=await espera(async()=>{await rpc("cerrar_todas_sesiones");return true});if(ok)toast("Sesiones cerradas")}}
 await espera(async()=>{await cargar()},"Cargando usuarios…");pintar();
 })();

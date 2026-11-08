@@ -26,11 +26,11 @@
 </form>
 <div class="lx-ft">© DAYMARSV · Acceso solo para usuarios autorizados</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="js/app.js?v=202611030400"></script>
+<script src="js/app.js?v=202611071900"></script>
 <script>
 (async()=>{const {db}=DAY,$=i=>document.getElementById(i);
 if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
-else if(location.search.indexOf("e=sesion")>-1){$("le").style.color="#ecd2d9";$("le").textContent="Tu sesión terminó (dura máximo 5 horas). Inicia sesión de nuevo."}
+else if(location.search.indexOf("e=cerrada")>-1){$("le").style.color="#ecd2d9";$("le").textContent="El administrador cerró tu sesión. Inicia sesión de nuevo."}
 else if(/type=recovery/.test(location.hash)||/[?&]recuperar=1/.test(location.search)){}
 else{const {data}=await db.auth.getSession();if(data.session)location.replace("menu.html")}
 

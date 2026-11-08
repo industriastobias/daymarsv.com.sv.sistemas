@@ -341,18 +341,17 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  d.showModal()}
 async function logout(){await db.auth.signOut();location.replace("index.html")}
 /* Si no hay sesión, manda al login. Devuelve el perfil del usuario. */
-/* Cada sesión dura como máximo 5 horas desde que se inició; después hay que volver a entrar */
-const SESION_MAX_MS=5*60*60*1000;
-const sesionVencida=ses=>{const t=Date.parse(ses&&ses.user&&ses.user.last_sign_in_at||"");return isFinite(t)&&Date.now()-t>SESION_MAX_MS};
-async function cerrarPorTiempo(){try{await db.auth.signOut()}catch(e){}location.replace("index.html?e=sesion")}
+/* La sesión no vence sola: dura hasta que la persona cierre sesión o el administrador principal la cierre (profiles.sesion_desde) */
+const sesionCerrada=(perfil,ses)=>{const f=Date.parse(perfil&&perfil.sesion_desde||""),t=Date.parse(ses&&ses.user&&ses.user.last_sign_in_at||"");return isFinite(f)&&isFinite(t)&&f>t};
+async function cerrarPorAdmin(){try{await db.auth.signOut()}catch(e){}location.replace("index.html?e=cerrada")}
 async function requireSession(){
  const {data}=await db.auth.getSession();
  if(!data.session){location.replace("index.html");return null}
- if(sesionVencida(data.session)){await cerrarPorTiempo();return null}
- const vigilar=async()=>{const {data:d}=await db.auth.getSession();if(d.session&&sesionVencida(d.session))cerrarPorTiempo()};
- setInterval(vigilar,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)vigilar()});
  const r=await db.from("profiles").select("*").eq("id",data.session.user.id).single();
  if(r.error||!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
+ if(sesionCerrada(r.data,data.session)){await cerrarPorAdmin();return null}
+ const vigilar=async()=>{try{const {data:d}=await db.auth.getSession();if(!d.session)return;const p=await db.from("profiles").select("activo,sesion_desde").eq("id",d.session.user.id).single();if(p.data&&(!p.data.activo||sesionCerrada(p.data,d.session)))cerrarPorAdmin()}catch(e){}};
+ setInterval(vigilar,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)vigilar()});
  DAY.me=r.data;DAY.email=data.session.user.email;DAY.principal=r.data.rol==="admin"&&String(DAY.email).toLowerCase()==="aehtobias@gmail.com";return r.data}
 /* Puntito de color según el nombre del color (rosado → punto rosado). Si no lo reconoce, no pone nada. */
 const COLORES={rosado:"#f06292",rosa:"#f06292",blanco:"#ffffff",negro:"#1a1a1a",rojo:"#d32f2f",azul:"#1e66d0",celeste:"#5bc0eb",verde:"#2e9d57",amarillo:"#f6d332",naranja:"#f58a1f",anaranjado:"#f58a1f",morado:"#8e44ad",violeta:"#8e44ad",lila:"#b99be0",gris:"#9e9e9e",plateado:"#c0c0c0",plata:"#c0c0c0",dorado:"#d4a62a",oro:"#d4a62a",cafe:"#7b4a2a",marron:"#7b4a2a",beige:"#e8d8b8",crema:"#f3e9d2",turquesa:"#20b2aa",vino:"#7b1e3a",guinda:"#7b1e3a",fucsia:"#e0198b",coral:"#ff7f6a",mostaza:"#d9a21b",nude:"#e3bfa5",salmon:"#fa8f7d",durazno:"#ffb38a",menta:"#98e0c0",transparente:"repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/8px 8px",multicolor:"conic-gradient(red,orange,yellow,green,blue,violet,red)"};
