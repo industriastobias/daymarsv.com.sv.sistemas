@@ -35,7 +35,7 @@ const ftime=v=>v?new Date(v).toLocaleTimeString("es-SV",{hour:"2-digit",minute:"
 const inicial=n=>esc((String(n||"?").trim()[0]||"?").toUpperCase());
 const TIPO={inmediata:["Inmediata",""],cod:["Contra entrega","wa"],entrega_pendiente:["Pend. entrega","pu"],cobro_pendiente:["Pend. cobro","or"]};
 const tipoBd=t=>`<span class="bd ${(TIPO[t]||TIPO.inmediata)[1]}">${(TIPO[t]||TIPO.inmediata)[0]}</span>`;
-const pagoBd=m=>`<span class="bd ${m==="Transferencia"?"pu":"ok"}">${esc(m||"Efectivo")}</span>`;
+const pagoBd=m=>`<span class="bd ${m==="Transferencia"?"pu":m==="Tarjeta"?"bl2":"ok"}">${esc(m||"Efectivo")}</span>`;
 
 /* ---------- sonidos (opcionales, nunca bloquean) ---------- */
 let AC=null;
@@ -216,7 +216,7 @@ async function ajustarStock(p,nuevo,nota){const d=nuevo-p.stock;if(!d)return;
 const INP=(n,ph,extra)=>`<div class="ig"><span>$</span><input name="${n}" type="number" min="0" step="0.01" placeholder="${ph||"0.00"}" ${extra||""}></div>`;
 function optHTML(){return `
  <div class="tp" data-g="ty"><button type="button" data-ty="inmediata" class="on">Inmediata</button><button type="button" data-ty="cod">Contra entrega</button><button type="button" data-ty="entrega_pendiente">Pend. entrega</button><button type="button" data-ty="cobro_pendiente">Pend. cobro</button></div>
- <div class="tp pm"><button type="button" data-pm="Efectivo" class="on">Efectivo</button><button type="button" data-pm="Transferencia">Transferencia</button></div>
+ <div class="tp pm"><button type="button" data-pm="Efectivo" class="on">Efectivo</button><button type="button" data-pm="Transferencia">Transferencia</button><button type="button" data-pm="Tarjeta">Tarjeta</button></div>
  <div class="cfg" data-cfg="cash"><div class="fg"><div class="full"><label>Efectivo recibido (opcional)</label>${INP("recibe")}<div class="qc"><button type="button" data-qc="x">Exacto</button><button type="button" data-qc="5">$5</button><button type="button" data-qc="10">$10</button><button type="button" data-qc="20">$20</button><button type="button" data-qc="50">$50</button><button type="button" data-qc="100">$100</button></div></div><div class="full cambio" data-cambio></div></div></div>
  <div class="cfg hidden" data-cfg="cod"><div class="fg">
   <div class="full"><label>¿Quién paga la comisión?</label><div class="tp"><button type="button" data-who="client" class="on">El cliente</button><button type="button" data-who="we">Nosotros</button></div></div>
@@ -497,7 +497,7 @@ function abrirMulti(){
  const m=modal("Venta múltiple",`<div class="mlt" id="mlT"></div><div class="mladd"><input id="mlS" type="search" autocomplete="off" placeholder="Agregar otro producto: nombre, código o barras"><div id="mlR" class="mlr hidden"></div></div><div class="ml" id="mlL"></div><div style="text-align:right;margin-top:6px"><button class="btn g sm" id="mlClr" type="button">Vaciar</button></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
  const sub=()=>lineasMulti().reduce((s,l)=>s+(Number.isInteger(l.q)&&l.q>0?cents(l.p.fin)*l.q:0),0);
  const of=optForm(m.q("#mlO"),sub,null);
- if(S.pedidoPV){if(S.pedidoPV.cli)of.setCli(S.pedidoPV.cli);of.setTy(S.pedidoPV.tipo==="entrega_pendiente"?"entrega_pendiente":"cod");if(S.pedidoPV.metodo==="Transferencia"){const b=m.q('[data-pm="Transferencia"]');if(b)b.click()}const ev=m.q("[name=envio]");if(ev&&S.pedidoPV.envio)ev.value=S.pedidoPV.envio.toFixed(2);of.calc()}
+ if(S.pedidoPV){if(S.pedidoPV.cli)of.setCli(S.pedidoPV.cli);of.setTy(S.pedidoPV.tipo==="entrega_pendiente"?"entrega_pendiente":"cod");if(S.pedidoPV.metodo==="Transferencia"||S.pedidoPV.metodo==="Tarjeta"){const b=m.q('[data-pm="'+S.pedidoPV.metodo+'"]');if(b)b.click()}const ev=m.q("[name=envio]");if(ev&&S.pedidoPV.envio)ev.value=S.pedidoPV.envio.toFixed(2);of.calc()}
  const draw=()=>{const L=lineasMulti();
   m.q("#mlL").innerHTML=L.length?L.map(l=>`<div class="mi" data-id="${l.p.id}">${l.p.foto_url?`<img src="${esc(l.p.foto_url)}" alt="">`:`<div class="ph">${inicial(l.p.nombre)}</div>`}
    <div><b>${esc(l.p.nombre)}</b><br><small>${$$(l.p.fin)} / unidad · Stock: ${l.p.stock} · ${esc(l.p.codigo_barras||l.p.codigo||"")}</small></div>
@@ -662,7 +662,7 @@ function editarPedido(v){
    <div class="stp"><button type="button" data-st="-1" data-i="${i.id}">−</button><input type="number" min="1" step="1" value="${i.cantidad}" data-q="${i.id}" style="min-width:56px"><button type="button" data-st="1" data-i="${i.id}">+</button></div></div>`).join("")}</div>
   <div class="cfg" style="margin-top:12px"><div class="fg">
    ${cod?`<div class="full"><label>¿Quién paga la comisión?</label><div class="tp"><button type="button" data-who="client" class="${v.quien_paga==="client"?"on":""}">El cliente</button><button type="button" data-who="we" class="${v.quien_paga==="we"?"on":""}">Nosotros</button></div></div>`:
-    `<div class="full"><label>Método de pago</label><div class="tp pm"><button type="button" data-pm="Efectivo" class="${v.metodo_pago==="Efectivo"?"on":""}">Efectivo</button><button type="button" data-pm="Transferencia" class="${v.metodo_pago==="Transferencia"?"on":""}">Transferencia</button></div></div>`}
+    `<div class="full"><label>Método de pago</label><div class="tp pm"><button type="button" data-pm="Efectivo" class="${v.metodo_pago==="Efectivo"?"on":""}">Efectivo</button><button type="button" data-pm="Transferencia" class="${v.metodo_pago==="Transferencia"?"on":""}">Transferencia</button><button type="button" data-pm="Tarjeta" class="${v.metodo_pago==="Tarjeta"?"on":""}">Tarjeta</button></div></div>`}
    <div><label>Envío</label>${INP("envio","0.00",`value="${v.envio}"`)}</div>
    ${cod?`<div><label>Seguro</label>${INP("seguro","0.00",`value="${v.seguro}"`)}</div><div><label>Tipo de comisión</label><select name="ctipo"><option value="percentage" ${v.comision_tipo==="percentage"?"selected":""}>Porcentaje (%)</option><option value="fixed" ${v.comision_tipo==="fixed"?"selected":""}>Monto fijo ($)</option></select></div>`:""}
    <div><label>${cod?"Comisión":"Comisión (%)"}</label><input name="cval" type="number" min="0" step="0.01" value="${v.comision_valor}"></div></div></div>
@@ -720,13 +720,13 @@ async function eliminarVenta(id,after){
 async function pintarHoy(){
  const d=$("hDate").value||ymd(new Date());$("hDate").value=d;
  const L=await espera(()=>ventasRango(d,d));if(!L)return;S.ventas=L;
- const g={ef:[0,0],tr:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
- L.forEach(v=>{const m=v.metodo_pago==="Transferencia"?"tr":"ef";
+ const g={ef:[0,0],tr:[0,0],tj:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
+ L.forEach(v=>{const m=v.metodo_pago==="Transferencia"?"tr":v.metodo_pago==="Tarjeta"?"tj":"ef";
   if(v.tipo==="cobro_pendiente"){g.cob[0]+=+v.total;g.cob[1]++;return}
   g[m][0]+=+v.total;g[m][1]++;
   if(v.tipo==="entrega_pendiente"){g.ent[0]+=+v.total;g.ent[1]++}else if(v.tipo==="cod"){g.cod[0]+=+v.total;g.cod[1]++}});
- const kp=(n,k)=>`<div><span>${n}</span><b>${$$(g[k][0])}</b><small>${g[k][1]} ventas</small>${(k==="ent"||k==="cod")&&g[k][1]?`<small style="display:block;color:var(--mut,#777)">ya incluido en Efectivo/Transferencia</small>`:""}</div>`;
- $("hKpi").innerHTML=kp("Efectivo","ef")+kp("Transferencia","tr")+kp("Pend. entrega","ent")+kp("Contra entrega","cod")+kp("Pend. cobro","cob");
+ const kp=(n,k)=>`<div><span>${n}</span><b>${$$(g[k][0])}</b><small>${g[k][1]} ventas</small>${(k==="ent"||k==="cod")&&g[k][1]?`<small style="display:block;color:var(--mut,#777)">ya incluido en Efectivo/Transferencia/Tarjeta</small>`:""}</div>`;
+ $("hKpi").innerHTML=kp("Efectivo","ef")+kp("Transferencia","tr")+kp("Tarjeta","tj")+kp("Pend. entrega","ent")+kp("Contra entrega","cod")+kp("Pend. cobro","cob");
  $("hList").innerHTML=L.length?L.map(filaVenta).join(""):`<div class="empty card">No hay ventas para esta fecha</div>`;
  navBadge("hoy",d===ymd(new Date())?L.length:+document.querySelector('#bnav [data-p="hoy"] .nb').textContent||0)}
 function aplicarQuick(){
@@ -752,9 +752,9 @@ async function pintarVentas(){
  const ty=$("vType").value,pm=$("vPay").value;
  const qs=norm($("vSearch").value);
  S.ventas=L.filter(v=>(ty==="all"||v.tipo===ty)&&(pm==="all"||v.metodo_pago===pm)&&(!qs||norm("#"+v.numero+" "+(v.cliente_nombre||"")+" "+(v.venta_items||[]).map(itName).join(" ")).includes(qs)));
- const tot=S.ventas.reduce((s,v)=>s+ +v.total,0),ef=S.ventas.filter(v=>v.metodo_pago!=="Transferencia"),tr=S.ventas.filter(v=>v.metodo_pago==="Transferencia");
+ const tot=S.ventas.reduce((s,v)=>s+ +v.total,0),ef=S.ventas.filter(v=>v.metodo_pago!=="Transferencia"&&v.metodo_pago!=="Tarjeta"),tr=S.ventas.filter(v=>v.metodo_pago==="Transferencia"),tj=S.ventas.filter(v=>v.metodo_pago==="Tarjeta");
  const sm=l=>l.reduce((s,v)=>s+ +v.total,0);
- $("vKpi").innerHTML=`<div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Efectivo</span><b>${$$(sm(ef))}</b><small>${ef.length} transacciones</small></div><div><span>Transferencia</span><b>${$$(sm(tr))}</b><small>${tr.length} transacciones</small></div><div><span>Ventas</span><b>${S.ventas.length}</b></div><div><span>Promedio por venta</span><b>${$$(S.ventas.length?tot/S.ventas.length:0)}</b></div>`;
+ $("vKpi").innerHTML=`<div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Efectivo</span><b>${$$(sm(ef))}</b><small>${ef.length} transacciones</small></div><div><span>Transferencia</span><b>${$$(sm(tr))}</b><small>${tr.length} transacciones</small></div><div><span>Tarjeta</span><b>${$$(sm(tj))}</b><small>${tj.length} transacciones</small></div><div><span>Ventas</span><b>${S.ventas.length}</b></div><div><span>Promedio por venta</span><b>${$$(S.ventas.length?tot/S.ventas.length:0)}</b></div>`;
  S.vShown=100;listaVentas()}
 function listaVentas(){
  const L=S.ventas;$("vList").innerHTML=L.length?L.slice(0,S.vShown).map(filaVenta).join(""):`<div class="empty card">No hay ventas en el periodo seleccionado</div>`;
@@ -930,7 +930,7 @@ async function facHTML(f,fmt){
  <div class="ft">${qr?`<div class="qr">${qr}</div>`:""}<div><b>${esc(c.pie||"")}</b><br><small>Código de validación: ${esc(f.codigo)}</small></div></div></div>`}
 async function cierreHTML(c,fmt){
  const cf=await ensureCfg(),R=c.resumen||{};
- const N={ef:"Efectivo",tr:"Transferencia",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)",dev:"Devoluciones y cambios (neto)"};
+ const N={ef:"Efectivo",tr:"Transferencia",tj:"Tarjeta",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)",dev:"Devoluciones y cambios (neto)"};
  const rows=Object.keys(N).filter(k=>k!=="dev"||R.dev).map(k=>`<tr><td>${N[k]}</td><td class="r">${(R[k]||{}).n||0}</td><td class="r">${money((R[k]||{}).total||0)}</td></tr>`).join("");
  const util=+c.total_ventas-+c.costo_total;
  return `<div class="fx fx-${fmt}"><style>${DOC_CSS}</style>
@@ -1228,7 +1228,7 @@ async function nuevaFactura(pre){
  m.q("#fAddM").onclick=()=>{F.items.push({nombre:"",codigo:"",cantidad:1,precio:0});lines();const l=m.el.querySelectorAll("#fLines .el input[data-f=nombre]");l[l.length-1].focus()};
  m.q("#fAddP").onclick=()=>pickProducto(p=>{const ex=F.items.find(i=>i.codigo&&i.codigo===p.codigo&&i.precio===p.fin);if(ex)ex.cantidad++;else F.items.push({nombre:p.nombre,codigo:p.codigo||"",cantidad:1,precio:p.fin});lines()});
  m.q("#fAddV").onclick=()=>pickVentas(L=>{const x=fromVentas(L);F.items.push(...x.items);F.ventas=[...new Set([...F.ventas,...x.ventas])];
-  if(x.cliente&&!q("cn").value.trim())q("cn").value=x.cliente;if(x.envio&&!num("env"))q("env").value=x.envio;q("met").value=x.metodo==="Transferencia"?"Transferencia":q("met").value;lines()});
+  if(x.cliente&&!q("cn").value.trim())q("cn").value=x.cliente;if(x.envio&&!num("env"))q("env").value=x.envio;q("met").value=x.metodo==="Transferencia"||x.metodo==="Tarjeta"?x.metodo:q("met").value;lines()});
  m.q("#fPromo").onclick=async()=>{const c=q("promo").value.trim().toUpperCase();if(!c)return;
   const {data}=await db.from("promo_codigos").select("pct").eq("codigo",c).eq("activo",true).maybeSingle();
   if(!data){toast("Código no válido o inactivo");return}q("dt").value="pct";q("dv").value=data.pct;toast("Descuento del "+(+data.pct)+"% aplicado");calc()};
@@ -1315,11 +1315,11 @@ async function cerrarCaja(){
   m0.close();cerrarPeriodo(d,h)}}
 async function cerrarPeriodo(d,h){
  const L=await espera(()=>ventasRango(d,h));if(!L)return;const un=d===h,per=un?"del día":"del periodo";
- const g={ef:[0,0],tr:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
- L.forEach(v=>{const k=v.tipo==="entrega_pendiente"?"ent":v.tipo==="cod"?"cod":v.tipo==="cobro_pendiente"?"cob":v.metodo_pago==="Transferencia"?"tr":"ef";g[k][0]+=+v.total;g[k][1]++});
+ const g={ef:[0,0],tr:[0,0],tj:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
+ L.forEach(v=>{const k=v.tipo==="entrega_pendiente"?"ent":v.tipo==="cod"?"cod":v.tipo==="cobro_pendiente"?"cob":v.metodo_pago==="Transferencia"?"tr":v.metodo_pago==="Tarjeta"?"tj":"ef";g[k][0]+=+v.total;g[k][1]++});
  let dv={n:0,t:0,ef:0};try{const r=await db.from("devoluciones").select("diferencia,metodo,monto_devuelto,monto_nuevo").gte("fecha",d).lte("fecha",h);(r.data||[]).forEach(x=>{dv.n++;dv.t+=+x.monto_nuevo-+x.monto_devuelto;if(x.metodo==="Efectivo")dv.ef+=+x.diferencia})}catch(e){}
  g.ef[0]+=dv.ef;const tot=Object.values(g).reduce((s,x)=>s+x[0],0)-dv.ef+dv.t;
- const m=modal("Cerrar caja · "+rangoTxt(d,h),`<div class="stats"><div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Ventas</span><b>${L.length}</b></div><div><span>Efectivo esperado</span><b>${$$(g.ef[0])}</b></div><div><span>Transferencias</span><b>${$$(g.tr[0])}</b></div></div>
+ const m=modal("Cerrar caja · "+rangoTxt(d,h),`<div class="stats"><div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Ventas</span><b>${L.length}</b></div><div><span>Efectivo esperado</span><b>${$$(g.ef[0])}</b></div><div><span>Transferencias</span><b>${$$(g.tr[0])}</b></div><div><span>Tarjeta</span><b>${$$(g.tj[0])}</b></div></div>
   ${dv.n?`<p class="hint">Incluye ${dv.n} devolución(es) o cambio(s) ${per}: ${dv.t<0?"−":""}${$$(Math.abs(dv.t))} en ventas netas${dv.ef?` y ${dv.ef<0?"salieron":"entraron"} ${$$(Math.abs(dv.ef))} en efectivo`:""}.</p>`:""}<p class="pw">Cuenta el efectivo que hay en caja y escríbelo para ver la diferencia. Cerrar la caja <b>guarda un registro</b> ${un?"del día":"de todo el periodo"}; no borra ventas ni cambia el inventario.</p>
   <div class="fg"><div><label>Efectivo contado <small>(opcional)</small></label><input name="cc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="${g.ef[0].toFixed(2)}"></div><div><label>Nota <small>(opcional)</small></label><input name="cn" maxlength="200"></div></div><div class="err2" id="ccE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="ccOk">Guardar cierre</button>`});
@@ -1347,7 +1347,7 @@ async function correoCierre(c,auto){
  if(!st||!st.listo){if(!auto)toast("El correo automático aún no está configurado");return}
  const para=st.copia||DAY.email;if(!para||!mailOk(para)){if(!auto)toast("Escribe tu correo en Datos del negocio (copia)");return}
  const cf=await ensureCfg(),neg=cf.nombre||"DAYMARSV",R=c.resumen||{},util=+c.total_ventas-+c.costo_total;
- const N={ef:"Efectivo",tr:"Transferencia",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)",dev:"Devoluciones y cambios (neto)"};
+ const N={ef:"Efectivo",tr:"Transferencia",tj:"Tarjeta",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)",dev:"Devoluciones y cambios (neto)"};
  const rows=Object.keys(N).filter(k=>k!=="dev"||R.dev).map(k=>`<tr><td style="padding:6px;border-bottom:1px solid #eee">${N[k]}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${(R[k]||{}).n||0}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right">${money((R[k]||{}).total||0)}</td></tr>`).join("");
  const h=caja(neg,"Cierre de caja · "+rangoTxt(c.fecha,c.fecha_hasta),`<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #222">Concepto</th><th style="padding:6px;border-bottom:2px solid #222">Ventas</th><th style="text-align:right;padding:6px;border-bottom:2px solid #222">Total</th></tr>${rows}</table><table style="width:100%;font-size:14px;margin-top:10px">${filaK("Total vendido",money(c.total_ventas),1)}${filaK("Ventas completadas",c.n_ventas)}${filaK("Ventas anuladas",c.n_anuladas)}${filaK("Costo de lo vendido",money(c.costo_total))}${filaK("Utilidad bruta",money(util))}${filaK("Efectivo esperado",money(c.esperado_efectivo))}${c.efectivo_contado!=null?filaK("Efectivo contado",money(c.efectivo_contado))+filaK("Diferencia",money(c.diferencia),1):""}</table>${c.nota?`<p style="font-size:13px;color:#444"><b>Nota:</b> ${esc(c.nota)}</p>`:""}<p style="text-align:center;font-size:12px;color:#777;margin-top:16px">Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)}${c.profiles?" por "+esc(c.profiles.nombre):""}</p>`);
  try{await rpc("enviar_correo_simple",{p_para:para,p_asunto:"Cierre de caja "+rangoTxt(c.fecha,c.fecha_hasta)+" – "+neg,p_html:h,p_copia:false,p_tipo:"cierre",p_ref:rangoTxt(c.fecha,c.fecha_hasta)});toast("Cierre enviado a "+para)}catch(e){if(!auto)toast(e.message)}}
