@@ -140,6 +140,7 @@ pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
  store:'<path d="M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9c0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0 0 2 3 2 3 0"/>',
  users:'<circle cx="9" cy="8" r="4"/><path d="M2 21v-1a6 6 0 0112 0v1M17 4a4 4 0 010 8M22 21v-1a5 5 0 00-4-4.9"/>',
  tag:'<path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
+ star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
  receipt:'<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
  quote:'<path d="M14 3H6a1 1 0 00-1 1v16a1 1 0 001 1h12a1 1 0 001-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
  sale:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M8 16h2M12 16h2"/>',
@@ -153,7 +154,7 @@ pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 const GRUPOS=[
- {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"inbox",h:"pedidos.html",ok:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1}]},
+ {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"inbox",h:"pedidos.html",ok:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"resenas",n:"Reseñas",i:"star",h:"resenas.html",ok:1,adm:1}]},
  {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"image",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"book",h:"catalogo.html",ok:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"correos",n:"Correos enviados",i:"mail",h:"correos.html",ok:1,adm:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
  {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1},{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
