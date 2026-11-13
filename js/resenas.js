@@ -12,10 +12,10 @@ async function cargar(){const {data,error}=await db.from("resenas_tienda").selec
  if(error){$("rsL").innerHTML='<p class="hint">No se pudo cargar. Si es la primera vez, espera a que se aplique la migración 081.</p>';return}
  L=data||[];pintar()}
 function pintar(){
- $("rsL").innerHTML=L.length?L.map(r=>`<div class="card" style="margin-bottom:10px;${r.visible?"":"opacity:.55"}">
+ $("rsL").innerHTML=L.length?L.map(r=>`<div class="card" style="margin-bottom:10px;${r.visible?"":(r.origen==="cliente"?"border-color:#d9b25f":"opacity:.55")}">
   <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
-   <div style="min-width:0"><b>${esc(r.nombre)}</b> <span style="color:#b8860b;letter-spacing:2px">${est(r.estrellas)}</span>${r.producto?` <small>· ${esc(r.producto)}</small>`:""}<br><small>${fdate(r.created_at)}${r.visible?"":" · oculta"}</small></div>
-   <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn g sm" data-vis="${r.id}" type="button">${r.visible?"Ocultar":"Mostrar"}</button><button class="btn g sm" data-ed="${r.id}" type="button">Editar</button><button class="btn dg sm" data-del="${r.id}" type="button">Borrar</button></div>
+   <div style="min-width:0"><b>${esc(r.nombre)}</b> <span style="color:#b8860b;letter-spacing:2px">${est(r.estrellas)}</span>${r.producto?` <small>· ${esc(r.producto)}</small>`:""}<br><small>${fdate(r.created_at)}${r.origen==="cliente"?" · de una clienta"+(r.pedido_codigo?" (pedido "+esc(String(r.pedido_codigo).replace(/^DY-/,""))+")":""):""}${r.visible?"":(r.origen==="cliente"?" · <b style=\"color:#b8860b\">pendiente de aprobar</b>":" · oculta")}</small></div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn g sm" data-vis="${r.id}" type="button">${r.visible?"Ocultar":(r.origen==="cliente"?"Aprobar y mostrar":"Mostrar")}</button><button class="btn g sm" data-ed="${r.id}" type="button">Editar</button><button class="btn dg sm" data-del="${r.id}" type="button">Borrar</button></div>
   </div><p style="margin:8px 0 0">${esc(r.texto)}</p></div>`).join(""):'<p class="hint">Aún no hay reseñas. Toca “Nueva reseña”.</p>'}
 function form(r){return new Promise(ok=>{let res=null;
  const m=modal(r?"Editar reseña":"Nueva reseña",`<label>Nombre de la clienta</label><input id="rsN" maxlength="40" value="${esc(r?r.nombre:"")}" placeholder="Ej. María G.">
