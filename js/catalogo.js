@@ -35,7 +35,7 @@ async function cargar(){
 function filtrados(){
  const q=norm($("kQ").value),c=$("kC").value,s=$("kS").value,o=$("kO").value;
  let L=P.filter(p=>(!c||p.cat===c)&&(!q||norm([p.nombre,p.codigo,p.codigo_barras].join(" ")).includes(q))&&(!s||(s==="con"?p.stk>0:s==="sin"?p.stk<=0:s==="foto"?p.fotos.length:!p.fotos.length)));
- if(o==="nombre")L.sort((a,b)=>a.nombre.localeCompare(b.nombre));else if(o==="menor")L.sort((a,b)=>a.fin-b.fin);else if(o==="mayor")L.sort((a,b)=>b.fin-a.fin);else if(o==="nuevo")L.sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+ if(o==="nombre")L.sort((a,b)=>a.nombre.localeCompare(b.nombre));else if(o==="menor")L.sort((a,b)=>a.fin-b.fin);else if(o==="mayor")L.sort((a,b)=>b.fin-a.fin);else if(o==="nuevo")L.sort((a,b)=>((b.stock>0)-(a.stock>0))||String(b.created_at).localeCompare(String(a.created_at)));
  else L.sort((a,b)=>a.cat.localeCompare(b.cat)||a.nombre.localeCompare(b.nombre));
  return L}
 /* ---------- pantalla ---------- */

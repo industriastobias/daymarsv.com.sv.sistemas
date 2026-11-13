@@ -131,7 +131,7 @@ function filtrar(keep){
   bc=$("fBar").value.trim().toLowerCase(),dt=$("fDate").value,low=$("fLow").checked,ql=norm(q);
  S.filt=S.prods.filter(p=>(!q||fuzzy(p.nombre,q)||norm(p.codigo).includes(ql)||(p.codigo_barras||"").toLowerCase().includes(q.toLowerCase()))&&(!cat||p.cat===cat)&&p.fin>=mn&&p.fin<=mx&&
   (!bc||(p.codigo_barras||"").toLowerCase().includes(bc))&&(!dt||p.dia===dt)&&(!low||p.stock<=0));
- S.filt.sort((a,b)=>b.stock-a.stock||a.nombre.localeCompare(b.nombre));
+ S.filt.sort((a,b)=>((b.stock>0)-(a.stock>0))||String(b.created_at||"").localeCompare(String(a.created_at||""))||a.nombre.localeCompare(b.nombre));
  if(!keep)S.page=1;
  const nf=[cat,mn,mx<Infinity,bc,dt,low].filter(Boolean).length;$("fTog").textContent=nf?"Filtros ("+nf+")":"Filtros";$("fTog").classList.toggle("on",nf>0);
  pintarInv()}
