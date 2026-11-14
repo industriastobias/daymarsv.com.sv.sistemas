@@ -79,7 +79,7 @@ async function cargarProductos(){
 function stats(){
  const v=S.prods.reduce((s,p)=>s+(S.sv&&S.sv.has((p.cat||"").trim().toLowerCase())?0:p.fin*(p.stock||0)),0);$("totalAmount").textContent=$$(v);
  $("nTotal").textContent=new Set(S.prods.map(p=>p.real||p.id)).size}
-const SEL_ITEMS="id,cantidad,precio_unit,precio_original,descuento_pct,nombre,codigo,codigo_barras,producto_id,es_libre,productos(foto_url,nombre,codigo,codigo_barras)";
+const SEL_ITEMS="id,cantidad,precio_unit,precio_original,descuento_pct,nombre,codigo,codigo_barras,producto_id,es_libre,foto_url,productos(foto_url,nombre,codigo,codigo_barras)";
 async function cargarPend(){
  S.pend=await fetchAll(()=>db.from("ventas").select(`*,profiles(nombre),venta_items(${SEL_ITEMS})`)
   .or("estado.eq.pendiente,and(estado.eq.completada,tipo.in.(entrega_pendiente,cobro_pendiente),oculto_pendientes.eq.false)").order("created_at",{ascending:false}));
@@ -457,6 +457,12 @@ function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
  m.el.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"&&e.target.id==="sQty"&&!unl)vender()})}
 
 /* ---------- venta rápida (producto que no está en el inventario) ---------- */
+async function comprimirFoto(file,max,q){
+ let src,w,h;const bmp=await createImageBitmap(file).catch(()=>null);
+ if(bmp){src=bmp;w=bmp.width;h=bmp.height}else{src=await new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=URL.createObjectURL(file)});w=src.width;h=src.height}
+ const k=Math.min(1,max/Math.max(w,h)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));
+ const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);
+ return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
 function ventaRapida(){
  const m=modal("Venta rápida",`
   <div class="fg"><div class="full"><label>Nombre del producto *</label><input id="fqN" maxlength="120" placeholder="Ej: Pulsera sin registrar"></div>
@@ -464,17 +470,23 @@ function ventaRapida(){
    <div><label>Cantidad *</label><input id="fqQ" type="number" min="1" step="1" value="1"></div>
    <div><label>Categoría</label><input id="fqC" placeholder="Venta rápida"></div>
    <div><label>Código de barras</label><div class="bcg"><input id="fqB" placeholder="Opcional"><button type="button" class="btn g" id="fqG">Generar</button></div></div>
-   <div class="full"><label>Descripción</label><textarea id="fqD" rows="2" maxlength="300"></textarea></div></div>
+   <div class="full"><label>Descripción</label><textarea id="fqD" rows="2" maxlength="300"></textarea></div>
+   <div class="full"><label>Foto del producto <small>(opcional)</small></label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><img id="fqPv" class="hidden" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--line,#e5ddd8)"><button type="button" class="btn g" id="fqCam">Tomar foto</button><button type="button" class="btn g" id="fqGal">Galería</button><button type="button" class="btn g hidden" id="fqQuit">Quitar</button></div><input type="file" id="fqF1" accept="image/*" capture="environment" hidden><input type="file" id="fqF2" accept="image/*" hidden></div></div>
   <div id="fqO">${optHTML()}</div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="fqGo">Registrar venta</button>`});
  const sub=()=>cents(parseFloat(m.q("#fqP").value)||0)*(parseInt(m.q("#fqQ").value,10)||0);
  const of=optForm(m.q("#fqO"),sub,null);
  ["#fqP","#fqQ"].forEach(s=>m.q(s).addEventListener("input",of.calc));
  m.q("#fqG").onclick=()=>{m.q("#fqB").value=String(Math.floor(1e7+Math.random()*9e7))};
+ let fblob=null,fprev="";
+ const fpon=async f=>{if(!f)return;try{fblob=await comprimirFoto(f,1000,.78);if(fprev)URL.revokeObjectURL(fprev);fprev=URL.createObjectURL(fblob);const pv=m.q("#fqPv");pv.src=fprev;pv.classList.remove("hidden");m.q("#fqQuit").classList.remove("hidden");m.q("#fqCam").textContent="Cambiar foto"}catch(e){toast("No se pudo leer la foto");fblob=null}};
+ m.q("#fqCam").onclick=()=>m.q("#fqF1").click();m.q("#fqGal").onclick=()=>m.q("#fqF2").click();
+ ["#fqF1","#fqF2"].forEach(sl=>m.q(sl).addEventListener("change",e=>{fpon(e.target.files&&e.target.files[0]);e.target.value=""}));
+ m.q("#fqQuit").onclick=()=>{fblob=null;if(fprev)URL.revokeObjectURL(fprev);fprev="";m.q("#fqPv").classList.add("hidden");m.q("#fqQuit").classList.add("hidden");m.q("#fqCam").textContent="Tomar foto"};
  m.q("#fqGo").onclick=async()=>{
   const n=m.q("#fqN").value.trim(),pr=parseFloat(m.q("#fqP").value),q=parseInt(m.q("#fqQ").value,10);let r;
   try{if(!n)throw new Error("El nombre del producto es obligatorio.");if(!(pr>0))throw new Error("El precio debe ser mayor a cero.");if(!Number.isInteger(q)||q<1)throw new Error("La cantidad debe ser un entero mayor o igual a 1.");r=of.check()}
   catch(e){m.q("[data-err]").textContent=e.message;snd("err");return}
-  const ac=of.autoFac();const ok=await espera(async()=>{return await rpc("registrar_pedido",{p_items:[{libre:true,nombre:n,precio:pr,cantidad:q,categoria:m.q("#fqC").value,descripcion:m.q("#fqD").value,codigo_barras:m.q("#fqB").value}],p_opts:r.o})},"Registrando venta…");
+  const ac=of.autoFac();const ok=await espera(async()=>{let fu=null;if(fblob){try{fu=await DAY.fotosAlm.subir("ventas/"+crypto.randomUUID()+".jpg",fblob)}catch(e){toast("La foto no se pudo subir; la venta se registra sin foto")}}return await rpc("registrar_pedido",{p_items:[{libre:true,nombre:n,precio:pr,cantidad:q,categoria:m.q("#fqC").value,descripcion:m.q("#fqD").value,codigo_barras:m.q("#fqB").value,foto_url:fu}],p_opts:r.o})},"Registrando venta…");
   if(ok){m.close();await tras(r.o,r.t,[]);autoFactura(ok,ac,{soloConCorreo:true})}}}
 
 /* ---------- venta múltiple ---------- */
@@ -532,7 +544,7 @@ function abrirMulti(){
 
 /* ---------- líneas de un pedido (se usan en pendientes, hoy e historial) ---------- */
 const itName=i=>i.nombre||(i.productos&&i.productos.nombre)||"Producto";
-const itImg=i=>(i.productos&&i.productos.foto_url)||"";
+const itImg=i=>(i.productos&&i.productos.foto_url)||i.foto_url||"";
 const itBar=i=>i.codigo_barras||(i.productos&&i.productos.codigo_barras)||"";
 const itCode=i=>i.codigo||(i.productos&&i.productos.codigo)||"";
 const lineas=v=>(v.venta_items||[]).map(i=>`<div class="ln">${itImg(i)?`<img src="${esc(itImg(i))}" alt="" loading="lazy" data-img="${esc(itImg(i))}">`:`<div class="ph">${inicial(itName(i))}</div>`}
