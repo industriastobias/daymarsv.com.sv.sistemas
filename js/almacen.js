@@ -137,6 +137,7 @@ function filtrar(keep){
  pintarInv()}
 const sIcon=p=>p.stock<=0?"zero":"";
 const resTxt=p=>{const r=p.res||0;if(r<1)return"";return r>=p.stock?`<a class="rsv" href="pedidos.html">Mira tus pedidos en línea</a>`:`<span class="rsv">Reservado: ${r} (pedidos en línea)</span>`};
+const imgG=u=>`src="${esc(DAY.grande(u))}" onerror="this.onerror=null;this.src='${esc(u)}'"`;
 const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(cls==="ph"?DAY.grande(p.foto_url):p.foto_url)}" ${cls==="ph"?`onerror="this.onerror=null;this.src='${esc(p.foto_url)}'" `:""}alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
 const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>DAY.colorDot(v.vnom)+esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
 const selQ=p=>p.vars?p.vars.reduce((s,v)=>s+(S.sel.get(v.id)||0),0):(S.sel.get(p.id)||0);
@@ -415,7 +416,7 @@ function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
  if(S.multi){addSel(p.id);return}
  snd("beep");let unl=false;
  const m=modal("Vender producto",`
-  <div class="sp">${p.foto_url?`<img class="sim" src="${esc(p.foto_url)}" alt="" data-img="${esc(p.foto_url)}">`:`<div class="ph">${inicial(p.nombre)}</div>`}
+  <div class="sp">${p.foto_url?`<img class="sim" ${imgG(p.foto_url)} alt="" data-img="${esc(p.foto_url)}">`:`<div class="ph">${inicial(p.nombre)}</div>`}
    <div><b>${esc(p.nombre)}</b><small>${esc(p.codigo||"")}</small>${p.codigo_barras?`<img class="bcs" src="${bcUrl(p.codigo_barras)}" alt="" data-bar="${esc(p.codigo_barras)}">`:""}</div></div>
   <div class="kv"><div><span>Precio ${p.descuento_pct>0?`<span class="dsc">${p.descuento_pct}% desc.</span>`:""}</span><b id="sPr">${$$(p.fin)}</b></div><div><span>Stock disponible</span><b id="sSt">${p.stock}</b></div></div>
   <div class="fg"><div><label>Cantidad</label><div class="stp"><button type="button" data-d="-1" aria-label="Menos">−</button><input id="sQty" class="lk" type="number" min="1" step="1" value="1" readonly><button type="button" data-d="1" aria-label="Más">+</button></div></div>
@@ -499,7 +500,7 @@ function abrirMulti(){
  const of=optForm(m.q("#mlO"),sub,null);
  if(S.pedidoPV){if(S.pedidoPV.cli)of.setCli(S.pedidoPV.cli);of.setTy(S.pedidoPV.tipo==="entrega_pendiente"?"entrega_pendiente":"cod");if(S.pedidoPV.metodo==="Transferencia"||S.pedidoPV.metodo==="Tarjeta"){const b=m.q('[data-pm="'+S.pedidoPV.metodo+'"]');if(b)b.click()}const ev=m.q("[name=envio]");if(ev&&S.pedidoPV.envio)ev.value=S.pedidoPV.envio.toFixed(2);of.calc()}
  const draw=()=>{const L=lineasMulti();
-  m.q("#mlL").innerHTML=L.length?L.map(l=>`<div class="mi" data-id="${l.p.id}">${l.p.foto_url?`<img src="${esc(l.p.foto_url)}" alt="">`:`<div class="ph">${inicial(l.p.nombre)}</div>`}
+  m.q("#mlL").innerHTML=L.length?L.map(l=>`<div class="mi" data-id="${l.p.id}">${l.p.foto_url?`<img ${imgG(l.p.foto_url)} alt="">`:`<div class="ph">${inicial(l.p.nombre)}</div>`}
    <div><b>${esc(l.p.nombre)}</b><br><small>${$$(l.p.fin)} / unidad · Stock: ${l.p.stock} · ${esc(l.p.codigo_barras||l.p.codigo||"")}</small></div>
    <button class="btn g sm mrm" data-rm="${l.p.id}" aria-label="Quitar ${esc(l.p.nombre)}" title="Quitar">✕</button>
    <div class="q"><div class="stp"><button type="button" data-st="-1" data-id="${l.p.id}">−</button><input type="number" min="1" max="${l.p.stock}" step="1" value="${l.q}" data-q="${l.p.id}"><button type="button" data-st="1" data-id="${l.p.id}">+</button></div><b data-sub="${l.p.id}">${$$(l.p.fin*l.q)}</b></div></div>`).join(""):`<div class="empty">Tu selección está vacía.</div>`;
@@ -514,7 +515,7 @@ function abrirMulti(){
  const bs=m.q("#mlS"),br=m.q("#mlR");
  bs.addEventListener("input",()=>{const q=norm(bs.value.trim());if(!q){br.classList.add("hidden");return}
   const R=S.prods.filter(p=>p.stock>=1&&norm((p.nombre||"")+" "+(p.codigo||"")+" "+(p.codigo_barras||"")).includes(q)).slice(0,6);
-  br.innerHTML=R.length?R.map(p=>`<button type="button" data-add="${p.id}">${p.foto_url?`<img src="${esc(p.foto_url)}" alt="">`:`<i class="ph">${inicial(p.nombre)}</i>`}<span>${esc(p.nombre)}</span><small>${$$(p.fin)} · Stock ${p.stock}</small></button>`).join(""):`<div class="empty">Sin resultados</div>`;br.classList.remove("hidden")});
+  br.innerHTML=R.length?R.map(p=>`<button type="button" data-add="${p.id}">${p.foto_url?`<img ${imgG(p.foto_url)} alt="">`:`<i class="ph">${inicial(p.nombre)}</i>`}<span>${esc(p.nombre)}</span><small>${$$(p.fin)} · Stock ${p.stock}</small></button>`).join(""):`<div class="empty">Sin resultados</div>`;br.classList.remove("hidden")});
  const addP=id=>{const p=S.byId.get(id);if(!p)return;if(p.vars){elegirColor(p,e=>addP(e.id));return}const c=S.sel.get(id)||0;if(c>=p.stock){toast("Ya tienes todo el stock");return}S.sel.set(id,c+1);bs.value="";br.classList.add("hidden");draw();bs.focus()};
  br.addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(b)addP(b.dataset.add)});
  bs.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const q=bs.value.trim(),x=S.all.find(p=>p.codigo_barras&&p.codigo_barras===q)||(br.querySelector("[data-add]")&&S.byId.get(br.querySelector("[data-add]").dataset.add));if(x)addP(x.id)}});
