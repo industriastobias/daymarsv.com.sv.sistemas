@@ -214,10 +214,11 @@ function pintarUsr(){const b=document.getElementById("cfg1");if(!b||!DAY.me)retu
 /* Número de pedidos en línea por atender (menú lateral y tarjetas del menú) */
 async function refrescarBadges(){try{
  const poner=(k,n)=>document.querySelectorAll(`[data-nbd=${k}]`).forEach(e=>{e.textContent=n>99?"99+":n;e.classList.toggle("hidden",!n)});
- if(document.querySelector("[data-nbd=pedidos]")){const {count,error}=await db.from("pedidos_linea").select("id",{count:"exact",head:true}).eq("estado","nuevo");if(!error)poner("pedidos",count||0)}
+ if(document.querySelector("[data-nbd=pedidos]")){const {count,error}=await db.from("pedidos_linea").select("id",{count:"exact",head:true}).eq("estado","nuevo");if(!error){poner("pedidos",count||0);const prev=window.__nbPrev;window.__nbPrev=count||0;
+  if(prev!==undefined&&(count||0)>prev&&document.visibilityState==="visible"){try{toast("Nuevo pedido en línea");if("Notification" in window&&Notification.permission==="granted"){const reg=await navigator.serviceWorker.ready;reg.showNotification("Nuevo pedido en línea",{body:"Tienes "+count+" pedido"+(count===1?"":"s")+" por atender",data:{url:"pedidos.html"},tag:"pedido-nuevo"})}}catch(e){}}}}
  if(document.querySelector("[data-nbd=pendientes]")){const {count,error}=await db.from("ventas").select("id",{count:"exact",head:true}).eq("estado","pendiente");if(!error)poner("pendientes",count||0)}
  }catch(e){}}
-if(!window.__nbT){window.__nbT=setInterval(refrescarBadges,60000)}
+if(!window.__nbT){window.__nbT=setInterval(refrescarBadges,30000)}
 function mountSide(el,activo,rol){
  el.innerHTML=`<div class="sbar"><div class="brand">DAYMAR<i>SV</i></div><button type="button" class="hb" id="hb1" aria-label="Ocultar el menú" title="Ocultar el menú">${svg("menu")}</button></div><nav><a href="menu.html" class="${activo==="menu"?"on":""}">${svg("home")}<span>Inicio</span></a>`+
   GRUPOS.filter(g=>visibles(g,rol).length).map(g=>`<div class="sg">${g.t}</div>`+visibles(g,rol).map(m=>enlace(m,"",activo)).join("")).join("")+`</nav><div class="usr"><button type="button" class="ub" id="cfg1" aria-label="Configuración"></button></div><button class="lo" id="lo1">Cerrar sesión</button>`;
