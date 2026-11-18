@@ -38,7 +38,14 @@ table.xl{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
 .bd.w{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .bd.b{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
 .ft{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:8px;color:var(--mute);font-size:13px;flex-wrap:wrap}
+.rb{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.rb .seg2{overflow-x:auto}.rf{display:flex;gap:6px}.rf input{padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+.dlt{display:block;font-style:normal;font-size:12px;margin-top:2px}.dlt.dup{color:var(--ok)}.dlt.ddn{color:var(--bad)}
+.mts{margin-bottom:14px}.mhd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.mhd h3{margin:0}
+.mtg{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:700px){.mtg{grid-template-columns:1fr}}
+.mh{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:6px;flex-wrap:wrap}.mpb{height:10px;border-radius:999px;background:var(--chip);overflow:hidden}.mpb i{display:block;height:100%;background:var(--gold);border-radius:999px}.mpb i.ok{background:var(--ok)}.mt small{color:var(--mute);font-size:12px}
+.hint{color:var(--mute);font-size:13px;margin:0 0 8px}.sml{font-size:13px;color:var(--mute)}.sml select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;width:auto}
 .nod{color:var(--mute);text-align:center;padding:60px 0;font-size:14px}
+.tbc input,.tbc select{width:auto!important}.tbc input[type=search]{flex:1 1 220px}
 </style></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
@@ -50,5 +57,5 @@ table.xl{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="js/app.js?v=202611141600"></script>
-<script src="js/dashboard.js?v=202611181600"></script>
+<script src="js/dashboard.js?v=202611181700"></script>
 </body></html>
