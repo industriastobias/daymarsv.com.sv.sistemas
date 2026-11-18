@@ -122,7 +122,7 @@ function promoHTML(c,x){
  <div style="padding:22px 24px"><div style="font-size:15px;line-height:1.6">${esc(x.msg).replace(/\n/g,"<br>")}</div>
  ${x.promo?`<div style="margin-top:22px;text-align:center;background:#fbf4e6;border:1px dashed #C9973F;border-radius:10px;padding:14px"><div style="font-size:13px;color:#555">Tu código de descuento</div><div style="font-size:24px;font-weight:bold;color:${W};letter-spacing:2px;margin:4px 0">${esc(x.promo.codigo)}</div><div style="font-size:14px">${+x.promo.pct}% de descuento</div></div>`:""}
  ${nv}<div style="text-align:center;margin-top:22px">${botones}</div>
- <p style="text-align:center;font-size:11px;color:#999;margin:18px 0 0;line-height:1.5">${esc(neg)}${c.direccion?" · "+esc(c.direccion):""}<br>Recibes este correo porque aceptaste recibir nuestras promociones.<br><a href="{{BAJA}}" style="color:#999">Dejar de recibir promociones</a></p>
+ <!--pie--><p style="text-align:center;font-size:11px;color:#aaa;margin:14px 0 0;line-height:1.5">${esc(neg)}${c.direccion?" · "+esc(c.direccion):""} · <a href="{{BAJA}}" style="color:#aaa">Darse de baja</a></p>
  </div></div></div>`}
 /* ---------- ficha ---------- */
 function ficha(id){
