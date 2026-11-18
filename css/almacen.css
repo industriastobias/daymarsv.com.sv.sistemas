@@ -267,3 +267,4 @@ dialog.opcp .btn{min-height:44px;padding:6px 8px;font-size:14px;display:flex;ali
 dialog.opcp .opg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .po .bt.pbt{display:grid;grid-template-columns:auto 1fr;gap:8px}.po .bt.pbt .btn{width:100%;margin:0}.po .bt [data-a="opc"]{white-space:nowrap;padding-left:16px;padding-right:16px}
 dialog.opcp .sgs .btn{font-size:13px;word-break:keep-all;overflow-wrap:normal;hyphens:none;padding:6px 4px}
+dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
