@@ -22,7 +22,7 @@ function pintar(){
  $("uList").innerHTML=U.map(u=>{const pr=(u.email||"").toLowerCase()===PRINCIPAL;
   return `<div class="rw">${u.avatar?`<div class="th" style="padding:0;overflow:hidden"><img src="${esc(u.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>`:`<div class="th ph">${esc((u.nombre||"?")[0].toUpperCase())}</div>`}<div class="ti"><b>${esc(u.nombre)}${pr?' <span class="bd ok">Principal</span>':""}</b><small>${esc(u.email||"sin correo")} · desde ${fdate(u.created_at)}</small></div>
   <span class="bd ${u.rol==="admin"?"pu":"bl2"}">${u.rol==="admin"?"Administrador":"Vendedor"}</span>${u.activo?"":'<span class="bd mu">Desactivado</span>'}
-  ${ESP&&!pr?`<button class="btn g sm" data-rol="${u.id}">Hacer ${u.rol==="admin"?"vendedor":"administrador"}</button><button class="btn g sm" data-ses="${u.id}">Cerrar sesión</button><button class="btn g sm" data-act="${u.id}" ${u.activo?'style="color:var(--bad)"':""}>${u.activo?"Desactivar":"Activar"}</button>`:""}</div>`}).join("")}
+  ${ESP&&!pr?`${u.rol!=="admin"?`<button class="btn g sm" data-perm="${u.id}">Permisos${Array.isArray(u.modulos_ocultos)&&u.modulos_ocultos.length?" ("+u.modulos_ocultos.length+" ocultos)":""}</button>`:""}<button class="btn g sm" data-rol="${u.id}">Hacer ${u.rol==="admin"?"vendedor":"administrador"}</button><button class="btn g sm" data-ses="${u.id}">Cerrar sesión</button><button class="btn g sm" data-act="${u.id}" ${u.activo?'style="color:var(--bad)"':""}>${u.activo?"Desactivar":"Activar"}</button>`:""}</div>`}).join("")}
 $("iAdd").onclick=async()=>{const em=$("iEm").value.trim().toLowerCase(),rol=$("iRol").value;
  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast("Escribe un correo válido");return}
  const ok=await espera(async()=>{await rpc("invitar_usuario",{p_email:em,p_rol:rol,p_nombre:$("iNom").value.trim()||null});return true});
@@ -31,7 +31,15 @@ $("iList").addEventListener("click",async e=>{const b=e.target.closest("[data-qi
  if(!await confirmar("Se quitará la invitación de <b>"+esc(b.dataset.qi)+"</b>. Ya no podrá crear su cuenta.",{titulo:"Quitar invitación",ok:"Quitar",peligro:true}))return;
  const ok=await espera(async()=>{await rpc("quitar_invitacion",{p_email:b.dataset.qi});return true});if(ok){await cargar();pintar()}});
 $("uList").addEventListener("click",async e=>{
- const r=e.target.closest("[data-rol]"),a=e.target.closest("[data-act]"),c=e.target.closest("[data-ses]");
+ const r=e.target.closest("[data-rol]"),a=e.target.closest("[data-act]"),c=e.target.closest("[data-ses]"),pm=e.target.closest("[data-perm]");
+ if(pm){const u=U.find(x=>x.id===pm.dataset.perm),oc=new Set(Array.isArray(u.modulos_ocultos)?u.modulos_ocultos:[]);
+  const mods=DAY.GRUPOS.flatMap(g=>g.m.filter(m=>!m.adm&&!m.pri).map(m=>({...m,g:g.t})));
+  const d=document.createElement("dialog");d.style.cssText="border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-height:88vh;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)";
+  d.innerHTML=`<style>dialog::backdrop{background:rgba(0,0,0,.55)}</style><form method="dialog" style="padding:18px;display:grid;gap:10px"><h3 style="margin:0">Permisos de ${esc(u.nombre)}</h3><p class="hint" style="margin:0">Marca lo que esta persona puede ver y abrir. Los módulos solo para administradores no aparecen aquí: ya están bloqueados para vendedores.</p><div style="max-height:50vh;overflow:auto;display:grid;gap:4px">${mods.map(m=>`<label style="display:flex;gap:10px;align-items:center;padding:6px 4px"><input type="checkbox" data-k="${m.k}" ${oc.has(m.k)?"":"checked"}> <span>${esc(m.n)} <small style="color:var(--mute)">· ${esc(m.g)}</small></span></label>`).join("")}</div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" value="x">Cancelar</button><button class="btn" id="pOk" value="ok">Guardar</button></div></form>`;
+  document.body.appendChild(d);d.showModal();d.addEventListener("close",()=>d.remove());
+  d.querySelector("#pOk").onclick=async ev=>{ev.preventDefault();const ocultos=[...d.querySelectorAll("input[data-k]")].filter(x=>!x.checked).map(x=>x.dataset.k);
+   const ok=await espera(async()=>{await rpc("guardar_modulos_usuario",{p_id:u.id,p_ocultos:ocultos});return true});
+   if(ok){d.close();toast("Permisos guardados. Se aplican la próxima vez que "+u.nombre+" abra o recargue el sistema.");await cargar();pintar()}};return}
  if(c){const u=U.find(x=>x.id===c.dataset.ses);
   if(!await confirmar(`Se cerrará la sesión de <b>${esc(u.nombre)}</b> en todos sus dispositivos. Podrá volver a entrar con su clave.`,{titulo:"Cerrar sesión",ok:"Cerrar sesión",peligro:true}))return;
   const ok=await espera(async()=>{await rpc("cerrar_sesion_usuario",{p_id:u.id});return true});if(ok)toast("Sesión de "+u.nombre+" cerrada");return}

@@ -3,7 +3,7 @@
 "use strict";
 const {db,esc,toast,mountSide,requireSession}=DAY;
 const $=i=>document.getElementById(i);
-const me=await requireSession();if(!me)return;
+const me=await requireSession();if(!me)return;if(me.rol!=="admin"){location.replace("menu.html");return}
 const ADM=me.rol==="admin";
 mountSide($("side"),"almacenamiento",me.rol);$("app").classList.remove("hidden");
 const money=n=>"$"+(Number(n)||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});

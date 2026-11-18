@@ -154,10 +154,13 @@ pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 const GRUPOS=[
  {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"inbox",h:"pedidos.html",ok:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1}]},
- {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"image",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"book",h:"catalogo.html",ok:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"correos",n:"Correos enviados",i:"mail",h:"correos.html",ok:1,adm:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
+ {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"image",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"book",h:"catalogo.html",ok:1},{k:"dashboard",n:"Dashboard",i:"pulse",h:"dashboard.html",ok:1,adm:1},{k:"kardex",n:"Kardex",i:"stock",h:"kardex.html",ok:1,adm:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"correos",n:"Correos enviados",i:"mail",h:"correos.html",ok:1,adm:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
  {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1},{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
-const visibles=(g,rol)=>g.m.filter(m=>(!m.adm||rol==="admin")&&(!m.pri||DAY.principal));
+/* Permisos por módulo: un vendedor no ve (ni abre) los módulos que el administrador principal le ocultó */
+const ocultoPara=(k,perfil)=>{const p=perfil||DAY.me;return !!(p&&p.rol!=="admin"&&Array.isArray(p.modulos_ocultos)&&p.modulos_ocultos.includes(k))};
+const moduloDePagina=()=>{const f=location.pathname.split("/").pop()||"index.html";const m=GRUPOS.flatMap(g=>g.m).find(x=>x.h===f);return m?m.k:(f==="ventas.html"?"ventas":"")};
+const visibles=(g,rol)=>g.m.filter(m=>(!m.adm||rol==="admin")&&(!m.pri||DAY.principal)&&!ocultoPara(m.k));
 const enlace=(m,c,on)=>`<a class="${c||""}${m.ok?"":" off"}${on===m.k?" on":""}" href="${m.ok?m.h:"#"}"${m.ext?' target="_blank" rel="noopener"':""} ${m.ok?"":`data-n="${esc(m.n)}"`}>${svg(m.i)}<span>${esc(m.n)}</span>${m.k==="pedidos"||m.k==="pendientes"?`<em class="nbd hidden" data-nbd="${m.k}"></em>`:""}</a>`;
 /* Ventanas propias (reemplazan los avisos feos del navegador) */
 function dlgCss(){if(document.getElementById("dayDlgCss"))return;const st=document.createElement("style");st.id="dayDlgCss";
@@ -351,6 +354,7 @@ async function requireSession(){
  const r=await db.from("profiles").select("*").eq("id",data.session.user.id).single();
  if(r.error||!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
  if(sesionCerrada(r.data,data.session)){await cerrarPorAdmin();return null}
+ {const mk=moduloDePagina();if(mk&&ocultoPara(mk,r.data)){location.replace("menu.html");return null}}
  const vigilar=async()=>{try{const {data:d}=await db.auth.getSession();if(!d.session)return;const p=await db.from("profiles").select("activo,sesion_desde").eq("id",d.session.user.id).single();if(p.data&&(!p.data.activo||sesionCerrada(p.data,d.session)))cerrarPorAdmin()}catch(e){}};
  setInterval(vigilar,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)vigilar()});
  DAY.me=r.data;DAY.email=data.session.user.email;DAY.principal=r.data.rol==="admin"&&String(DAY.email).toLowerCase()==="aehtobias@gmail.com";return r.data}
@@ -418,6 +422,7 @@ const iniSB=()=>{autoSelects();new MutationObserver(m=>{if(m.some(r=>r.addedNode
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniSB);else iniSB();
 let _csv=null;
 async function catsSinValor(f){if(_csv&&!f)return _csv;let n=[];try{const {data}=await db.from("config_negocio").select("cats_sin_valor").eq("id",1).maybeSingle();n=(data&&data.cats_sin_valor)||[]}catch(e){}_csv=new Set(n.map(x=>String(x).trim().toLowerCase()));return _csv}
+{const s=document.createElement("script");s.src="js/busqueda.js?v=202611181710";s.defer=true;setTimeout(()=>document.head.appendChild(s),0)}
 window.DAY={catsSinValor,fotosAlm,refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();

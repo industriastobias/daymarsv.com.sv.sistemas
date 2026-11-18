@@ -3,7 +3,7 @@
 "use strict";
 const {db,esc,toast,mountSide,requireSession}=DAY;
 const $=i=>document.getElementById(i);
-const me=await requireSession();if(!me)return;
+const me=await requireSession();if(!me)return;if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"almacenamiento",me.rol);$("app").classList.remove("hidden");
 const TIPO={entrada:["Entrada","ok"],salida:["Salida","b"],venta:["Venta","w"],devolucion:["Devolución","ok"]};
 const dia=d=>{const x=new Date(d);return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0")};
