@@ -579,17 +579,30 @@ function cardPend(v){
  else{am=`<div><span>Productos</span><b>${$$(v.subtotal)}</b></div><div><span>Envío</span><b>${$$(v.envio)}</b></div><div><span>Comisión${t==="cod"?(v.quien_paga==="client"?" · paga cliente":" · pagamos nosotros"):""}</span><b>${$$(v.comision_monto)}</b></div>`+
   (t==="cod"?`<div><span>Seguro</span><b>${$$(v.seguro)}</b></div>`:"")+`<div class="k"><span>Total a cobrar</span><b>${$$(v.total)}</b></div>`}
  if(pen){
-  if(t==="cobro_pendiente")bt=`<button class="btn g" data-a="rem" data-v="${v.id}">Recordatorio</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar pago completo</button>`;
-  else if(t==="cod"&&v.entregado_en)bt=`<button class="btn g" data-a="noent" data-v="${v.id}">Deshacer entrega</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar liquidación</button>`;
-  else if(t==="cod")bt=`<button class="btn g" data-a="edit" data-v="${v.id}">Editar</button><button class="btn g" data-a="ent" data-v="${v.id}">Marcar entregado</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar cobro</button>`;
-  else bt=`<button class="btn g" data-a="edit" data-v="${v.id}">Editar</button><button class="btn" data-a="ok" data-v="${v.id}">Confirmar entrega</button>`;
-  if(ADM)bt=`<button class="btn g" style="color:var(--bad)" data-a="del" data-v="${v.id}">Eliminar</button>`+bt}
+  const okTxt=t==="cobro_pendiente"?"Confirmar pago completo":t==="cod"&&v.entregado_en?"Confirmar liquidación":t==="cod"?"Confirmar cobro":"Confirmar entrega";
+  bt=`<button class="btn g" data-a="opc" data-v="${v.id}">Opciones ⋯</button><button class="btn" data-a="ok" data-v="${v.id}">${okTxt}</button>`}
  else bt=`<span class="bd ok">${COMPLETADO[t]}</span>`;
- return `<div class="po"><div class="ph1"><span>${fdate(v.created_at)} ${ftime(v.created_at)}</span>${pagoBd(v.metodo_pago)}<span class="grow"></span><span class="bd ${pen?"wa":"ok"}">${pen?(t==="cod"&&v.entregado_en?"Entregado · por liquidar":"Pendiente"):COMPLETADO[t]}</span></div>
-  ${lineas(v)}${ent}<div class="am">${am}</div>${pen?segHtml(v):""}<div class="bt">${bt}</div></div>`}
+ return `<div class="po"><div class="ph1"><span>${fdate(v.created_at)} ${ftime(v.created_at)}</span>${pagoBd(v.metodo_pago)}<span class="grow"></span>${pen&&v.seguimiento&&SEGV[v.seguimiento]?`<span class="bd bl2">${SEGV[v.seguimiento]}</span>`:""}<span class="bd ${pen?"wa":"ok"}">${pen?(t==="cod"&&v.entregado_en?"Entregado · por liquidar":"Pendiente"):COMPLETADO[t]}</span></div>
+  ${lineas(v)}${ent}<div class="am">${am}</div><div class="bt${pen?" pbt":""}">${bt}</div></div>`}
 
+function opcionesPend(v){
+ const t=v.tipo,b=(a,txt,c)=>`<button type="button" class="btn ${c||"g"}" data-a="${a}" data-v="${v.id}">${txt}</button>`;
+ const acc=[];
+ if(t==="cobro_pendiente")acc.push(b("rem","Recordatorio de pago"));
+ else if(t==="cod"&&v.entregado_en)acc.push(b("noent","Deshacer entrega"));
+ else if(t==="cod")acc.push(b("edit","Editar"),b("ent","Marcar entregado"));
+ else acc.push(b("edit","Editar"));
+ if(ADM)acc.push(`<button type="button" class="btn g" style="color:var(--bad)" data-a="del" data-v="${v.id}">Eliminar</button>`);
+ const html=`${segHtml(v)}<div class="opg">${acc.join("")}</div>`;
+ const m=modal(esc(v.cliente_nombre||"Pedido")+" · opciones",html,{});
+ m.el.classList.add("opcp");
+ m.el.addEventListener("click",async e=>{const x=e.target.closest("[data-a]");if(!x)return;e.preventDefault();const a=x.dataset.a;
+  if(a==="cpcod"){accionPend(a,v.id);return}
+  m.close();await accionPend(a,v.id)});
+ m.el.showModal?m.el.open||m.el.showModal():0}
 async function accionPend(a,id){
  const v=S.pend.find(x=>x.id===id);if(!v){toast("Pedido no encontrado");return}
+ if(a==="opc")return opcionesPend(v);
  if(a==="cpcod"){try{await navigator.clipboard.writeText(v.codigo);toast("Número copiado: "+v.codigo)}catch(e){await DAY.input("Copia este número",v.codigo,{titulo:"Número de pedido"})}return}
  if(a.startsWith("seg:")){const k=a.slice(4)===v.seguimiento?"":a.slice(4);
   const ok=await espera(async()=>{await rpc("venta_seguimiento",{p_id:id,p_seg:k});return true},"Guardando…");if(ok){toast(k?"Marcado: "+SEGV[k]:"Seguimiento quitado");await cargarPend();pintarPend()}return}

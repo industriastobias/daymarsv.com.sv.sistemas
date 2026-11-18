@@ -256,3 +256,14 @@ a.rsv:hover{text-decoration:underline}
  .po .bt .btn:last-child:nth-child(odd){grid-column:1/-1}
  .po .bt .bd{grid-column:1/-1;justify-self:end}
 }
+
+/* Pendientes: ventana de opciones */
+dialog.opcp .sgb{margin:0 0 12px;padding:12px;border:1px dashed var(--line);border-radius:12px}
+dialog.opcp .sgc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+dialog.opcp .sgc span{grid-column:1/-1;font-size:12px;color:var(--mute)}
+dialog.opcp .sgc b{grid-column:1/-1;font:800 20px monospace;letter-spacing:1px;word-break:break-all}
+dialog.opcp .sgs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+dialog.opcp .btn{min-height:44px;padding:6px 8px;font-size:14px;display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;line-height:1.15;width:100%;box-sizing:border-box}
+dialog.opcp .opg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.po .bt.pbt{display:grid;grid-template-columns:auto 1fr;gap:8px}.po .bt.pbt .btn{width:100%;margin:0}.po .bt [data-a="opc"]{white-space:nowrap;padding-left:16px;padding-right:16px}
+dialog.opcp .sgs .btn{font-size:13px;word-break:keep-all;overflow-wrap:normal;hyphens:none;padding:6px 4px}
