@@ -2,7 +2,11 @@
 (function(){
 try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611021229";document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
-const db=supabase.createClient(CFG.url,CFG.key);
+/* Ninguna consulta puede quedarse colgada para siempre: a los 30 s se corta y la pantalla vuelve a responder (las subidas de archivos quedan fuera) */
+const fetchLimite=(u,o)=>{const url=String(u&&u.url||u);if(/\/storage\/v1\//.test(url))return fetch(u,o);
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),30000);if(o&&o.signal){if(o.signal.aborted)c.abort();else o.signal.addEventListener("abort",()=>c.abort())}
+ return fetch(u,{...(o||{}),signal:c.signal}).finally(()=>clearTimeout(t))};
+const db=supabase.createClient(CFG.url,CFG.key,{global:{fetch:fetchLimite}});
 /* Fotos en Cloudflare R2 (opcional). Vacío = se siguen guardando en Supabase. Ver cloudflare/LEEME.md */
 const R2={worker:"https://daymar-fotos.daymarsv.workers.dev",publico:"https://daymar-fotos.daymarsv.workers.dev/f"};
 const sesionToken=async()=>{const s=(await db.auth.getSession()).data.session;if(!s)throw new Error("Tu sesión expiró. Vuelve a entrar.");return s.access_token};
