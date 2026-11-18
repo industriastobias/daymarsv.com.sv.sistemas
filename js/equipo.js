@@ -37,12 +37,12 @@ async function rpc(fn,args,ok){const r=await db.rpc(fn,args);if(r.error){toast("
 function formulario(t){
  const d=document.createElement("dialog");d.style.cssText="border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-height:92vh;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)";
  const act=U.filter(u=>u.activo!==false);
- d.innerHTML=`<style>dialog::backdrop{background:rgba(0,0,0,.55)}</style><form method="dialog" class="fm"><h3 style="margin:0">${t?"Editar tarea":"Nueva tarea"}</h3>
+ d.innerHTML=`<style>dialog::backdrop{background:rgba(0,0,0,.55)}</style><form method="dialog" class="eqf" style="display:flex;flex-direction:column;gap:12px;padding:18px;margin:0;width:auto;max-width:none"><h3 style="margin:0">${t?"Editar tarea":"Nueva tarea"}</h3>
  <label>Título<input id="xT" maxlength="120" value="${esc(t?t.titulo:"")}" placeholder="Ej. Contar el stock de aretes"></label>
  <label>Detalle (opcional)<textarea id="xD" rows="3" maxlength="600">${esc(t&&t.detalle||"")}</textarea></label>
  <label>Asignar a<select id="xA"><option value="">Sin asignar</option>${act.map(u=>`<option value="${u.id}"${t&&t.asignado_a===u.id?" selected":""}>${esc(u.nombre)}${u.rol==="admin"?" (admin)":""}</option>`).join("")}</select></label>
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Prioridad<select id="xP">${["alta","media","baja"].map(p=>`<option value="${p}"${(t?t.prioridad:"media")===p?" selected":""}>${PR[p][0]}</option>`).join("")}</select></label><label>Fecha límite<input type="date" id="xV" value="${t&&t.vence||""}"></label></div>
- <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn g" value="x">Cancelar</button><button class="btn" id="xOk" value="ok">Guardar</button></div></form>`;
+ <div class="eqr"><label>Prioridad<select id="xP">${["alta","media","baja"].map(p=>`<option value="${p}"${(t?t.prioridad:"media")===p?" selected":""}>${PR[p][0]}</option>`).join("")}</select></label><label>Fecha límite<input type="date" id="xV" value="${t&&t.vence||""}"></label></div>
+ <div class="eqb"><button class="btn g" value="x">Cancelar</button><button class="btn" id="xOk" value="ok">Guardar</button></div></form>`;
  document.body.appendChild(d);d.showModal();d.addEventListener("close",()=>d.remove());
  d.querySelector("#xOk").onclick=async e=>{e.preventDefault();const tt=d.querySelector("#xT").value.trim();if(!tt){toast("Escribe un título");return}
   const a={p_titulo:tt,p_detalle:d.querySelector("#xD").value,p_asignado:d.querySelector("#xA").value||null,p_prioridad:d.querySelector("#xP").value,p_vence:d.querySelector("#xV").value||null};
