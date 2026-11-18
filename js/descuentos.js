@@ -27,11 +27,11 @@ function pintarProd(){
  $("pKpi").innerHTML=`<div><span>Productos</span><b>${S.prods.length}</b></div><div><span>Con descuento</span><b>${con.length}</b></div><div><span>Valor a precio regular</span><b>${$$(val)}</b></div><div><span>Valor con descuentos</span><b>${$$(proy)}</b></div><div><span>Descuento total</span><b>${$$(val-proy)}</b></div>`;
  $("pInfo").innerHTML=`<b>${L.length}</b> productos · <b>${S.sel.size}</b> seleccionados`;
  $("pAll").checked=L.length>0&&L.every(p=>S.sel.has(p.id));
- $("pList").innerHTML=L.length?L.slice(0,400).map(p=>`<div class="rw" data-id="${p.id}"><input type="checkbox" class="ck" data-ck="${p.id}" ${S.sel.has(p.id)?"checked":""} aria-label="Seleccionar ${esc(p.nombre)}">
-  ${p.foto_url?`<img class="th" src="${esc(p.foto_url)}" alt="" loading="lazy">`:`<div class="th ph">${esc((p.nombre[0]||"?").toUpperCase())}</div>`}
-  <div class="ti"><b>${esc(p.nombre)}</b><small>${esc(p.codigo||"")} · ${esc(p.cat)} · Stock ${p.stock}</small></div>
-  <div class="am2">${+p.descuento_pct>0?`<s>${$$(p.precio_venta)}</s> <b>${$$(fin(p))}</b><span class="bd or">-${+p.descuento_pct}%</span>`:`<b>${$$(p.precio_venta)}</b>`}</div>
-  <button class="btn g sm" data-ed="${p.id}">Cambiar %</button></div>`).join(""):`<div class="empty card">No hay productos con estos filtros.</div>`}
+ $("pList").innerHTML=L.length?`<div class="dsc-g">`+L.slice(0,400).map(p=>{const d=+p.descuento_pct>0,sel=S.sel.has(p.id);
+  return `<div class="dsc-c${sel?" on":""}" data-id="${p.id}"><div class="dsc-im" data-im="${p.id}">${p.foto_url?`<img src="${esc(DAY.grande(p.foto_url))}" onerror="this.onerror=null;this.src='${esc(p.foto_url)}'" alt="" loading="lazy">`:`<div class="ph">${esc((p.nombre[0]||"?").toUpperCase())}</div>`}<input type="checkbox" class="ck" data-ck="${p.id}" ${sel?"checked":""} aria-label="Seleccionar ${esc(p.nombre)}">${d?`<span class="dsc-bd">-${+p.descuento_pct}%</span>`:""}</div>
+  <div class="dsc-b"><b class="dsc-n">${esc(p.nombre)}</b><small>${esc(p.cat)} · Stock ${p.stock}</small><small>${esc(p.codigo||"")}</small>
+  <div class="dsc-p">${d?`<s>${$$(p.precio_venta)}</s> <b>${$$(fin(p))}</b>`:`<b>${$$(p.precio_venta)}</b>`}</div>
+  <button class="btn g sm" data-ed="${p.id}">Cambiar %</button></div></div>`}).join("")+`</div>`:`<div class="empty card">No hay productos con estos filtros.</div>`}
 async function aplicarIds(ids,pct){
  if(!ids.length)return;
  const ok=await espera(async()=>{for(let i=0;i<ids.length;i+=100){const {error}=await db.from("productos").update({descuento_pct:pct}).in("id",ids.slice(i,i+100));if(error)throw new Error(error.message)}return true},"Aplicando descuento…");
@@ -43,6 +43,7 @@ function pedirPct(titulo,texto,def){return new Promise(ok=>{let r=null;
  m.q("#pcOk").onclick=go;m.q("#pcI").addEventListener("keydown",e=>{if(e.key==="Enter")go()});setTimeout(()=>m.q("#pcI").focus(),50)})}
 $("pList").addEventListener("click",async e=>{
  const ck=e.target.closest("[data-ck]");if(ck){ck.checked?S.sel.add(ck.dataset.ck):S.sel.delete(ck.dataset.ck);pintarProd();return}
+ const im=e.target.closest("[data-im]");if(im&&!e.target.closest("[data-ck]")){const id=im.dataset.im;S.sel.has(id)?S.sel.delete(id):S.sel.add(id);pintarProd();return}
  const ed=e.target.closest("[data-ed]");if(ed){const p=S.prods.find(x=>x.id===ed.dataset.ed);const v=await pedirPct("Descuento de "+esc(p.nombre),"Precio regular: <b>"+$$(p.precio_venta)+"</b>. Pon 0 para quitar el descuento.",+p.descuento_pct||"");if(v!==null)aplicarIds([p.id],v)}});
 ["pQ"].forEach(i=>$(i).addEventListener("input",deb(pintarProd,150)));["pCat","pEst"].forEach(i=>$(i).onchange=pintarProd);
 $("pAll").onchange=()=>{const L=filtrados();if($("pAll").checked)L.forEach(p=>S.sel.add(p.id));else L.forEach(p=>S.sel.delete(p.id));pintarProd()};

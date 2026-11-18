@@ -6,7 +6,18 @@
 <link rel="stylesheet" href="css/estilo.css?v=202611041100">
 <link rel="stylesheet" href="css/compra.css?v=202611022330">
 <link rel="stylesheet" href="css/almacen.css?v=202611031120">
-<link rel="stylesheet" href="css/paginas.css?v=202611021220"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=4"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<link rel="stylesheet" href="css/paginas.css?v=202611021220"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=4"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"><style>
+.dsc-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.dsc-c{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}.dsc-c.on{border-color:var(--wine);box-shadow:0 0 0 2px color-mix(in srgb,var(--wine) 25%,transparent)}
+.dsc-im{position:relative;aspect-ratio:1/1;background:var(--chip);cursor:pointer}.dsc-im img{width:100%;height:100%;object-fit:cover;display:block}.dsc-im .ph{width:100%;height:100%;display:grid;place-items:center;font-size:40px;font-weight:700;color:var(--wine)}
+.dsc-im .ck{position:absolute;top:8px;left:8px;width:24px;height:24px;margin:0;accent-color:var(--wine);background:#fff;border-radius:7px}
+.dsc-bd{position:absolute;top:8px;right:8px;background:var(--warn);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:999px}
+.dsc-b{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px;flex:1}.dsc-b small{color:var(--mute);font-size:12px}
+.dsc-n{font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dsc-p{margin:4px 0 8px;font-size:15px}.dsc-p s{color:var(--mute);font-size:12px;margin-right:4px}.dsc-p b{font-size:17px}
+.dsc-b .btn{margin-top:auto;width:100%;justify-content:center}
+</style>
+</head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -55,5 +66,5 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script src="js/app.js?v=202611181940"></script>
 <script src="js/comun.js?v=202611181940"></script>
-<script src="js/descuentos.js?v=202610311459"></script>
+<script src="js/descuentos.js?v=9202610311459"></script>
 </body></html>
