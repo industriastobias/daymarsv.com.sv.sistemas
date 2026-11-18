@@ -1504,4 +1504,10 @@ await (async()=>{let pv=null;try{pv=JSON.parse(sessionStorage.getItem("dms_pedid
 addEventListener("hashchange",()=>{const h=(location.hash||"").slice(1);if(!SOLO&&h==="pend"){location.replace("pendientes.html");return}if(!SOLO&&["inv","hoy","ven","fac"].includes(h))tab(h)});
 /* precarga las librerías de PDF en segundo plano para que el primer ticket no tarde */
 setTimeout(()=>{lib("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js").catch(()=>{});setTimeout(()=>lib("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js").catch(()=>{}),1500)},2500);
+/* Abrir un producto concreto (desde la búsqueda global) */
+window.DMS_abrirProducto=id=>{const p=S.byId&&S.byId.get(id);if(!p){toast("No se encontró el producto en el inventario");return}
+ if(S.venta){toast("Termina o cancela la venta que tienes abierta");return}
+ if(S.multi){addSel(p.id);return}
+ if(S.tab!=="inv")tab("inv");abrF(true);$("fSearch").value=p.nombre;filtrar();setTimeout(()=>{if(!document.querySelector("dialog[open]"))abrirVenta(p)},250)};
+try{const pid=sessionStorage.getItem("dms_prod");if(pid){sessionStorage.removeItem("dms_prod");setTimeout(()=>window.DMS_abrirProducto(pid),400)}}catch(e){}
 })();

@@ -19,7 +19,9 @@ function abrir(){
  d.innerHTML=`<style>#gsDlg::backdrop{background:rgba(0,0,0,.55)}#gsDlg .gsr:hover,#gsDlg .gsr:focus{background:var(--chip,#f0e6e9);outline:0}</style><div style="padding:14px"><input id="gsQ" type="search" placeholder="Buscar producto, cliente, venta o pedido…" autocomplete="off" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid var(--line,#e6dde0);border-radius:12px;font:inherit;font-size:16px;background:var(--card,#fff);color:inherit"><div id="gsR" style="margin-top:10px;max-height:60vh;overflow:auto"><p style="color:var(--mute,#7b6a70);font-size:13px;margin:6px 2px">Escribe al menos 2 letras o números. Puedes buscar por nombre, código, teléfono o n.º de pedido.</p></div></div>`;
  document.body.appendChild(d);d.showModal();d.addEventListener("close",()=>d.remove());
  const q=d.querySelector("#gsQ"),R=d.querySelector("#gsR");let tm=0,seq=0,A=[];
- const ir=(href,txt)=>{try{sessionStorage.setItem("dms_q",txt)}catch(e){}location.href=href};
+ const ir=(href,txt,id)=>{
+  if(id){if(window.DMS_abrirProducto){d.close();window.DMS_abrirProducto(id);return}try{sessionStorage.setItem("dms_prod",id)}catch(e){}location.href=href;return}
+  try{sessionStorage.setItem("dms_q",txt)}catch(e){}location.href=href};
  const fila=(i,t,s)=>`<button type="button" class="gsr" data-i="${i}" style="display:block;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:10px;background:none;color:inherit;font:inherit;cursor:pointer"><b style="font-size:14px">${esc(t)}</b><br><small style="color:var(--mute,#7b6a70)">${esc(s)}</small></button>`;
  const sec=(tt,arr)=>arr.length?`<div style="font:700 11px 'DM Sans',sans-serif;color:var(--mute,#7b6a70);text-transform:uppercase;letter-spacing:.06em;margin:10px 4px 2px">${tt}</div>`+arr.join(""):"";
  async function buscar(){
@@ -32,8 +34,8 @@ function abrir(){
    permitido("ventas")?db.from("ventas").select("id,numero,codigo,cliente_nombre,total,created_at").or(`codigo.ilike.${L},cliente_nombre.ilike.${L}`+(/^\d{1,9}$/.test(t)?`,numero.eq.${t}`:"")).order("created_at",{ascending:false}).limit(5).then(r=>r.data||[],()=>vac):vac,
    permitido("pedidos")?db.from("pedidos_linea").select("id,codigo,cliente_nombre,total,estado").or(`codigo.ilike.${L},cliente_nombre.ilike.${L}`).order("created_at",{ascending:false}).limit(5).then(r=>r.data||[],()=>vac):vac]);
   if(my!==seq)return;A=[];
-  const add=(href,txt)=>A.push([href,txt])-1;
-  const h=sec("Productos",pr.map(x=>fila(add("reportes.html",x.nombre),x.nombre,(x.codigo_barras||x.codigo||"")+" · stock "+x.stock+" · $"+Number(x.precio_venta||0).toFixed(2))))
+  const add=(href,txt,id)=>A.push([href,txt,id])-1;
+  const h=sec("Productos",pr.map(x=>fila(add("almacenamiento.html",x.nombre,x.id),x.nombre,(x.codigo_barras||x.codigo||"")+" · stock "+x.stock+" · $"+Number(x.precio_venta||0).toFixed(2))))
    +sec("Clientes",cl.map(x=>fila(add("clientes.html",x.nombre),x.nombre,[x.telefono,x.correo].filter(Boolean).join(" · "))))
    +sec("Ventas",ve.map(x=>fila(add("ventas.html",String(x.codigo||x.numero)),"Venta #"+x.numero+(x.cliente_nombre?" · "+x.cliente_nombre:""),(x.codigo||"")+" · $"+Number(x.total||0).toFixed(2)+" · "+String(x.created_at).slice(0,10))))
    +sec("Pedidos en línea",pe.map(x=>fila(add("pedidos.html",x.codigo),String(x.codigo).replace(/^D[YM]-/,"")+(x.cliente_nombre?" · "+x.cliente_nombre:""),x.estado+" · $"+Number(x.total||0).toFixed(2))));

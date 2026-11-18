@@ -422,7 +422,7 @@ const iniSB=()=>{autoSelects();new MutationObserver(m=>{if(m.some(r=>r.addedNode
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniSB);else iniSB();
 let _csv=null;
 async function catsSinValor(f){if(_csv&&!f)return _csv;let n=[];try{const {data}=await db.from("config_negocio").select("cats_sin_valor").eq("id",1).maybeSingle();n=(data&&data.cats_sin_valor)||[]}catch(e){}_csv=new Set(n.map(x=>String(x).trim().toLowerCase()));return _csv}
-{const s=document.createElement("script");s.src="js/busqueda.js?v=202611181710";s.defer=true;setTimeout(()=>document.head.appendChild(s),0)}
+{const s=document.createElement("script");s.src="js/busqueda.js?v=202611181750";s.defer=true;setTimeout(()=>document.head.appendChild(s),0)}
 window.DAY={catsSinValor,fotosAlm,refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
