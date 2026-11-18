@@ -838,9 +838,9 @@ async function excel(){
 /* ---------- navegación entre secciones ---------- */
 const ALLT=[["inv"],["pend"],["hoy"],["ven"],["fac"]];
 const TABS=SOLO?[]:[["inv","Inventario",IC.box],["hoy","Hoy",IC.cal],["ven","Ventas",IC.rec],["fac","Facturas",IC.fac]];
-if(SOLO){["bnav","bScan","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i);if(e)e.classList.add("hidden")});const t=document.querySelector(".head .tot");if(t)t.classList.add("hidden");const mo=document.querySelector(".head .more");if(mo)mo.classList.add("hidden")}
+if(SOLO){["bnav","bScan","bPhoto","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i);if(e)e.classList.add("hidden")});const t=document.querySelector(".head .tot");if(t)t.classList.add("hidden");const mo=document.querySelector(".head .more");if(mo)mo.classList.add("hidden")}
 $("bnav").innerHTML=TABS.map(t=>`<button type="button" data-p="${t[0]}">${ic(t[2])}<span>${t[1]}</span><span class="nb hidden">0</span></button>`).join("");
-$("bScan").innerHTML=ic(IC.scan)+"Escanear";
+$("bScan").innerHTML=ic(IC.scan)+"Escanear";$("bPhoto").innerHTML=ic('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>')+"Buscar por foto";
 async function tab(k){
  document.documentElement.removeAttribute("data-h");document.documentElement.setAttribute("data-tab",k);S.tab=k;
  if(!SOLO){const T={inv:["Almacenamiento",""],hoy:["Hoy","Ventas y movimientos del día"],ven:["Ventas","Historial de ventas del punto de venta"],fac:["Facturas","Emite y consulta tus facturas"]}[k];
@@ -1453,6 +1453,11 @@ $("vSearch").addEventListener("input",(()=>{let t;return()=>{clearTimeout(t);t=s
 $("vMore").onclick=()=>{S.vShown+=100;listaVentas()};
 
 $("bScan").onclick=()=>QR?pararCamara():camara();
+$("bPhoto").onclick=async()=>{
+ if(S.venta){toast("Termina o cancela la venta que tienes abierta");return}
+ const abrirFB=()=>FotoBusq.abrir(S.all,p=>{if(S.multi){addSel(p.id);return}if(S.tab!=="inv")tab("inv");abrirVenta(p)});
+ if(window.FotoBusq)return abrirFB();
+ try{await new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="js/fotobusq.js?v=202611181740";sc.onload=ok;sc.onerror=()=>ko(new Error("No se pudo cargar"));document.head.appendChild(sc)});abrirFB()}catch(e){toast("No se pudo abrir la búsqueda por foto: "+(e.message||e))}};
 $("bUsb").onclick=()=>usb();
 $("bMulti").onclick=()=>modoMulti();
 $("bFast").onclick=ventaRapida;
