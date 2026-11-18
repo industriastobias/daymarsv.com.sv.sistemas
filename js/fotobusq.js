@@ -50,7 +50,7 @@ function abrir(productos,alElegir){
  <input type="file" id="fbF1" accept="image/*" capture="environment" hidden><input type="file" id="fbF2" accept="image/*" hidden>
  <div id="fbPv" style="display:none"><img id="fbIm" alt="" style="max-width:100%;max-height:180px;border-radius:12px;display:block"></div>
  <div id="fbRes" style="max-height:48vh;overflow:auto"></div>
- <p style="margin:0;font-size:12px;color:var(--mute,#7b6a70)">Funciona mejor con buena luz y el producto centrado. Confirma siempre que sea el correcto antes de vender.</p></div>`;
+</div>`;
  document.body.appendChild(d);d.showModal();d.addEventListener("close",()=>d.remove());
  const $=s=>d.querySelector(s),est=t=>{$("#fbEst").textContent=t};
  $("#fbX").onclick=()=>d.close();
@@ -58,7 +58,7 @@ function abrir(productos,alElegir){
  const preparar=()=>listo||(listo=(async()=>{
   est("Cargando el módulo de imágenes (solo la primera vez)…");await prepararModelo();
   const r=await indexar(productos,(h,t)=>est(`Aprendiendo las fotos de tus productos… ${h} de ${t}`));
-  est(`Listo: ${r.H.size} producto${r.H.size===1?"":"s"} con foto analizados`+(r.sinFoto?` · ${r.sinFoto} sin foto no se pueden buscar`:"")+(r.fallos?` · ${r.fallos} fotos no se pudieron leer`:""));return r})().catch(e=>{listo=null;est("No se pudo preparar la búsqueda: "+(e.message||e));throw e}));
+  est("");return r})().catch(e=>{listo=null;est("No se pudo preparar la búsqueda: "+(e.message||e));throw e}));
  preparar().catch(()=>{});
  async function analizar(file){
   if(!file)return;const url=URL.createObjectURL(file);$("#fbIm").src=url;$("#fbPv").style.display="block";$("#fbRes").innerHTML="";
