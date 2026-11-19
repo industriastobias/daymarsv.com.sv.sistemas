@@ -308,3 +308,10 @@ dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
  .hact .more{grid-column:-2/-1!important}
  .menu{max-width:calc(100vw - 32px)}
 }
+/* En Hoy, Ventas y Facturas solo queda el botón •••: va en la misma fila que el título */
+@media(max-width:799px){
+ html[data-tab]:not([data-tab=inv]) .head,html[data-h] .head{flex-wrap:nowrap;align-items:center}
+ html[data-tab]:not([data-tab=inv]) .hact,html[data-h] .hact{display:flex!important;width:auto!important;margin-left:auto!important;flex:0 0 auto}
+ html[data-tab]:not([data-tab=inv]) .hact .more,html[data-h] .hact .more{width:46px}
+ html[data-tab]:not([data-tab=inv]) .hact .more .btn.icb,html[data-h] .hact .more .btn.icb{width:46px;height:46px}
+}
