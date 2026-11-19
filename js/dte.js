@@ -1,4 +1,4 @@
-/* DAYMARSV · Factura electrónica (DTE) — MODO PRUEBA.
+/* DAYMARSV · Factura electrónica (DTE) — simulación.
    Arma, con ventas reales del sistema y datos ficticios del emisor, el documento en el formato de la Factura (tipo 01)
    de Hacienda (esquema v1) y su representación gráfica. NO se firma ni se envía a Hacienda: no tiene validez fiscal. */
 (async()=>{
@@ -15,9 +15,9 @@ const money=n=>"$"+r2(n).toLocaleString("en-US",{minimumFractionDigits:2,maximum
 const pad=(n,l)=>String(n).padStart(l,"0");
 
 /* Datos FICTICIOS del emisor (se guardan solo en este dispositivo) */
-const EMK="dms_dte_emisor_prueba";
-const EM0={nombre:"DAYMARSV (PRUEBA)",nombreComercial:"DAYMARSV",nit:"00000000000000",nrc:"0000000",codActividad:"47734",descActividad:"Venta al por menor de joyería, bisutería y accesorios",
- departamento:"06",municipio:"14",complemento:"San Salvador, El Salvador",telefono:"00000000",correo:"prueba@ejemplo.com",codEstableMH:"M001",codPuntoVentaMH:"P001"};
+const EMK="dms_dte_emisor";
+const EM0={nombre:"DAYMARSV",nombreComercial:"DAYMARSV",nit:"00000000000000",nrc:"0000000",codActividad:"47734",descActividad:"Venta al por menor de joyería, bisutería y accesorios",
+ departamento:"06",municipio:"14",complemento:"San Salvador, El Salvador",telefono:"00000000",correo:"correo@ejemplo.com",codEstableMH:"M001",codPuntoVentaMH:"P001"};
 const leerEm=()=>{try{return {...EM0,...JSON.parse(localStorage.getItem(EMK)||"{}")}}catch(e){return {...EM0}}};
 const guardarEm=v=>{try{localStorage.setItem(EMK,JSON.stringify(v))}catch(e){}};
 
@@ -58,14 +58,14 @@ function armarDTE(v,em){
    montoTotalOperacion:tg,totalNoGravado:0,totalPagar:tg,totalLetras:letras(tg),totalIva:iva,saldoFavor:0,condicionOperacion:1,pagos:[{codigo:cp,montoPago:tg,referencia:null,plazo:null,periodo:null}],numPagoElectronico:null},
   extension:null,apendice:[{campo:"aviso",etiqueta:"Aviso",valor:"SIMULACIÓN SIN VALIDEZ FISCAL"}]}}
 
-/* Representación gráfica (lo que recibe el cliente), con marca de agua de prueba */
+/* Representación gráfica (lo que recibe el cliente), con marca de agua de simulación */
 async function representacion(j){
  let qr="";try{await lib("https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js");const q=qrcode(0,"M");q.addData("SIMULACION SIN VALIDEZ FISCAL | "+j.identificacion.codigoGeneracion);q.make();qr=q.createSvgTag({cellSize:3,margin:0,scalable:true})}catch(e){}
  const e=j.emisor,id=j.identificacion,r=j.resumen;
  const filas=j.cuerpoDocumento.map(x=>`<tr><td>${x.numItem}</td><td>${x.cantidad}</td><td>${esc(x.descripcion)}<br><small>${esc(x.codigo||"")}</small></td><td class="r">${money(x.precioUni)}</td><td class="r">${x.montoDescu?money(x.montoDescu):"—"}</td><td class="r">${money(x.ventaGravada)}</td></tr>`).join("");
  return `<div style="position:relative;width:794px;min-height:1000px;padding:36px 40px;box-sizing:border-box;background:#fff;color:#222;font:13px/1.45 Arial,Helvetica,sans-serif;overflow:hidden">
  <div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none"><div style="transform:rotate(-30deg);font:900 64px Arial;color:rgba(179,38,30,.13);white-space:nowrap;letter-spacing:4px">SIMULACIÓN · SIN VALIDEZ FISCAL</div></div>
- <div style="background:#b3261e;color:#fff;text-align:center;font-weight:700;padding:7px;border-radius:6px;margin-bottom:14px;letter-spacing:1px">DOCUMENTO DE PRUEBA — NO FUE FIRMADO NI ENVIADO A HACIENDA — SIN VALIDEZ FISCAL</div>
+ <div style="background:#b3261e;color:#fff;text-align:center;font-weight:700;padding:7px;border-radius:6px;margin-bottom:14px;letter-spacing:1px">SIMULACIÓN — NO FUE FIRMADO NI ENVIADO A HACIENDA — SIN VALIDEZ FISCAL</div>
  <div style="display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #6B2D3E;padding-bottom:12px">
   <div><div style="font:800 22px Arial;color:#6B2D3E">${esc(e.nombreComercial)}</div><div>${esc(e.nombre)}</div><div style="color:#555">NIT ${esc(e.nit)} · NRC ${esc(e.nrc)}</div><div style="color:#555">${esc(e.descActividad)}</div><div style="color:#555">${esc(e.direccion.complemento)} · Tel. ${esc(e.telefono)}</div></div>
   <div style="text-align:right"><div style="font:800 15px Arial;color:#6B2D3E">DOCUMENTO TRIBUTARIO ELECTRÓNICO</div><div style="font-weight:700">FACTURA</div><div style="margin-top:6px;width:96px;height:96px;margin-left:auto">${qr}</div></div></div>
@@ -74,7 +74,7 @@ async function representacion(j){
   <tr><td style="padding:3px 0;color:#555">Número de control</td><td style="font-family:monospace">${id.numeroControl}</td></tr>
   <tr><td style="padding:3px 0;color:#555">Sello de recepción</td><td style="color:#b3261e;font-weight:700">— (no enviado: simulación)</td></tr>
   <tr><td style="padding:3px 0;color:#555">Fecha y hora</td><td>${id.fecEmi} ${id.horEmi}</td></tr>
-  <tr><td style="padding:3px 0;color:#555">Ambiente</td><td>${id.ambiente} (pruebas) · Modelo previo · Transmisión normal</td></tr>
+  <tr><td style="padding:3px 0;color:#555">Ambiente</td><td>${id.ambiente} · Modelo previo · Transmisión normal</td></tr>
   <tr><td style="padding:3px 0;color:#555">Cliente</td><td>${esc(j.receptor.nombre)}</td></tr></table>
  <table style="width:100%;border-collapse:collapse"><thead><tr style="background:#6B2D3E;color:#fff;font-size:12px"><th style="padding:6px;text-align:left">#</th><th style="padding:6px;text-align:left">Cant.</th><th style="padding:6px;text-align:left">Descripción</th><th style="padding:6px;text-align:right">Precio unit.</th><th style="padding:6px;text-align:right">Descuento</th><th style="padding:6px;text-align:right">Ventas gravadas</th></tr></thead>
  <tbody>${filas.replace(/<td/g,'<td style="padding:6px;border-bottom:1px solid #eee;vertical-align:top"').replace(/class="r"/g,'align="right"')}</tbody></table>
@@ -89,21 +89,21 @@ async function representacion(j){
 function descargarJSON(j,nombre){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(j,null,2)],{type:"application/json"}));a.download=nombre+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
 async function simular(v){
- const j=armarDTE(v,leerEm()),nom="DTE-PRUEBA-venta-"+(v.numero||"");
- const m=modal("Factura electrónica · prueba",`<div class="pasos">
+ const j=armarDTE(v,leerEm()),nom="DTE-venta-"+(v.numero||"");
+ const m=modal("Factura electrónica",`<div class="pasos">
   <div class="paso"><b>1. Armar ✓</b><small>Venta convertida al formato de Hacienda.</small></div>
   <div class="paso no"><b>2. Firmar ✗</b><small>Necesita tu firma electrónica.</small></div>
   <div class="paso no"><b>3. Enviar ✗</b><small>Necesita usuario de Hacienda.</small></div>
-  <div class="paso"><b>4. Entregar ✓</b><small>PDF para el cliente (de prueba).</small></div></div>
+  <div class="paso"><b>4. Entregar ✓</b><small>PDF para el cliente.</small></div></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><button class="btn" id="sVer" type="button">Ver factura del cliente</button><button class="btn g" id="sJson" type="button">Descargar archivo (JSON)</button></div>
   <p style="margin:0 0 6px;font-size:13px;color:var(--mute)">Así se ve el archivo que se enviaría a Hacienda:</p><pre class="json" id="sPre"></pre>`,{big:true});
  m.q("#sPre").textContent=JSON.stringify(j,null,2);
  m.q("#sJson").onclick=()=>descargarJSON(j,nom);
- m.q("#sVer").onclick=async()=>{const html=await representacion(j);vistaDoc("Factura del cliente (prueba)",html,nom)}}
+ m.q("#sVer").onclick=async()=>{const html=await representacion(j);vistaDoc("Factura del cliente",html,nom)}}
 
 function editarEm(){
  const e=leerEm(),C=[["nombre","Nombre legal"],["nombreComercial","Nombre comercial"],["nit","NIT (ficticio)"],["nrc","NRC (ficticio)"],["codActividad","Código de actividad"],["descActividad","Actividad económica"],["complemento","Dirección"],["telefono","Teléfono"],["correo","Correo"],["codEstableMH","Código de establecimiento"],["codPuntoVentaMH","Código de punto de venta"]];
- const m=modal("Datos del emisor (prueba)",`<p style="margin:0 0 12px;color:var(--mute);font-size:13px">Son datos ficticios para la prueba y se guardan solo en este dispositivo. Cuando te registres en Hacienda, aquí irán tus datos reales.</p><div style="display:grid;gap:10px">${C.map(c=>`<label style="display:grid;gap:4px;font-size:13px;color:var(--mute)">${c[1]}<input data-k="${c[0]}" value="${esc(e[c[0]])}" style="padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:16px"></label>`).join("")}</div>`,{foot:`<button class="btn g" id="eRes" type="button">Restablecer</button><button class="btn" id="eOk" type="button">Guardar</button>`});
+ const m=modal("Datos del emisor",`<p style="margin:0 0 12px;color:var(--mute);font-size:13px">Por ahora son datos de ejemplo y se guardan solo en este dispositivo. Cuando te registres en Hacienda, aquí irán tus datos reales.</p><div style="display:grid;gap:10px">${C.map(c=>`<label style="display:grid;gap:4px;font-size:13px;color:var(--mute)">${c[1]}<input data-k="${c[0]}" value="${esc(e[c[0]])}" style="padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:16px"></label>`).join("")}</div>`,{foot:`<button class="btn g" id="eRes" type="button">Restablecer</button><button class="btn" id="eOk" type="button">Guardar</button>`});
  m.q("#eOk").onclick=()=>{const v={...e};m.el.querySelectorAll("[data-k]").forEach(i=>v[i.dataset.k]=i.value.trim());guardarEm(v);m.close();toast("Datos guardados")};
  m.q("#eRes").onclick=()=>{try{localStorage.removeItem(EMK)}catch(x){}m.close();toast("Se restablecieron los datos de ejemplo")}}
 $("bEm").onclick=editarEm;
@@ -113,7 +113,7 @@ async function cargar(){
  V=await fetchAll(()=>db.from("ventas").select("id,numero,total,subtotal,created_at,cliente_nombre,metodo_pago,venta_items(cantidad,precio_unit,precio_original,nombre,codigo,codigo_barras)").eq("estado","completada").order("created_at",{ascending:false}).limit(60));
  V=V.slice(0,60)}
 function pintar(){
- $("dash").innerHTML=`<div class="aviso"><b>Modo prueba.</b> Con tus ventas reales y datos ficticios del negocio, aquí ves cómo quedaría una factura electrónica de Hacienda. No se firma ni se envía, así que <b>no tiene validez fiscal</b> y no cuenta como factura.</div>
+ $("dash").innerHTML=`<div class="aviso"><b>Simulación.</b> Con tus ventas reales y los datos del emisor, aquí ves cómo quedaría una factura electrónica de Hacienda. Todavía no se firma ni se envía, así que <b>no tiene validez fiscal</b> hasta conectar tu registro de Hacienda.</div>
  <div class="pn s12"><div class="mhd"><h3>Elige una venta para simular su factura</h3></div>${V.length?V.map(v=>`<div class="vl"><div class="ti"><b>Venta #${v.numero}</b> · ${money(v.total)}<br><small>${new Date(v.created_at).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"})} · ${esc(v.cliente_nombre||"Clientes varios")} · ${(v.venta_items||[]).length} producto${(v.venta_items||[]).length===1?"":"s"}</small></div><button class="btn sm" data-v="${v.id}" type="button">Simular factura</button></div>`).join(""):'<div class="nod">No hay ventas completadas.</div>'}</div>`;
  $("dash").onclick=e=>{const b=e.target.closest("[data-v]");if(b)simular(V.find(x=>x.id===b.dataset.v))}}
 try{await cargar();pintar()}catch(e){$("dash").innerHTML='<div class="nod">No se pudieron cargar las ventas: '+esc(e.message||e)+'</div>'}
