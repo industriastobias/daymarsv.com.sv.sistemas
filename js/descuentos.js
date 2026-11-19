@@ -45,7 +45,11 @@ $("pList").addEventListener("click",async e=>{
  const ck=e.target.closest("[data-ck]");if(ck){ck.checked?S.sel.add(ck.dataset.ck):S.sel.delete(ck.dataset.ck);pintarProd();return}
  const im=e.target.closest("[data-im]");if(im&&!e.target.closest("[data-ck]")){const id=im.dataset.im;S.sel.has(id)?S.sel.delete(id):S.sel.add(id);pintarProd();return}
  const ed=e.target.closest("[data-ed]");if(ed){const p=S.prods.find(x=>x.id===ed.dataset.ed);const v=await pedirPct("Descuento de "+esc(p.nombre),"Precio regular: <b>"+$$(p.precio_venta)+"</b>. Pon 0 para quitar el descuento.",+p.descuento_pct||"");if(v!==null)aplicarIds([p.id],v)}});
-["pQ"].forEach(i=>$(i).addEventListener("input",deb(pintarProd,150)));["pCat","pEst"].forEach(i=>$(i).onchange=pintarProd);
+["pQ"].forEach(i=>$(i).addEventListener("input",deb(pintarProd,150)));
+/* Que el buscador no se active solo al entrar (en celular abría el teclado): solo se activa si lo tocas */
+{let toco=false;const q=$("pQ");["pointerdown","touchstart","keydown"].forEach(ev=>q.addEventListener(ev,()=>{toco=true},{passive:true}));
+ [0,300,800,1600].forEach(ms=>setTimeout(()=>{if(!toco&&document.activeElement===q)q.blur()},ms));
+ q.addEventListener("focus",()=>{if(!toco&&performance.now()<4000)q.blur()})}["pCat","pEst"].forEach(i=>$(i).onchange=pintarProd);
 $("pAll").onchange=()=>{const L=filtrados();if($("pAll").checked)L.forEach(p=>S.sel.add(p.id));else L.forEach(p=>S.sel.delete(p.id));pintarProd()};
 $("pApply").onclick=async()=>{if(!S.sel.size){toast("Selecciona productos primero");return}const v=await pedirPct("Aplicar descuento",`Se aplicará a <b>${S.sel.size}</b> producto(s) seleccionados.`);if(v!==null)aplicarIds([...S.sel],v)};
 $("pClear").onclick=async()=>{if(!S.sel.size){toast("Selecciona productos primero");return}if(await confirmar(`Se quitará el descuento de <b>${S.sel.size}</b> producto(s).`,{titulo:"Quitar descuento",ok:"Quitar",peligro:true}))aplicarIds([...S.sel],0)};
