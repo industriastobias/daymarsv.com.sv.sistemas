@@ -831,17 +831,24 @@ document.addEventListener("keydown",e=>{
 /* ---------- exportar inventario a Excel (con imágenes) ---------- */
 async function excel(){
  if(!S.prods.length){toast("No hay productos en el inventario para exportar.");return}
+ const conFotos=await new Promise(res=>{const m=modal("Exportar inventario a Excel",`<p style="margin:0 0 14px;color:var(--mute)">Sin fotos se genera al instante. Con fotos tarda más porque descarga la imagen de cada producto.</p><div style="display:grid;gap:8px"><button type="button" class="btn" id="xSin">Sin fotos (rápido)</button><button type="button" class="btn g" id="xCon">Con fotos</button></div>`,{});
+  let ok=false;m.q("#xSin").onclick=()=>{ok=true;m.close();res(false)};m.q("#xCon").onclick=()=>{ok=true;m.close();res(true)};m.el.addEventListener("close",()=>{if(!ok)res(null)})});
+ if(conFotos===null)return;
  await espera(async()=>{await lib("https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js");
   const toJpeg=async url=>{const b=await(await fetch(url)).blob(),bmp=await createImageBitmap(b),k=Math.min(1,120/Math.max(bmp.width,bmp.height)),w=Math.max(1,Math.round(bmp.width*k)),h=Math.max(1,Math.round(bmp.height*k));
    const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(bmp,0,0,w,h);return {base64:c.toDataURL("image/jpeg",.85),w,h}};
   const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet("Inventario");
-  ws.columns=[["Imagen",20],["Producto",34],["Código",16],["Código de barras",20],["Categoría",18],["Cantidad en stock",18],["Precio unitario",16],["Descuento %",12],["Precio final",12],["Descripción",40]].map(c=>({header:c[0],width:c[1]}));
+  ws.columns=[["Imagen",conFotos?20:8],["Producto",34],["Código",16],["Código de barras",20],["Categoría",18],["Cantidad en stock",18],["Precio unitario",16],["Descuento %",12],["Precio final",12],["Descripción",40]].map(c=>({header:c[0],width:c[1]}));
   const h=ws.getRow(1);h.font={bold:true,color:{argb:"FFFFFFFF"}};h.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF6B2D3E"}};h.alignment={vertical:"middle",horizontal:"center"};h.height=24;
   const L=S.prods.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  /* fotos: se descargan 8 a la vez (antes era una por una) */
+  const IM=new Array(L.length);
+  if(conFotos){let k=0,hechas=0;const ov=document.getElementById("ovT");
+   await Promise.all(Array.from({length:8},async()=>{while(k<L.length){const i=k++;if(L[i].foto_url){try{IM[i]=await toJpeg(L[i].foto_url)}catch(e){}}hechas++;if(ov&&hechas%10===0)ov.textContent="Preparando fotos… "+Math.round(hechas/L.length*100)+"%"}}))}
   for(let i=0;i<L.length;i++){const p=L[i];
    const r=ws.addRow(["",p.nombre,p.codigo||"",p.codigo_barras||"",p.cat||"",p.stock,+p.precio_venta,+p.descuento_pct||0,p.fin,p.descripcion||""]);
-   r.height=95;r.alignment={vertical:"middle",wrapText:true};[7,9].forEach(c=>r.getCell(c).numFmt='"$"#,##0.00');
-   if(p.foto_url){try{const im=await toJpeg(p.foto_url),id=wb.addImage({base64:im.base64,extension:"jpeg"});ws.addImage(id,{tl:{col:.1,row:i+1.1},ext:{width:im.w*.75,height:im.h*.75}})}catch(e){}}}
+   r.height=conFotos?95:20;r.alignment={vertical:"middle",wrapText:true};[7,9].forEach(c=>r.getCell(c).numFmt='"$"#,##0.00');
+   if(conFotos&&IM[i]){try{const im=IM[i],id=wb.addImage({base64:im.base64,extension:"jpeg"});ws.addImage(id,{tl:{col:.1,row:i+1.1},ext:{width:im.w*.75,height:im.h*.75}})}catch(e){}}}
   ws.views=[{state:"frozen",ySplit:1}];
   const buf=await wb.xlsx.writeBuffer(),a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
@@ -1472,7 +1479,7 @@ if($("bPhoto"))$("bPhoto").onclick=async()=>{
  if(S.venta){toast("Termina o cancela la venta que tienes abierta");return}
  const abrirFB=()=>FotoBusq.abrir(S.all,p=>{if(S.multi){addSel(p.id);return}if(S.tab!=="inv")tab("inv");abrirVenta(p)});
  if(window.FotoBusq)return abrirFB();
- try{await new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="js/fotobusq.js?v=202611190430";sc.onload=ok;sc.onerror=()=>ko(new Error("No se pudo cargar"));document.head.appendChild(sc)});abrirFB()}catch(e){toast("No se pudo abrir la búsqueda por foto: "+(e.message||e))}};
+ try{await new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="js/fotobusq.js?v=202611190450";sc.onload=ok;sc.onerror=()=>ko(new Error("No se pudo cargar"));document.head.appendChild(sc)});abrirFB()}catch(e){toast("No se pudo abrir la búsqueda por foto: "+(e.message||e))}};
 $("bUsb").onclick=()=>usb();
 $("bMulti").onclick=()=>modoMulti();
 $("bFast").onclick=ventaRapida;

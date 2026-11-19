@@ -7,8 +7,8 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const cargarJs=u=>new Promise((ok,ko)=>{if(document.querySelector(`script[data-fb="${u}"]`))return ok();const s=document.createElement("script");s.src=u;s.dataset.fb=u;s.onload=ok;s.onerror=()=>ko(new Error("No se pudo cargar el módulo de imágenes. Revisa tu conexión."));document.head.appendChild(s)});
 
 /* Pequeña base local (IndexedDB) para no recalcular las huellas de las fotos cada vez */
-const DB="dms_fotobusq2",ST="huellas";   /* v2: huella = foto completa + centro recortado */
-try{indexedDB.deleteDatabase("dms_fotobusq")}catch(e){}
+const DB="dms_fotobusq3",ST="huellas";   /* v3: modelo ligero; huella = foto completa + centro recortado */
+try{indexedDB.deleteDatabase("dms_fotobusq");indexedDB.deleteDatabase("dms_fotobusq2")}catch(e){}
 const abrirDB=()=>new Promise(res=>{try{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(ST);r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}});
 const leerTodo=db=>new Promise(res=>{if(!db)return res(new Map());try{const m=new Map(),c=db.transaction(ST).objectStore(ST).openCursor();c.onsuccess=()=>{const k=c.result;if(k){m.set(k.key,k.value);k.continue()}else res(m)};c.onerror=()=>res(m)}catch(e){res(new Map())}});
 const guardar=(db,id,v)=>{try{if(db)db.transaction(ST,"readwrite").objectStore(ST).put(v,id)}catch(e){}};
@@ -17,7 +17,7 @@ const borrar=(db,id)=>{try{if(db)db.transaction(ST,"readwrite").objectStore(ST).
 let modelo=null,promLibs=null;
 async function prepararModelo(){
  if(modelo)return modelo;
- if(!promLibs)promLibs=(async()=>{for(const u of LIBS)await cargarJs(u);await tf.ready();modelo=await mobilenet.load({version:2,alpha:1.0});return modelo})().catch(e=>{promLibs=null;throw e});
+ if(!promLibs)promLibs=(async()=>{for(const u of LIBS)await cargarJs(u);await tf.ready();modelo=await mobilenet.load({version:2,alpha:0.5});return modelo})().catch(e=>{promLibs=null;throw e});
  return promLibs}
 
 async function huella(fuente){
@@ -30,8 +30,10 @@ function cargarImg(url){return new Promise((ok,ko)=>{const im=new Image();im.cro
 async function aCentro(fuente,frac,w){const c=document.createElement("canvas");c.width=w;c.height=w;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,w);
  const sw=fuente.naturalWidth||fuente.width,sh=fuente.naturalHeight||fuente.height,m=Math.min(sw,sh)*frac;x.drawImage(fuente,(sw-m)/2,(sh-m)/2,m,m,0,0,w,w);return c}
 /* Huella combinada: promedio de la foto completa y del centro, normalizado */
-async function huellaDoble(im){const a=aF32(await huella(await aCanvas(im,224,224))),b=aF32(await huella(await aCentro(im,.68,224))),v=new Float32Array(a.length);let n=0;
- for(let i=0;i<a.length;i++){v[i]=a[i]+b[i];n+=v[i]*v[i]}n=Math.sqrt(n)||1;for(let i=0;i<v.length;i++)v[i]/=n;return v}
+/* Las dos versiones (completa y centro) se analizan juntas en una sola pasada del modelo */
+async function huellaDoble(im){const c1=await aCanvas(im,224,224),c2=await aCentro(im,.68,224);
+ const d=await tf.tidy(()=>{const b=tf.stack([tf.browser.fromPixels(c1),tf.browser.fromPixels(c2)]),e=modelo.infer(b,true),n=e.div(e.norm("euclidean",1,true)),s=n.sum(0);return s.div(s.norm())}).data();
+ return aF32(d)}
 async function aCanvas(fuente,w,h){const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);
  const sw=fuente.naturalWidth||fuente.width,sh=fuente.naturalHeight||fuente.height,k=Math.min(w/sw,h/sh);x.drawImage(fuente,(w-sw*k)/2,(h-sh*k)/2,sw*k,sh*k);return c}
 
@@ -39,10 +41,15 @@ async function aCanvas(fuente,w,h){const c=document.createElement("canvas");c.wi
 async function indexar(prods,prog){
  const db=await abrirDB(),cache=await leerTodo(db),lista=prods.filter(p=>p.foto_url),H=new Map();let hechos=0,fallos=0;
  const vivos=new Set(lista.map(p=>p.id));cache.forEach((v,k)=>{if(!vivos.has(k))borrar(db,k)});
+ /* descarga las fotos por adelantado (varias a la vez) mientras el modelo analiza */
+ const falta=lista.filter(p=>{const c=cache.get(p.id);return !(c&&c.url===p.foto_url&&c.v)}),cola=new Map();let ix=0;
+ const llenar=()=>{while(cola.size<8&&ix<falta.length){const u=falta[ix++].foto_url;if(!cola.has(u))cola.set(u,(x=>(x.catch(()=>{}),x))(cargarImg(u)))}};
+ const pre=u=>{llenar();const pr=cola.get(u)||cargarImg(u);cola.delete(u);llenar();return pr};
+ llenar();
  for(const p of lista){
   const c=cache.get(p.id);
   if(c&&c.url===p.foto_url&&c.v){H.set(p.id,aF32(c.v))}
-  else{try{const im=await cargarImg(p.foto_url),v=await huellaDoble(im);H.set(p.id,v);guardar(db,p.id,{url:p.foto_url,v:v.buffer.slice(0)})}catch(e){fallos++}}
+  else{try{const im=await pre(p.foto_url),v=await huellaDoble(im);H.set(p.id,v);guardar(db,p.id,{url:p.foto_url,v:v.buffer.slice(0)})}catch(e){fallos++}}
   hechos++;if(hechos%4===0||hechos===lista.length){prog(hechos,lista.length);await tf.nextFrame()}}
  return {H,fallos,total:lista.length,sinFoto:prods.length-lista.length}}
 
