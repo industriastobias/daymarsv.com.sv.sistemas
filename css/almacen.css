@@ -295,3 +295,16 @@ dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
  #fcList .fac-ac{flex:1 1 auto}
  #fcList .fac-ac .btn{flex:1 1 auto;min-width:0;padding:6px 8px}
 }
+
+/* Botones de Facturas ordenados: "Nueva factura" a lo ancho y los demás en pares del mismo tamaño */
+#fcCtl{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+@media(max-width:799px){
+ #fcCtl{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+ #fcCtl .grow{display:none}
+ #fcCtl #fcNew{order:-1;grid-column:1/-1}
+ #fcCtl .btn{width:100%;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;margin:0;padding:8px 6px;font-size:14px;line-height:1.15}
+ #fcCtl #fcDte{order:0}#fcCtl #fcCfg{order:1}#fcCtl #fcSel{order:2;grid-column:1/-1}
+ /* el botón ••• siempre a la derecha, para que su menú se abra dentro de la pantalla */
+ .hact .more{grid-column:-2/-1!important}
+ .menu{max-width:calc(100vw - 32px)}
+}
