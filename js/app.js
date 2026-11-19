@@ -132,6 +132,7 @@ const toggleTheme=()=>{const r=document.documentElement,dk=r.dataset.theme?r.dat
 /* Iconos (líneas finas) y grupos del menú. ok = ya conectado a la base de datos · adm = solo administrador */
 const ICON={
  tareas:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM8.5 13l2 2 4-4.5"/>',
+ dte:'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 15h5M10 18h3"/><circle cx="7" cy="17" r="3.2"/><path d="M5.6 17l1 1 1.8-2"/>',
  grafica:'<path d="M4 20V4M4 20h16"/><rect x="7.5" y="11" width="3" height="6" rx=".6"/><rect x="12.5" y="7" width="3" height="10" rx=".6"/><rect x="17.5" y="13" width="2.5" height="4" rx=".6"/>',
  kardex:'<path d="M7 4v14M7 18l-3-3M7 18l3-3M17 20V6M17 6l-3 3M17 6l3 3"/>',
 inbox:'<path d="M3 13l2.5-8h13L21 13v6H3z"/><path d="M3 13h5l1.5 3h5l1.5-3h5"/>',
@@ -162,7 +163,7 @@ pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
 const GRUPOS=[
  {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"inbox",h:"pedidos.html",ok:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1}]},
  {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"image",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"book",h:"catalogo.html",ok:1},{k:"equipo",n:"Equipo y tareas",i:"tareas",h:"equipo.html",ok:1},{k:"dashboard",n:"Dashboard",i:"grafica",h:"dashboard.html",ok:1,adm:1},{k:"kardex",n:"Kardex",i:"kardex",h:"kardex.html",ok:1,adm:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"correos",n:"Correos enviados",i:"mail",h:"correos.html",ok:1,adm:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
- {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1},{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1}]}];
+ {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"dte",n:"Factura electrónica (prueba)",i:"dte",h:"dte.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1},{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 /* Permisos por módulo: un vendedor no ve (ni abre) los módulos que el administrador principal le ocultó */
 const ocultoPara=(k,perfil)=>{const p=perfil||DAY.me;return !!(p&&p.rol!=="admin"&&Array.isArray(p.modulos_ocultos)&&p.modulos_ocultos.includes(k))};
