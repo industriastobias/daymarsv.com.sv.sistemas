@@ -955,11 +955,46 @@ function facT80(f,c,its,qr,wd){
  ${f.nota?`<div class="nt" style="margin-top:6px">${esc(f.nota)}</div>`:""}
  <div class="t8q">${qr?`<div class="qr">${qr}</div>`:""}<div style="font-size:9px">Escanea para verificar factura</div><div class="t8k">${esc(cod)}</div></div>
  <hr class="t8d"><div class="t8p">${esc(c.pie||"¡GRACIAS POR SU COMPRA!")}</div>${(c.instagram||c.telefono)?`<div class="t8i" style="display:flex;justify-content:center;gap:10px;white-space:nowrap;font-size:10.5px">${c.instagram?`<span>${IC_IG}${esc(/^@/.test(c.instagram)?c.instagram:"@"+c.instagram)}</span>`:""}${c.telefono?`<span>${IC_WA}${esc(/^\+/.test(c.telefono)?c.telefono:"+503 "+c.telefono)}</span>`:""}</div>`:""}${c.condiciones?`<div class="t8l">${esc(c.condiciones)}</div>`:""}<div class="t8n">Documento generado electrónicamente<br>${esc(c.nombre||"DAYMARSV")} - Facturación POS</div></div>`}
+/* Total en letras (dólares) */
+function enLetras(n){
+ const U=["","UNO","DOS","TRES","CUATRO","CINCO","SEIS","SIETE","OCHO","NUEVE","DIEZ","ONCE","DOCE","TRECE","CATORCE","QUINCE","DIECISÉIS","DIECISIETE","DIECIOCHO","DIECINUEVE","VEINTE","VEINTIUNO","VEINTIDÓS","VEINTITRÉS","VEINTICUATRO","VEINTICINCO","VEINTISÉIS","VEINTISIETE","VEINTIOCHO","VEINTINUEVE"];
+ const D=["","","","TREINTA","CUARENTA","CINCUENTA","SESENTA","SETENTA","OCHENTA","NOVENTA"],C=["","CIENTO","DOSCIENTOS","TRESCIENTOS","CUATROCIENTOS","QUINIENTOS","SEISCIENTOS","SETECIENTOS","OCHOCIENTOS","NOVECIENTOS"];
+ const c99=x=>x<30?U[x]:D[Math.floor(x/10)]+(x%10?" Y "+U[x%10]:""),c999=x=>x===100?"CIEN":(C[Math.floor(x/100)]+(x%100?(x>=100?" ":"")+c99(x%100):"")).trim();
+ n=Math.round((+n||0)*100)/100;const e=Math.floor(n),ce=Math.round((n-e)*100),mi=Math.floor(e/1000),r=e%1000;
+ let t=(mi?(mi===1?"MIL":c999(mi)+" MIL")+" ":"")+(r?c999(r):(e?"":"CERO"));return (t.trim()+" "+String(ce).padStart(2,"0")+"/100 DÓLARES").replace(/\s+/g," ")}
+/* Factura tamaño carta, con la distribución de la representación gráfica de Hacienda (emisor, receptor, detalle y resumen) */
+function facA4(f,c,its,qr){
+ const e=s=>esc(s==null?"":String(s)),m=money,inc=f.iva_modo==="incluido",anul=f.estado==="anulada";
+ const fh=f.created_at?new Date(f.created_at):new Date(f.fecha+"T12:00:00");
+ const fecha=fdate(f.fecha)+(f.created_at?" "+fh.toLocaleTimeString("es-SV",{hour:"2-digit",minute:"2-digit"}):"");
+ const B="border:1px solid #cfc3c7",TH="background:#6B2D3E;color:#fff;font-size:10.5px;font-weight:700;padding:6px 5px;text-align:center;border:1px solid #6B2D3E",TD="padding:6px 5px;font-size:11.5px;border:1px solid #e3d9dc;vertical-align:top";
+ const L=its.map(i=>({q:i.cantidad,u:"Unidad",d:i.nombre+(i.codigo?" ("+i.codigo+")":""),pu:+i.precio_unit,de:0,t:+i.total}));
+ if(+f.envio)L.push({q:1,u:"Servicio",d:"Envío",pu:+f.envio,de:0,t:+f.envio});
+ const suma=L.reduce((a,x)=>a+x.t,0),desc=+f.descuento_monto||0,sub=suma-desc;
+ const caja=(t,h)=>`<div style="${B};border-radius:8px;overflow:hidden;flex:1;min-width:0"><div style="background:#f3ecee;color:#6B2D3E;font-weight:700;font-size:11px;letter-spacing:1px;padding:6px 10px;border-bottom:1px solid #cfc3c7">${t}</div><div style="padding:8px 10px;font-size:11.5px;line-height:1.55">${h}</div></div>`;
+ const fl=(k,v)=>v?`<div><span style="color:#6d6066">${k}:</span> ${e(v)}</div>`:"";
+ const rs=(k,v,b)=>`<tr><td style="padding:4px 10px;font-size:11.5px;${b?"font-weight:800;background:#f3ecee;color:#6B2D3E":"color:#444"}">${k}</td><td style="padding:4px 10px;font-size:11.5px;text-align:right;${b?"font-weight:800;background:#f3ecee;color:#6B2D3E":""}">${v}</td></tr>`;
+ return `<div style="position:relative;width:794px;min-height:1050px;box-sizing:border-box;padding:34px 38px;background:#fff;color:#222;font-family:Arial,Helvetica,sans-serif;overflow:hidden">
+ ${anul?'<div style="position:absolute;inset:0;display:grid;place-items:center;pointer-events:none"><div style="transform:rotate(-28deg);font:900 110px Arial;color:rgba(179,38,30,.12);letter-spacing:8px">ANULADA</div></div>':""}
+ <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:14px;border-bottom:3px solid #6B2D3E">
+  <div style="min-width:0"><div style="font:800 26px Arial;color:#6B2D3E;letter-spacing:.5px">${e(c.nombre||"DAYMARSV")}</div>${c.eslogan?`<div style="color:#C9973F;font-weight:700;font-size:12px">${e(c.eslogan)}</div>`:""}${c.razon_social?`<div style="font-size:12px;margin-top:4px">${e(c.razon_social)}</div>`:""}</div>
+  <div style="${B};border-radius:10px;padding:10px 16px;text-align:center;min-width:230px"><div style="font:800 17px Arial;color:#6B2D3E;letter-spacing:1px">FACTURA</div><div style="font-size:11px;color:#6d6066;margin-top:2px">Consumidor final</div>
+   <table style="margin:8px auto 0;border-collapse:collapse;font-size:11.5px;text-align:left"><tr><td style="color:#6d6066;padding:1px 8px 1px 0">N.º</td><td style="font-weight:800">${fnum(f.numero)}</td></tr><tr><td style="color:#6d6066;padding:1px 8px 1px 0">Fecha y hora</td><td>${e(fecha)}</td></tr><tr><td style="color:#6d6066;padding:1px 8px 1px 0">Condición</td><td>Contado</td></tr></table></div></div>
+ <div style="display:flex;gap:12px;margin:14px 0">${caja("EMISOR",fl("Nombre",c.razon_social||c.nombre)+fl("NIT",c.nit)+fl("NRC",c.nrc)+fl("Actividad económica",c.giro)+fl("Dirección",c.direccion)+fl("Teléfono",c.telefono)+fl("Correo",c.correo))}
+  ${caja("RECEPTOR",fl("Nombre",f.cliente_nombre||"Consumidor final")+fl("DUI/NIT",f.cliente_doc)+fl("Dirección",f.cliente_direccion)+fl("Teléfono",f.cliente_telefono)+fl("Correo",f.cliente_correo))}</div>
+ <table style="width:100%;border-collapse:collapse"><thead><tr><th style="${TH};width:26px">N.º</th><th style="${TH};width:44px">Cant.</th><th style="${TH};width:60px">Unidad</th><th style="${TH};text-align:left">Descripción</th><th style="${TH};width:66px">Precio unitario</th><th style="${TH};width:62px">Descuento por ítem</th><th style="${TH};width:56px">Ventas no sujetas</th><th style="${TH};width:56px">Ventas exentas</th><th style="${TH};width:66px">Ventas gravadas</th></tr></thead>
+ <tbody>${L.map((x,k)=>`<tr><td style="${TD};text-align:center">${k+1}</td><td style="${TD};text-align:center">${x.q}</td><td style="${TD};text-align:center">${x.u}</td><td style="${TD}">${e(x.d)}</td><td style="${TD};text-align:right">${m(x.pu)}</td><td style="${TD};text-align:right">${m(x.de)}</td><td style="${TD};text-align:right">${m(0)}</td><td style="${TD};text-align:right">${m(0)}</td><td style="${TD};text-align:right">${m(x.t)}</td></tr>`).join("")}</tbody></table>
+ <div style="display:flex;gap:12px;margin-top:12px;align-items:flex-start">
+  <div style="flex:1;min-width:0;display:grid;gap:10px">${caja("VALOR EN LETRAS",e(enLetras(f.total)))}${caja("FORMA DE PAGO",e(f.metodo_pago||"")+(f.efectivo!=null?` · Recibido ${m(f.efectivo)} · Cambio ${m(f.cambio)}`:""))}${f.nota?caja("OBSERVACIONES",e(f.nota)):""}</div>
+  <table style="width:300px;border-collapse:collapse;${B}">${rs("Suma de ventas",m(suma))}${desc?rs("Descuentos",`-${m(desc)}`):""}${rs("Sub-total",m(sub))}${f.iva_modo!=="ninguno"?rs(`IVA ${+f.iva_pct}%${inc?" (incluido)":""}`,m(f.iva_monto)):""}${rs("Monto total de la operación",m(f.total))}${rs("TOTAL A PAGAR",m(f.total),1)}</table></div>
+ <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-top:22px;padding-top:12px;border-top:1px solid #e3d9dc">
+  <div style="font-size:11px;color:#555;line-height:1.5">${c.pie?`<div style="font-weight:700;color:#6B2D3E;font-size:12px">${e(c.pie)}</div>`:""}<div>Código de validación: <span style="font-family:monospace">${e(f.codigo)}</span></div><div style="color:#999;margin-top:4px">Comprobante emitido por el sistema ${e(c.nombre||"DAYMARSV")}. No es un Documento Tributario Electrónico (DTE).</div></div>
+  ${qr?`<div style="width:86px;height:86px;flex:none">${qr}</div>`:""}</div></div>`}
 async function facHTML(f,fmt){
  const c=await ensureCfg(),its=f.factura_items||[],iv=f.iva_modo;
  const qr=await qrSvg(["FACTURA",fnum(f.numero),f.codigo,f.fecha,f.total].join("|"));
  if(fmt==="t80")return facT80(f,c,its,qr);
- if(fmt==="a4")return `<div class="fx fx-a4" style="padding:30px 0;display:flex;justify-content:center">${facT80(f,c,its,qr,1)}</div>`;
+ if(fmt==="a4")return facA4(f,c,its,qr);
  const fila=i=>fmt==="t80"?`<tr><td colspan="3">${esc(i.nombre)}</td></tr><tr><td>${i.cantidad} × ${money(i.precio_unit)}</td><td></td><td class="r">${money(i.total)}</td></tr>`
   :`<tr><td>${i.cantidad}</td><td>${esc(i.nombre)}${i.codigo?` <small>(${esc(i.codigo)})</small>`:""}</td><td class="r">${money(i.precio_unit)}</td><td class="r">${money(i.total)}</td></tr>`;
  const dato=(l,v)=>v?`<div><small>${l}</small> ${esc(v)}</div>`:"";
