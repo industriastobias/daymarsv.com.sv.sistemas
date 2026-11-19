@@ -55,13 +55,13 @@ async function suscripcionActual(){try{const reg=await navigator.serviceWorker.r
 async function regWorker(j,quitar){try{const {data}=await db.auth.getSession();const t=data&&data.session&&data.session.access_token;if(!t)return;
  await fetch(PUSH.worker+"/registrar",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+t},body:JSON.stringify({endpoint:j.endpoint,p256dh:j.keys&&j.keys.p256dh,auth:j.keys&&j.keys.auth,quitar:!!quitar})})}catch(e){}}
 async function pintarAvisos(q){
- const box=q("#cfAv");if(!box)return;
+ const box=q("#cfPush");if(!box)return;const adm=DAY.me&&DAY.me.rol==="admin";
  if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window)){box.innerHTML='<p class="cf-m" style="margin:0">Este navegador no permite avisos.'+(esIOS()?" En iPhone hay que instalar la app primero: Compartir → Agregar a pantalla de inicio, y abrirla desde el ícono.":"")+"</p>";return}
  if(esIOS()&&!instalada()){box.innerHTML='<p class="cf-m" style="margin:0">En iPhone los avisos solo funcionan con la app instalada: toca Compartir → <b>Agregar a pantalla de inicio</b>, abre el sistema desde ese ícono y vuelve aquí.</p>';return}
  const sub=await suscripcionActual(),perm=Notification.permission;
  if(perm==="denied"){box.innerHTML='<p class="cf-m" style="margin:0">Los avisos están bloqueados en este navegador. Actívalos en los permisos del sitio (candado junto a la dirección) y vuelve aquí.</p>';return}
  const n=await db.rpc("mis_dispositivos_push").then(r=>r.data||0,()=>0);
- box.innerHTML=`<p class="cf-m" style="margin:0 0 10px">${sub?"Los avisos están <b>activados</b> en este dispositivo.":"Recibe una notificación en este dispositivo cada vez que llegue un pedido en línea."} Dispositivos con avisos: ${n}.</p>`+
+ box.innerHTML=`<p class="cf-m" style="margin:0 0 10px">${sub?"Los avisos están <b>activados</b> en este dispositivo.":(adm?"Recibe una notificación en este dispositivo cuando llegue un pedido en línea o te asignen una tarea.":"Recibe una notificación en este dispositivo cuando te asignen una tarea.")} Dispositivos con avisos: ${n}.</p>`+
   (sub?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn g s" id="cfAvT">Probar aviso</button><button type="button" class="btn g s" id="cfAvOff">Desactivar aquí</button></div>':'<button type="button" class="btn s" id="cfAvOn">Activar avisos en este dispositivo</button>');
  if(sub)regWorker(sub.toJSON());
  const on=q("#cfAvOn"),off=q("#cfAvOff"),pr=q("#cfAvT");
@@ -71,7 +71,7 @@ async function pintarAvisos(q){
   const r=await db.rpc("guardar_suscripcion_push",{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_dispositivo:(esIOS()?"iPhone":/Android/.test(navigator.userAgent)?"Android":"Computadora")});
   if(r.error)throw new Error(r.error.message);await regWorker(j);toast("Avisos activados");pintarAvisos(q)}catch(e){toast("No se pudo activar: "+(e.message||e));on.disabled=false}};
  if(off)off.onclick=async()=>{try{const s=await suscripcionActual();if(s){await regWorker(s.toJSON(),true);await db.rpc("quitar_suscripcion_push",{p_endpoint:s.endpoint});await s.unsubscribe()}toast("Avisos desactivados");pintarAvisos(q)}catch(e){toast("No se pudo desactivar")}};
- if(pr)pr.onclick=async()=>{pr.disabled=true;try{const j=sub.toJSON();const r=await fetch(PUSH.worker+"/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({titulo:"Aviso de prueba",cuerpo:"Así te avisaremos de los pedidos en línea.",url:"pedidos.html",subs:[{endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth}]})});const d=await r.json();toast(d.enviados?"Aviso enviado: míralo en tus notificaciones":"No se pudo enviar el aviso")}catch(e){toast("No se pudo enviar el aviso")}pr.disabled=false}}
+ if(pr)pr.onclick=async()=>{pr.disabled=true;try{const j=sub.toJSON();const r=await fetch(PUSH.worker+"/enviar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({titulo:"Aviso de prueba",cuerpo:"Así te llegarán los avisos del sistema.",url:"menu.html",subs:[{endpoint:j.endpoint,p256dh:j.keys.p256dh,auth:j.keys.auth}]})});const d=await r.json();toast(d.enviados?"Aviso enviado: míralo en tus notificaciones":"No se pudo enviar el aviso")}catch(e){toast("No se pudo enviar el aviso")}pr.disabled=false}}
 async function importarTienda(btn){
  const t0=btn.textContent;btn.disabled=true;btn.textContent="Leyendo la tienda…";
  try{
@@ -302,10 +302,10 @@ function abrirConfig(){
   <button type="button" role="tab" data-t="cu">${ti("cu")}<span>Cuenta</span></button></nav>
  <div class="cf-b">
   <section class="cf-s" data-s="perfil"><h3>Mi perfil</h3><div class="cf-p"><span id="cfAv"></span><div class="cf-ab"><button type="button" class="btn g s" id="cfFoto">Cambiar foto</button><button type="button" class="btn g s" id="cfQuit">Quitar foto</button><input type="file" id="cfFile" accept="image/*" hidden></div></div><div id="cfZw" class="hidden cf-z"><label for="cfZ">Acercar</label><input type="range" id="cfZ" min="1" max="4" step="0.02" value="1"><small class="cf-m">La foto llena todo el círculo. Arrastra para encuadrar tu cara y usa el control para acercar.</small></div>
-  <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small></section>
+  <label for="cfN">Nombre</label><input id="cfN" maxlength="60" autocomplete="name" value="${esc(me.nombre)}"><small class="cf-m">Aparece en el saludo y en tus ventas.</small><h3 style="margin-top:22px">Avisos en este dispositivo</h3><div class="cf-card" id="cfPush"><p class="cf-m" style="margin:0">Revisando…</p></div></section>
   <section class="cf-s hidden" data-s="ap"><h3>Apariencia</h3><label for="cfT">Tema</label><select id="cfT"><option value="auto">Automático (como tu dispositivo)</option><option value="light">Claro</option><option value="dark">Oscuro</option></select><label for="cfL" style="margin-top:14px">Idioma</label><select id="cfL"><option value="es">Español</option><option value="en">English</option></select><small class="cf-m">Se guarda solo en este dispositivo. English traduce los menús y botones principales; lo demás sigue en español.</small></section>
   ${me.rol==="admin"?`<section class="cf-s hidden" data-s="us"><h3>Usuarios</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 12px">Equipo, roles e invitaciones. Solo el administrador principal puede invitar personas o cambiar roles.</p><a class="btn" href="usuarios.html">Administrar usuarios</a></div></section>`:""}
-  ${me.rol==="admin"?`<section class="cf-s hidden" data-s="dt"><h3>Avisos de pedidos</h3><div class="cf-card" id="cfAv"><p class="cf-m" style="margin:0">Revisando…</p></div><h3>Valor del inventario</h3><div class="cf-card" id="cfInv"><p class="cf-m" style="margin:0">Cargando categorías…</p></div><h3>Espacio usado</h3><div class="cf-card" id="cfEsp"><p class="cf-m" style="margin:0">Calculando…</p></div><h3>Respaldo</h3><div class="cf-card"><p class="cf-m" id="cfBkT" style="margin:0 0 10px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button></div>
+  ${me.rol==="admin"?`<section class="cf-s hidden" data-s="dt"><h3>Valor del inventario</h3><div class="cf-card" id="cfInv"><p class="cf-m" style="margin:0">Cargando categorías…</p></div><h3>Espacio usado</h3><div class="cf-card" id="cfEsp"><p class="cf-m" style="margin:0">Calculando…</p></div><h3>Respaldo</h3><div class="cf-card"><p class="cf-m" id="cfBkT" style="margin:0 0 10px"></p><button type="button" class="btn g s" id="cfBk">Descargar respaldo de datos</button></div>
    <div id="cfDz"></div></section>`:""}
   <section class="cf-s hidden" data-s="cu"><h3>Cuenta</h3><div class="cf-card"><small class="cf-m" style="margin:0">Sesión iniciada como</small><b style="word-break:break-all">${esc(DAY.email||"")}</b><small class="cf-m">${me.rol==="admin"?"Administrador":"Vendedor"}</small></div>
    <button type="button" class="btn g" id="cfOut" style="margin-top:12px">Cerrar sesión</button></section>
@@ -329,7 +329,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
  let dr=null;cv.addEventListener("pointerdown",e=>{dr=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
  cv.addEventListener("pointermove",e=>{if(!dr||!im)return;const k=240/cv.clientWidth;ox+=(e.clientX-dr[0])*k;oy+=(e.clientY-dr[1])*k;dr=[e.clientX,e.clientY];dibujar()});
  ["pointerup","pointercancel"].forEach(n=>cv.addEventListener(n,()=>{dr=null}));
- if(q("#cfAv"))pintarAvisos(q);
+ if(q("#cfPush"))pintarAvisos(q);
  if(q("#cfInv"))Promise.all([db.from("categorias").select("nombre").order("nombre"),DAY.catsSinValor(true)]).then(([r,sv])=>{const e=q("#cfInv");if(!e)return;const L=(r.data||[]).map(c=>c.nombre);
   e.innerHTML=L.length?`<p class="cf-m" style="margin:0 0 8px">Marca las categorías que <b>no</b> deben sumarse al valor del inventario.</p>`+L.map((n,i)=>`<label class="cf-sw" for="cfV${i}"><span><b>${esc(n)}</b></span><input type="checkbox" id="cfV${i}" role="switch" data-n="${esc(n)}"${sv.has(n.trim().toLowerCase())?" checked":""}></label>`).join(""):'<p class="cf-m" style="margin:0">Todavía no hay categorías.</p>';
   e.onchange=async()=>{const sel=[...e.querySelectorAll("input:checked")].map(x=>x.dataset.n);const {error}=await db.from("config_negocio").update({cats_sin_valor:sel}).eq("id",1);if(error){toast(error.message.includes("cats_sin_valor")?"Falta aplicar la migración 068.":error.message);return}await DAY.catsSinValor(true);toast("Guardado")}});
@@ -431,7 +431,7 @@ const iniSB=()=>{autoSelects();new MutationObserver(m=>{if(m.some(r=>r.addedNode
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",iniSB);else iniSB();
 let _csv=null;
 async function catsSinValor(f){if(_csv&&!f)return _csv;let n=[];try{const {data}=await db.from("config_negocio").select("cats_sin_valor").eq("id",1).maybeSingle();n=(data&&data.cats_sin_valor)||[]}catch(e){}_csv=new Set(n.map(x=>String(x).trim().toLowerCase()));return _csv}
-{const s=document.createElement("script");s.src="js/busqueda.js?v=202611181830";s.defer=true;setTimeout(()=>document.head.appendChild(s),0)}
+{const s=document.createElement("script");s.src="js/busqueda.js?v=202611181830";s.defer=true;setTimeout(()=>document.head.appendChild(s),0);const s2=document.createElement("script");s2.src="js/avisos.js?v=202611190300";s2.defer=true;setTimeout(()=>document.head.appendChild(s2),0)}
 window.DAY={catsSinValor,fotosAlm,refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
