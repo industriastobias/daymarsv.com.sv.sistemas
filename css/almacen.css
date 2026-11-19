@@ -281,3 +281,17 @@ dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
  .hact .more{order:3}
  .hact .more .btn.icb{width:100%;padding:0!important}
 }
+
+/* Facturas en celular: la tarjeta no se aprieta ni empuja la página hacia los lados */
+#fcDte{text-decoration:none}
+.ctl{flex-wrap:wrap}
+#fcList .sv{flex-wrap:wrap;align-items:flex-start}
+#fcList .sv .ti{flex:1 1 220px;min-width:0}
+#fcList .am2{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0;max-width:100%}
+#fcList .fac-ac{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+@media(max-width:799px){
+ html,body{overflow-x:hidden}
+ #fcList .am2{flex:1 1 100%;flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:wrap}
+ #fcList .fac-ac{flex:1 1 auto}
+ #fcList .fac-ac .btn{flex:1 1 auto;min-width:0;padding:6px 8px}
+}

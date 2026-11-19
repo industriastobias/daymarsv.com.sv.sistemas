@@ -148,3 +148,7 @@ a.tile .nbd{position:absolute;top:10px;right:10px;margin:0}
 /* con un cuadro abierto, el fondo no se desliza */
 html:has(dialog[open]),body:has(dialog[open]){overflow:hidden;overscroll-behavior:none}
 dialog[open],dialog[open] *{overscroll-behavior:contain}
+/* iPhone: los campos de fecha traen un ancho mínimo propio que empujaba la página hacia los lados */
+input[type=date],input[type=time],input[type=datetime-local],input[type=month]{min-width:0;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none}
+input[type=date]::-webkit-date-and-time-value{text-align:left}
+.fl>*,.fg>*,.f2>*,.grid2>*{min-width:0}
