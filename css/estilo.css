@@ -155,3 +155,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 /* iPhone: evita que Safari agrande por su cuenta el texto de las vistas previas (tickets y facturas se veían encimados) */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .docv,.docv *,.dvz,.dvz *{-webkit-text-size-adjust:none!important;text-size-adjust:none!important}
+/* Botones de buscar y notificaciones del menú: limpios, del color del sistema, para que la foto de perfil resalte */
+.tbtn{position:relative;flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--wine);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;padding:0;transition:background .15s,transform .1s}
+.tbtn:active{transform:scale(.94)}
+.tbtn:hover{background:var(--chip)}
+.tbtn svg{display:block}
+.tbtn [data-nfc]{top:-2px!important;right:-2px!important;border:2px solid var(--bg)}

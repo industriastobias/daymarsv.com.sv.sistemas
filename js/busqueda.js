@@ -52,12 +52,12 @@ document.addEventListener("keydown",e=>{const t=e.target&&e.target.tagName,k=(e.
  if(((e.ctrlKey||e.metaKey)&&k==="k")||(e.key==="/"&&t!=="INPUT"&&t!=="TEXTAREA"&&t!=="SELECT"&&!(e.target&&e.target.isContentEditable))){if(!DAY.me)return;e.preventDefault();abrir()}});
 
 /* Botón "Buscar" en el menú lateral (de escritorio) y en la barra superior del menú principal (celular) */
-const ICO='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
+const ICO='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
 let n=0;const t=setInterval(()=>{n++;
  const side=document.getElementById("side"),nav=side&&side.querySelector("nav");
  if(nav&&!document.getElementById("gs1")){const b=document.createElement("button");b.type="button";b.id="gs1";b.title="Buscar (Ctrl + K)";b.style.cssText="display:flex;align-items:center;gap:10px;width:calc(100% - 20px);margin:4px 10px 10px;padding:9px 12px;border:1px solid var(--line,#e6dde0);border-radius:12px;background:var(--card,#fff);color:var(--mute,#7b6a70);font:inherit;font-size:14px;cursor:pointer";b.innerHTML=ICO+'<span style="flex:1;text-align:left">Buscar</span><kbd style="font:600 11px sans-serif;padding:2px 6px;border:1px solid var(--line,#e6dde0);border-radius:6px">Ctrl K</kbd>';b.onclick=abrir;side.insertBefore(b,nav)}
  const who=document.querySelector(".top .who");
- if(who&&!document.getElementById("gs2")){const b=document.createElement("button");b.type="button";b.id="gs2";b.className="av";b.setAttribute("aria-label","Buscar");b.title="Buscar";b.innerHTML=ICO;b.style.cssText="display:grid;place-items:center";b.onclick=abrir;who.insertBefore(b,who.firstChild)}
+ if(who&&!document.getElementById("gs2")){const b=document.createElement("button");b.type="button";b.id="gs2";b.className="tbtn";b.setAttribute("aria-label","Buscar");b.title="Buscar";b.innerHTML=ICO;b.onclick=abrir;who.insertBefore(b,who.firstChild)}
  if(n>60||(document.getElementById("gs1")||!document.getElementById("side"))&&(document.getElementById("gs2")||!document.querySelector(".top .who")))clearInterval(t)},250);
 aplicarPendiente();
 })();

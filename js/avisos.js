@@ -57,7 +57,7 @@ let n=0;const t=setInterval(()=>{n++;
  const gs1=document.getElementById("gs1");
  if(gs1&&!document.getElementById("nf1")){const b=document.createElement("button");b.type="button";b.id="nf1";b.title="Notificaciones";b.style.cssText=gs1.style.cssText+";position:relative";b.innerHTML=svg("campana",18)+'<span style="flex:1;text-align:left">Notificaciones</span>'+BADGE.replace("top:-4px;right:-4px","top:50%;right:10px;transform:translateY(-50%)");b.onclick=abrir;gs1.after(b)}
  const gs2=document.getElementById("gs2");
- if(gs2&&!document.getElementById("nf2")){const b=document.createElement("button");b.type="button";b.id="nf2";b.className=gs2.className;b.setAttribute("aria-label","Notificaciones");b.title="Notificaciones";b.style.cssText="display:grid;place-items:center;position:relative";b.innerHTML=svg("campana",18)+BADGE;b.onclick=abrir;gs2.after(b)}
+ if(gs2&&!document.getElementById("nf2")){const b=document.createElement("button");b.type="button";b.id="nf2";b.className=gs2.className;b.setAttribute("aria-label","Notificaciones");b.title="Notificaciones";b.innerHTML=svg("campana",20)+BADGE;b.onclick=abrir;gs2.after(b)}
  if(DAY.me&&(document.getElementById("nf1")||document.getElementById("nf2"))&&!window.__nfIni){window.__nfIni=1;actualizar();setInterval(()=>{if(document.visibilityState==="visible")actualizar()},60000)}
  if(n>80)clearInterval(t)},250);
 })();
