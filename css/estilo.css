@@ -152,3 +152,6 @@ dialog[open],dialog[open] *{overscroll-behavior:contain}
 input[type=date],input[type=time],input[type=datetime-local],input[type=month]{min-width:0;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none}
 input[type=date]::-webkit-date-and-time-value{text-align:left}
 .fl>*,.fg>*,.f2>*,.grid2>*{min-width:0}
+/* iPhone: evita que Safari agrande por su cuenta el texto de las vistas previas (tickets y facturas se veían encimados) */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.docv,.docv *,.dvz,.dvz *{-webkit-text-size-adjust:none!important;text-size-adjust:none!important}
