@@ -725,12 +725,25 @@ const filaVenta=v=>`<div class="sv2"><div class="sv2h"><div class="th">${(v.vent
  <div class="sv2t"><b>${resumenItems(v)}</b><small>${fdate(v.created_at)} · ${ftime(v.created_at)}</small></div><b class="sv2p">${$$(v.total)}</b></div>
  <div class="sv2m">${tipoBd(v.tipo)} ${pagoBd(v.metodo_pago)}${v.cliente_nombre?`<span class="sv2c">👤 ${esc(v.cliente_nombre)}</span>`:""}${v.profiles?`<span class="sv2c">Vendió: ${esc(v.profiles.nombre)}</span>`:""}</div>
  <div class="sv2a"><button class="btn g sm" data-tk="${v.id}">Ticket</button><button class="btn g sm" data-fa="${v.id}">Facturar</button>${ADM?`<a class="btn g sm" href="devoluciones.html#v=${v.id}">Devolver</a><button class="btn g sm dn" data-an="${v.id}">Anular</button><button class="btn g sm dn" data-el="${v.id}">Eliminar</button>`:""}</div></div>`;
+/* Aviso de anulación: el sistema lo manda solo si la factura ya se había enviado por correo; si no, ofrece mandarlo */
+async function facturaDeVenta(id){try{const {data}=await db.from("facturas").select("id,numero,cliente_nombre,cliente_correo,correo_enviado_en").contains("venta_ids",[id]).eq("estado","emitida").limit(1);return data&&data[0]||null}catch(e){return null}}
+async function avisoAnulacion(f){
+ if(!f)return;const num=fnum(f.numero);
+ if(f.correo_enviado_en&&f.cliente_correo){toast("Se envió el aviso de anulación de "+num+" a "+f.cliente_correo);return}
+ let sug=f.cliente_correo||"";if(!sug&&f.cliente_nombre){try{const {data}=await db.from("clientes").select("nombre,correo").ilike("nombre",f.cliente_nombre).limit(1);if(data&&data[0]&&data[0].correo)sug=data[0].correo}catch(e){}}
+ const para=await DAY.input(`La factura ${num} se anuló, pero nunca se había enviado por correo, así que no se avisó a nadie.\n\nSi quieres avisarle al cliente, escribe su correo (o cancela):`,sug,{titulo:"Aviso de anulación",ok:"Enviar aviso"});
+ if(!para||!para.trim())return;
+ let neg="DAYMARSV";try{const cf=await ensureCfg();if(cf&&cf.nombre)neg=cf.nombre}catch(e){}
+ const h=`<div style="background:#f5f1f2;padding:20px 8px;font-family:Arial,Helvetica,sans-serif;color:#222"><div style="max-width:520px;margin:0 auto;background:#fff;border-radius:10px;padding:24px"><h2 style="margin:0 0 10px;color:#6B2D3E">${esc(neg)}</h2><p style="font-size:15px">Te informamos que la factura <b>${num}</b> fue <b>anulada</b> y ya no tiene validez.</p><p style="font-size:14px;color:#444">Si tienes dudas, responde a este correo o escríbenos por WhatsApp.</p></div></div>`;
+ const ok=await espera(async()=>{await rpc("enviar_correo_simple",{p_para:para.trim(),p_asunto:"Factura "+num+" anulada – "+neg,p_html:h,p_copia:true,p_tipo:"anulacion",p_ref:num});return true},"Enviando aviso…");
+ if(ok)toast("Aviso de anulación enviado a "+para.trim())}
 async function anular(id,after){
  if(!soloAdmin())return;if(!await pedirClave("Vas a anular esta venta."))return;
  const v=[...S.ventas,...S.pend].find(x=>x.id===id);
  if(!await confirmar((v?lineas(v)+`<p>Total: <b>${$$(v.total)}</b></p>`:"")+`<p>La venta se anulará y <b>se devolverá el stock</b> al inventario.</p>`,{titulo:"Anular venta",ok:"Anular",peligro:true}))return;
+ const fac=await facturaDeVenta(id);
  const ok=await espera(async()=>{await rpc("anular_venta",{p_venta:id});return true});
- if(ok){toast("Venta anulada y stock devuelto");snd("ok");await cargarProductos();filtrar(true);await after()}}
+ if(ok){toast("Venta anulada y stock devuelto");snd("ok");await cargarProductos();filtrar(true);await after();await avisoAnulacion(fac)}}
 async function eliminarVenta(id,after){
  if(!soloAdmin())return;if(!await pedirClave("Vas a eliminar esta venta."))return;
  const v=[...S.ventas,...S.pend].find(x=>x.id===id);
@@ -742,8 +755,9 @@ async function eliminarVenta(id,after){
   <p class="hint">Si solo quieres corregir un error y dejar constancia, usa <b>Anular</b>: la venta queda en el historial.</p>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn dg" id="evOk">Eliminar</button>`});
  m.q("#evOk").onclick=async()=>{const dev=m.q("[name=evd]:checked").value==="1";
-  const ok=await espera(async()=>{await rpc("eliminar_venta",{p_venta:id,p_devolver:dev,p_conservar_factura:m.q("[name=evf]").checked});return true});
-  if(ok){m.close();toast(dev?"Venta eliminada y stock devuelto":"Venta eliminada");snd("ok");await cargarProductos();filtrar(true);await after()}}}
+  const cons=m.q("[name=evf]").checked,fac=cons?null:await facturaDeVenta(id);
+  const ok=await espera(async()=>{await rpc("eliminar_venta",{p_venta:id,p_devolver:dev,p_conservar_factura:cons});return true});
+  if(ok){m.close();toast(dev?"Venta eliminada y stock devuelto":"Venta eliminada");snd("ok");await cargarProductos();filtrar(true);await after();await avisoAnulacion(fac)}}}
 async function pintarHoy(){
  const d=$("hDate").value||ymd(new Date());$("hDate").value=d;
  const L=await espera(()=>ventasRango(d,d));if(!L)return;S.ventas=L;
@@ -996,13 +1010,13 @@ async function pdfBlob(html,fmt){
  const host=document.createElement("div");host.style.cssText="position:fixed;left:-10000px;top:0;background:#fff";host.innerHTML=html;document.body.appendChild(host);
  const peq=fmt==="t80"||fmt==="tk";if(peq)host.style.width="340px";
  let c,el;try{el=host.firstElementChild;if(peq){el.style.maxWidth="none";el.style.margin="0";if(el.classList.contains("tkt"))el.style.width="300px"}
-  try{await document.fonts.ready}catch(e){}await new Promise(r=>setTimeout(r,200));
-  c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:3,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
+  try{await document.fonts.ready}catch(e){}await new Promise(r=>setTimeout(r,60));
+  c=await DAY.h2c(el,{backgroundColor:"#ffffff",scale:peq?2.5:2,useCORS:true,logging:false,windowWidth:Math.max(1000,el.offsetWidth+40),width:el.offsetWidth,height:el.offsetHeight})}finally{host.remove()}
  const {jsPDF}=window.jspdf;
- if(fmt==="t80"||fmt==="tk"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)],orientation:Math.max(h,40)>=w?"p":"l"});p.addImage(c.toDataURL("image/jpeg",.95),"JPEG",0,0,w,h);return p.output("blob")}
+ if(fmt==="t80"||fmt==="tk"){const w=80,h=c.height*w/c.width,p=new jsPDF({unit:"mm",format:[w,Math.max(h,40)],orientation:Math.max(h,40)>=w?"p":"l"});p.addImage(c.toDataURL("image/jpeg",.9),"JPEG",0,0,w,h);return p.output("blob")}
  const p=new jsPDF("p","mm","a4"),W=210,H=297,pageH=Math.floor(c.width*H/W);
  for(let y=0;y<c.height;y+=pageH){const s=document.createElement("canvas");s.width=c.width;s.height=Math.min(pageH,c.height-y);const x=s.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,s.width,s.height);x.drawImage(c,0,y,c.width,s.height,0,0,c.width,s.height);
-  if(y)p.addPage();p.addImage(s.toDataURL("image/jpeg",.95),"JPEG",0,0,W,s.height*W/c.width)}
+  if(y)p.addPage();p.addImage(s.toDataURL("image/jpeg",.9),"JPEG",0,0,W,s.height*W/c.width)}
  return p.output("blob")}
 /* Entrega el PDF: en el celular abre el menú de compartir/imprimir; si no se puede, lo abre o lo descarga */
 async function entregarPdf(blob,nombre,modo){
