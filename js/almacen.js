@@ -1241,8 +1241,9 @@ async function compartirFactura(f){
  toast("PDF descargado: adjúntalo en el correo que se abrirá");
  setTimeout(()=>{location.href="mailto:"+encodeURIComponent(f.cliente_correo||"")+"?subject="+encodeURIComponent(asunto)+"&body="+encodeURIComponent(cuerpo)},700)}
 async function abrirFactura(f){
- const anu=(f.estado==="emitida"?`<button class="btn g" id="dvM">Enviar por correo</button>`:"")+(ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"");
+ const anu=(f.estado==="emitida"?`<button class="btn g" id="dvM">Enviar por correo</button>`:"")+(ADM&&f.estado==="emitida"?`<button class="btn g" id="dvA" style="color:var(--bad)">Anular factura</button>`:"")+(DAY.principal?`<button class="btn g" id="dvE" style="color:var(--bad)">Eliminar</button>`:"");
  const m=await vistaDoc("Factura "+fnum(f.numero),fm=>facHTML(f,fm),fnum(f.numero),anu);
+ const de=m.q("#dvE");if(de)de.onclick=async()=>{const n=await borrarFacturas([f.id]);if(n)m.close()};
  const mb=m.q("#dvM");if(mb)mb.onclick=async()=>{const st=await correoListo().catch(()=>null);if(!st)return;await modalEnviarFactura(f,()=>{if(S.tab==="fac")pintarFacturas()})};
  const a=m.q("#dvA");if(a)a.onclick=async()=>{
   if(!await pedirClave("Vas a anular la factura "+fnum(f.numero)+"."))return;
@@ -1351,7 +1352,7 @@ async function borrarFacturas(ids){
  if(!await pedirClave("Vas a eliminar facturas definitivamente."))return;
  if(!await confirmar("Se eliminarán <b>"+ids.length+"</b> factura"+(ids.length===1?"":"s")+" de forma <b>definitiva</b> (también sus líneas). No se puede deshacer. Si las necesitas para tu contabilidad, descárgalas en PDF antes.",{titulo:"Eliminar facturas",ok:"Eliminar",peligro:true}))return;
  let n=0;for(let i=0;i<ids.length;i+=200){const r=await espera(()=>rpc("eliminar_facturas",{p_ids:ids.slice(i,i+200)}),"Eliminando facturas…");if(r===undefined||r===null)break;n+=r}
- toast(n+" factura"+(n===1?"":"s")+" eliminada"+(n===1?"":"s"));snd("ok");S.fsel=S.fsel?new Set():null;selBar();pintarFacturas()}
+ toast(n+" factura"+(n===1?"":"s")+" eliminada"+(n===1?"":"s"));snd("ok");S.fsel=S.fsel?new Set():null;selBar();pintarFacturas();return n}
 if(DAY.principal&&$("fcSel")){$("fcSel").classList.remove("hidden");
  $("fcSel").onclick=()=>modoSel(!S.fsel);
  $("fcSelAll").onclick=()=>{S.fac.forEach(f=>S.fsel.add(f.id));pintarFacturas().then(selBar)};
