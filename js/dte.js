@@ -8,7 +8,7 @@ const {modal,vistaDoc,espera,lib,fetchAll}=UI;
 const $=i=>document.getElementById(i);
 const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
-mountSide($("side"),"dte",me.rol);$("app").classList.remove("hidden");
+mountSide($("side"),"facturas",me.rol);$("app").classList.remove("hidden");
 
 const r2=n=>Math.round((Number(n)||0)*100)/100;
 const money=n=>"$"+r2(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});

@@ -1049,6 +1049,7 @@ async function pintarFacturas(){
   <div class="am2"><b style="${f.estado==="anulada"?"text-decoration:line-through;color:var(--mute)":""}">${$$(f.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="ver">Ver</button><button class="btn g sm" data-fa="print">Imprimir</button><button class="btn g sm" data-fa="pdf">PDF</button>${f.estado==="emitida"?`<button class="btn g sm" data-fa="mail">${f.correo_enviado_en?"Reenviar":"Correo"}</button>${ADM?`<button class="btn g sm" data-fa="dte" title="Factura electrónica de Hacienda">Electrónica</button>`:""}`:""}</div></div></div>`).join("")
   :`<div class="empty card">No hay facturas con estos filtros.<br><button class="btn" id="fcNew2" style="margin-top:10px">Crear la primera factura</button></div>`;
  const n2=$("fcNew2");if(n2)n2.onclick=()=>nuevaFactura()}
+if(ADM&&$("fcDte"))$("fcDte").classList.remove("hidden");
 $("fcList").addEventListener("click",async e=>{
  const b=e.target.closest("[data-fa]"),r=e.target.closest("[data-fid]");if(!r)return;const id=r.dataset.fid;
  if(S.fsel){if(e.target.closest("[data-fa]")&&!e.target.closest("[data-fsel]")){}else{if(S.fsel.has(id))S.fsel.delete(id);else S.fsel.add(id);const k=r.querySelector("[data-fsel]");if(k)k.checked=S.fsel.has(id);selBar();return}}
