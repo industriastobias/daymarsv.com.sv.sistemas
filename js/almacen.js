@@ -1472,7 +1472,7 @@ if($("bPhoto"))$("bPhoto").onclick=async()=>{
  if(S.venta){toast("Termina o cancela la venta que tienes abierta");return}
  const abrirFB=()=>FotoBusq.abrir(S.all,p=>{if(S.multi){addSel(p.id);return}if(S.tab!=="inv")tab("inv");abrirVenta(p)});
  if(window.FotoBusq)return abrirFB();
- try{await new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="js/fotobusq.js?v=202611190400";sc.onload=ok;sc.onerror=()=>ko(new Error("No se pudo cargar"));document.head.appendChild(sc)});abrirFB()}catch(e){toast("No se pudo abrir la búsqueda por foto: "+(e.message||e))}};
+ try{await new Promise((ok,ko)=>{const sc=document.createElement("script");sc.src="js/fotobusq.js?v=202611190410";sc.onload=ok;sc.onerror=()=>ko(new Error("No se pudo cargar"));document.head.appendChild(sc)});abrirFB()}catch(e){toast("No se pudo abrir la búsqueda por foto: "+(e.message||e))}};
 $("bUsb").onclick=()=>usb();
 $("bMulti").onclick=()=>modoMulti();
 $("bFast").onclick=ventaRapida;
