@@ -733,9 +733,7 @@ async function avisoAnulacion(f){
  let sug=f.cliente_correo||"";if(!sug&&f.cliente_nombre){try{const {data}=await db.from("clientes").select("nombre,correo").ilike("nombre",f.cliente_nombre).limit(1);if(data&&data[0]&&data[0].correo)sug=data[0].correo}catch(e){}}
  const para=await DAY.input(`La factura ${num} se anuló, pero nunca se había enviado por correo, así que no se avisó a nadie.\n\nSi quieres avisarle al cliente, escribe su correo (o cancela):`,sug,{titulo:"Aviso de anulación",ok:"Enviar aviso"});
  if(!para||!para.trim())return;
- let neg="DAYMARSV";try{const cf=await ensureCfg();if(cf&&cf.nombre)neg=cf.nombre}catch(e){}
- const h=`<div style="background:#f5f1f2;padding:20px 8px;font-family:Arial,Helvetica,sans-serif;color:#222"><div style="max-width:520px;margin:0 auto;background:#fff;border-radius:10px;padding:24px"><h2 style="margin:0 0 10px;color:#6B2D3E">${esc(neg)}</h2><p style="font-size:15px">Te informamos que la factura <b>${num}</b> fue <b>anulada</b> y ya no tiene validez.</p><p style="font-size:14px;color:#444">Si tienes dudas, responde a este correo o escríbenos por WhatsApp.</p></div></div>`;
- const ok=await espera(async()=>{await rpc("enviar_correo_simple",{p_para:para.trim(),p_asunto:"Factura "+num+" anulada – "+neg,p_html:h,p_copia:true,p_tipo:"anulacion",p_ref:num});return true},"Enviando aviso…");
+ const ok=await espera(async()=>{await rpc("enviar_aviso_anulacion",{p_factura:f.id,p_para:para.trim()});return true},"Enviando aviso…");
  if(ok)toast("Aviso de anulación enviado a "+para.trim())}
 async function anular(id,after){
  if(!soloAdmin())return;if(!await pedirClave("Vas a anular esta venta."))return;
