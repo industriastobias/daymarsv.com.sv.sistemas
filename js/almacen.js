@@ -853,7 +853,9 @@ const ALLT=[["inv"],["pend"],["hoy"],["ven"],["fac"]];
 const TABS=SOLO?[]:[["inv","Inventario",IC.box],["hoy","Hoy",IC.cal],["ven","Ventas",IC.rec],["fac","Facturas",IC.fac]];
 if(SOLO){["bnav","bScan","bPhoto","bUsb","bMulti","bFast","bEye"].forEach(i=>{const e=$(i);if(e)e.classList.add("hidden")});const t=document.querySelector(".head .tot");if(t)t.classList.add("hidden");const mo=document.querySelector(".head .more");if(mo)mo.classList.add("hidden")}
 $("bnav").innerHTML=TABS.map(t=>`<button type="button" data-p="${t[0]}">${ic(t[2])}<span>${t[1]}</span><span class="nb hidden">0</span></button>`).join("");
-$("bScan").innerHTML=ic(IC.scan)+"Escanear";if($("bPhoto"))$("bPhoto").innerHTML=ic('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>')+"Buscar por foto";
+/* Botones de la cabecera: solo íconos (el nombre queda como ayuda al mantener el dedo/ratón y para lectores de pantalla) */
+{const B=[["bScan",IC.scan,"Escanear"],["bPhoto",'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',"Buscar por foto"],["bUsb",'<rect x="7" y="3" width="10" height="8" rx="1.5"/><path d="M9 11v4a3 3 0 006 0v-4M12 18v3M10 6h1M13 6h1"/>',"Lector USB"],["bMulti",'<rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/>',"Venta múltiple"],["bFast",'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',"Venta rápida"],["bMore",'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',"Más opciones"]];
+ B.forEach(([id,svg,t])=>{const e=$(id);if(!e)return;e.classList.add("icb");e.innerHTML=ic(svg)+`<span class="icl">${t}</span>`;e.setAttribute("aria-label",t);e.title=t})}
 async function tab(k){
  document.documentElement.removeAttribute("data-h");document.documentElement.setAttribute("data-tab",k);S.tab=k;
  if(!SOLO){const T={inv:["Almacenamiento",""],hoy:["Hoy","Ventas y movimientos del día"],ven:["Ventas","Historial de ventas del punto de venta"],fac:["Facturas","Emite y consulta tus facturas"]}[k];
