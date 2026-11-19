@@ -273,7 +273,6 @@ dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
 .hact .icb{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;min-height:46px;padding:0!important;border-radius:14px;flex:none}
 .hact .icb .ic{width:22px;height:22px;margin:0!important;display:block}
 .hact .icb .icl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.hact #bFast.icb{background:var(--wine);color:#fff;border-color:var(--wine)}
 @media(max-width:799px){
  .hact{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:8px!important}
  .hact .tot{grid-column:1/-1!important;order:0}
