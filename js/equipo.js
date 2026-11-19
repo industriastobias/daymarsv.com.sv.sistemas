@@ -33,7 +33,7 @@ function pintar(){
  $("dash").innerHTML=(ADM?`<div class="rb"><div class="seg2" id="tb"><button data-t="tareas" class="${TAB==="tareas"?"on":""}">Tareas</button><button data-t="personas" class="${TAB==="personas"?"on":""}">Personas y roles</button></div></div>`:`<p class="hint">Estas son las tareas que te asignaron. Avanza su estado cuando empieces o termines.</p>`)+'<div id="tc"></div>';
  if($("tb"))$("tb").onclick=e=>{const b=e.target.closest("[data-t]");if(b){TAB=b.dataset.t;pintar()}};
  TAB==="personas"&&ADM?pintarPersonas():pintarTareas()}
-async function rpc(fn,args,ok){const r=await db.rpc(fn,args);if(r.error){toast("No se pudo: "+r.error.message);return false}if(ok)toast(ok);await cargar();pintar();return true}
+async function rpc(fn,args,ok){const r=await db.rpc(fn,args);if(r.error){toast("No se pudo: "+r.error.message);return false}if(ok)toast(ok);await cargar();pintar();if(DAY.refrescarBadges)DAY.refrescarBadges();return true}
 function formulario(t){
  const d=document.createElement("dialog");d.style.cssText="border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-height:92vh;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)";
  const act=U.filter(u=>u.activo!==false);
