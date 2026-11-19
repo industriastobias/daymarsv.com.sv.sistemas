@@ -83,8 +83,8 @@ function abrir(productos,alElegir){
    /* ¿Qué tanto se separa cada resultado del resto? Una coincidencia real sobresale; una foto sin relación da puntajes parecidos para todos */
    const media=sc.reduce((t,x)=>t+x[1],0)/sc.length,de=Math.sqrt(sc.reduce((t,x)=>t+(x[1]-media)**2,0)/sc.length)||1e-6;
    const todos=sc.slice(0,6).map(([id,s])=>({p:productos.find(x=>x.id===id),s,z:(s-media)/de})).filter(x=>x.p);
-   const bueno=x=>x.s>=0.62||(x.s>=0.5&&x.z>=3.2);
-   const nivel=x=>x.s>=0.75||x.z>=5?["Muy parecido","var(--ok,#2f7d4f)"]:x.s>=0.62||x.z>=4?["Parecido","var(--wine,#6B2D3E)"]:["Posible","var(--mute,#7b6a70)"];
+   const bueno=x=>x.s>=0.74||(x.s>=0.62&&x.z>=4.5);
+   const nivel=x=>x.s>=0.82||(x.s>=0.7&&x.z>=6)?["Muy parecido","var(--ok,#2f7d4f)"]:x.s>=0.74||x.z>=5?["Parecido","var(--wine,#6B2D3E)"]:["Posible","var(--mute,#7b6a70)"];
    const fila=(x,i,tenue)=>{const n=nivel(x);return `<button type="button" class="fbr" data-i="${i}" style="${tenue?"opacity:.6":""}"><img src="${esc(x.p.foto_url)}" alt=""><span style="flex:1;min-width:0"><b style="display:block;font-size:14px">${esc(x.p.nombre)}</b><small style="color:var(--mute,#7b6a70)">${esc(x.p.codigo_barras||x.p.codigo||"")} · stock ${esc(x.p.stock)} · $${Number(x.p.fin!=null?x.p.fin:x.p.precio_venta||0).toFixed(2)}</small></span><b style="font-size:12px;color:${n[1]};white-space:nowrap">${n[0]}</b></button>`};
    let L=todos.filter(bueno).slice(0,5);
    if(L.length){est(L.length===1?"Encontré este producto:":"Productos parecidos:");$("#fbRes").innerHTML=L.map((x,i)=>fila(x,i)).join("")}
