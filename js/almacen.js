@@ -51,8 +51,14 @@ const bcUrl=code=>{if(!code)return"";if(bcc.has(code))return bcc.get(code);let u
 /* ---------- acceso a datos ---------- */
 const fetchAll=async mk=>{let out=[],from=0;for(;;){const {data,error}=await mk().range(from,from+999);if(error)throw error;out=out.concat(data);if(data.length<1000)break;from+=1000}return out};
 const rpc=async(fn,args)=>{const {data,error}=await db.rpc(fn,args);if(error)throw new Error(error.message);return data};
-const espera=async(fn,txt)=>{$("ovT").textContent=txt||"Procesando…";$("ov").classList.add("on");
- try{return await fn()}catch(e){console.error(e);toast(e.message||"Ocurrió un error");snd("err");return undefined}finally{$("ov").classList.remove("on")}};
+const espera=async(fn,txt)=>{const o=$("ov"),casa=o.parentNode,sig=o.nextSibling;
+ /* si hay una ventana abierta, el círculo de espera va dentro de ella (si no, queda escondido detrás) */
+ const dl=[...document.querySelectorAll("dialog[open]")].pop();
+ $("ovT").textContent=txt||"Procesando…";if(dl){dl.appendChild(o);o.classList.add("endlg")}o.classList.add("on");
+ const soltar=()=>{o.classList.remove("on","endlg");if(dl&&o.parentNode!==casa)casa.insertBefore(o,sig&&sig.parentNode===casa?sig:null)};
+ /* si algo tarda demasiado, la pantalla de espera se quita sola para que la app no quede bloqueada */
+ const guardia=setTimeout(()=>{soltar();toast("Está tardando más de lo normal. Revisa tu conexión e intenta de nuevo.")},35000);
+ try{return await fn()}catch(e){console.error(e);toast(/abort/i.test(e&&e.name||"")||/abort/i.test(e&&e.message||"")?"La conexión tardó demasiado. Intenta de nuevo.":(e.message||"Ocurrió un error"));snd("err");return undefined}finally{clearTimeout(guardia);soltar()}};
 const lib=url=>lib.c[url]||(lib.c[url]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=url;s.onload=ok;s.onerror=()=>ko(new Error("No se pudo cargar una librería. Revisa tu conexión."));document.head.appendChild(s)}));lib.c={};
 
 const S={prods:[],byId:new Map(),filt:[],page:1,size:1000,view:LS("dms_vw")||(matchMedia("(min-width:800px)").matches?"table":"cards"),

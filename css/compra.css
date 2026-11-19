@@ -131,3 +131,4 @@ kbd{background:var(--chip);border:1px solid var(--line);border-radius:5px;paddin
 .prevs .pvx{top:-6px;right:-6px;width:26px;height:26px;border-radius:50%;background:var(--bad);color:#fff;font-size:17px;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .prevs .pvs{bottom:4px;left:4px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--wine);font-size:13px}
 .prevs .pvp{position:absolute;bottom:4px;left:4px;background:var(--wine);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px}
+.ov.endlg{z-index:1000;border-radius:inherit}
