@@ -988,7 +988,7 @@ function facA4(f,c,its,qr){
   <div style="flex:1;min-width:0;display:grid;gap:10px">${caja("VALOR EN LETRAS",e(enLetras(f.total)))}${caja("FORMA DE PAGO",e(f.metodo_pago||"")+(f.efectivo!=null?` · Recibido ${m(f.efectivo)} · Cambio ${m(f.cambio)}`:""))}${f.nota?caja("OBSERVACIONES",e(f.nota)):""}</div>
   <table style="width:300px;border-collapse:collapse;${B}">${rs("Suma de ventas",m(suma))}${desc?rs("Descuentos",`-${m(desc)}`):""}${rs("Sub-total",m(sub))}${f.iva_modo!=="ninguno"?rs(`IVA ${+f.iva_pct}%${inc?" (incluido)":""}`,m(f.iva_monto)):""}${rs("Monto total de la operación",m(f.total))}${rs("TOTAL A PAGAR",m(f.total),1)}</table></div>
  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-top:22px;padding-top:12px;border-top:1px solid #e3d9dc">
-  <div style="font-size:11px;color:#555;line-height:1.5">${c.pie?`<div style="font-weight:700;color:#6B2D3E;font-size:12px">${e(c.pie)}</div>`:""}<div>Código de validación: <span style="font-family:monospace">${e(f.codigo)}</span></div><div style="color:#999;margin-top:4px">Comprobante emitido por el sistema ${e(c.nombre||"DAYMARSV")}. No es un Documento Tributario Electrónico (DTE).</div></div>
+  <div style="font-size:11px;color:#555;line-height:1.5">${c.pie?`<div style="font-weight:700;color:#6B2D3E;font-size:12px">${e(c.pie)}</div>`:""}<div>Código de validación: <span style="font-family:monospace">${e(f.codigo)}</span></div></div>
   ${qr?`<div style="width:86px;height:86px;flex:none">${qr}</div>`:""}</div></div>`}
 async function facHTML(f,fmt){
  const c=await ensureCfg(),its=f.factura_items||[],iv=f.iva_modo;
