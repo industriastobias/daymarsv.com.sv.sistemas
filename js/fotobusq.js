@@ -50,20 +50,20 @@ function abrir(productos,alElegir){
  if(document.getElementById("fbDlg"))return;
  const d=document.createElement("dialog");d.id="fbDlg";
  d.style.cssText="border:0;border-radius:16px;padding:0;margin:auto;width:min(620px,95vw);max-height:92vh;background:var(--card,#fff);color:var(--ink,#2a1a1f);box-shadow:0 20px 60px rgba(0,0,0,.35)";
- d.innerHTML=`<style>#fbDlg::backdrop{background:rgba(0,0,0,.55)}#fbDlg .fbb{padding:10px 16px;border:1px solid var(--line,#e6dde0);border-radius:12px;background:var(--card,#fff);color:inherit;font:inherit;font-weight:600;cursor:pointer}#fbDlg .fbb.pr{background:var(--wine,#6B2D3E);color:#fff;border-color:transparent}#fbDlg .fbr{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:8px;border:1px solid var(--line,#e6dde0);border-radius:12px;background:none;color:inherit;font:inherit;cursor:pointer;margin-bottom:8px}#fbDlg .fbr:hover{border-color:var(--wine,#6B2D3E)}#fbDlg .fbr img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--chip,#f0e6e9);flex:none}#fbDlg .fbsp{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--mute,#7b6a70)}#fbDlg .fbsp i{width:22px;height:22px;border-radius:50%;border:3px solid var(--chip,#f0e6e9);border-top-color:var(--wine,#6B2D3E);animation:fbgira .8s linear infinite;flex:none}@keyframes fbgira{to{transform:rotate(360deg)}}</style>
+ d.innerHTML=`<style>#fbDlg::backdrop{background:rgba(0,0,0,.55)}#fbDlg .fbb{padding:10px 16px;border:1px solid var(--line,#e6dde0);border-radius:12px;background:var(--card,#fff);color:inherit;font:inherit;font-weight:600;cursor:pointer}#fbDlg .fbb:focus:not(:focus-visible){outline:none;box-shadow:none}#fbDlg .fbb.pr{background:var(--wine,#6B2D3E);color:#fff;border-color:transparent}#fbDlg .fbr{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:8px;border:1px solid var(--line,#e6dde0);border-radius:12px;background:none;color:inherit;font:inherit;cursor:pointer;margin-bottom:8px}#fbDlg .fbr:hover{border-color:var(--wine,#6B2D3E)}#fbDlg .fbr img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--chip,#f0e6e9);flex:none}#fbDlg .fbsp{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--mute,#7b6a70)}#fbDlg .fbsp i{width:22px;height:22px;border-radius:50%;border:3px solid var(--chip,#f0e6e9);border-top-color:var(--wine,#6B2D3E);animation:fbgira .8s linear infinite;flex:none}@keyframes fbgira{to{transform:rotate(360deg)}}</style>
  <div style="padding:16px;display:grid;gap:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">Buscar por foto</h3><button type="button" class="fbb" id="fbX">Cerrar</button></div>
- <div id="fbEst" style="font-size:13px;color:var(--mute,#7b6a70)">Preparando…</div>
+ <div id="fbEst" style="font-size:13px;color:var(--mute,#7b6a70)"></div>
  <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="fbb pr" id="fbCam">Tomar foto</button><button type="button" class="fbb" id="fbGal">Elegir de la galería</button></div>
  <input type="file" id="fbF1" accept="image/*" capture="environment" hidden><input type="file" id="fbF2" accept="image/*" hidden>
  <div id="fbPv" style="display:none"><img id="fbIm" alt="" style="max-width:100%;max-height:180px;border-radius:12px;display:block"></div>
  <div id="fbRes" style="max-height:48vh;overflow:auto"></div>
 </div>`;
- document.body.appendChild(d);d.showModal();d.addEventListener("close",()=>d.remove());
+ document.body.appendChild(d);d.showModal();d.addEventListener("close",()=>d.remove());try{document.activeElement&&document.activeElement.blur()}catch(e){}
  const $=s=>d.querySelector(s),est=(t,gira)=>{const e=$("#fbEst");if(gira){e.innerHTML=`<span class="fbsp"><i></i>${esc(t)}</span>`}else e.textContent=t};
  $("#fbX").onclick=()=>d.close();
  let listo=null;
  const preparar=()=>listo||(listo=(async()=>{
-  est("Cargando…",true);await prepararModelo();
+  await prepararModelo();
   const r=await indexar(productos,()=>{});
   est("");return r})().catch(e=>{listo=null;est("No se pudo preparar la búsqueda: "+(e.message||e));throw e}));
  preparar().catch(()=>{});
