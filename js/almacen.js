@@ -340,7 +340,8 @@ async function abrirTicket(v,nuevo){
  const cf=await ensureCfg(),html=ticketHTML(v,cf);
  const m=modal(nuevo?"Venta registrada · #"+v.numero:"Ticket · venta #"+v.numero,`<div id="tkB" style="background:#eee;border-radius:12px;padding:10px">${html}</div>
   <label class="chk" style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px"><input type="checkbox" id="tkPref" ${LS("dms_ticket")!=="0"?"checked":""} style="width:18px;height:18px"> Mostrar el ticket al terminar cada venta</label>`,
-  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button><button class="btn" id="tkW">Enviar PDF por WhatsApp</button>`});
+  {foot:`<button class="btn g" data-x>Cerrar</button><button class="btn g" id="tkP">Imprimir</button>${ADM?'<button class="btn g" id="tkE">Factura electrónica</button>':""}<button class="btn" id="tkW">Enviar PDF por WhatsApp</button>`});
+ if(m.q("#tkE"))m.q("#tkE").onclick=()=>{location.href="dte.html?v="+encodeURIComponent(v.id)};
  m.q("#tkPref").onchange=e=>LS("dms_ticket",e.target.checked?"1":"0");
  m.q("#tkP").onclick=()=>espera(async()=>{await entregarPdf(await ticketPdfBlob(v,cf),"ticket-"+v.numero+".pdf","imprimir")},"Generando PDF…");
  m.q("#tkW").onclick=async()=>{
@@ -1045,13 +1046,14 @@ async function pintarFacturas(){
  const em=S.fac.filter(f=>f.estado==="emitida"),sm=k=>em.reduce((s,f)=>s+ +f[k],0);
  $("fcKpi").innerHTML=`<div><span>Facturado</span><b>${$$(sm("total"))}</b><small>${em.length} emitidas</small></div><div><span>IVA</span><b>${$$(sm("iva_monto"))}</b></div><div><span>Descuentos</span><b>${$$(sm("descuento_monto"))}</b></div><div><span>Anuladas</span><b>${S.fac.length-em.length}</b></div><div><span>Ticket promedio</span><b>${$$(em.length?sm("total")/em.length:0)}</b></div>`;
  $("fcList").innerHTML=S.fac.length?S.fac.slice(0,300).map(f=>`<div class="sv" data-fid="${f.id}">${S.fsel?`<input type="checkbox" data-fsel ${S.fsel.has(f.id)?"checked":""} style="width:20px;height:20px;margin-right:8px;flex:none">`:""}<div class="ti"><b>${fnum(f.numero)} · ${esc(f.cliente_nombre||"Consumidor final")}</b><small>${fdate(f.fecha)} · ${f.factura_items.length} línea${f.factura_items.length===1?"":"s"}</small><br>${pagoBd(f.metodo_pago)} ${f.estado==="anulada"?'<span class="bd or">Anulada</span>':""}${f.correo_enviado_en?`<span class="bd ok" title="Enviada a ${esc(f.cliente_correo||"")}">✉ Enviada ${fdate(f.correo_enviado_en)}</span>`:""}</div>
-  <div class="am2"><b style="${f.estado==="anulada"?"text-decoration:line-through;color:var(--mute)":""}">${$$(f.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="ver">Ver</button><button class="btn g sm" data-fa="print">Imprimir</button><button class="btn g sm" data-fa="pdf">PDF</button>${f.estado==="emitida"?`<button class="btn g sm" data-fa="mail">${f.correo_enviado_en?"Reenviar":"Correo"}</button>`:""}</div></div></div>`).join("")
+  <div class="am2"><b style="${f.estado==="anulada"?"text-decoration:line-through;color:var(--mute)":""}">${$$(f.total)}</b><div class="fac-ac"><button class="btn g sm" data-fa="ver">Ver</button><button class="btn g sm" data-fa="print">Imprimir</button><button class="btn g sm" data-fa="pdf">PDF</button>${f.estado==="emitida"?`<button class="btn g sm" data-fa="mail">${f.correo_enviado_en?"Reenviar":"Correo"}</button>${ADM?`<button class="btn g sm" data-fa="dte" title="Factura electrónica de Hacienda">Electrónica</button>`:""}`:""}</div></div></div>`).join("")
   :`<div class="empty card">No hay facturas con estos filtros.<br><button class="btn" id="fcNew2" style="margin-top:10px">Crear la primera factura</button></div>`;
  const n2=$("fcNew2");if(n2)n2.onclick=()=>nuevaFactura()}
 $("fcList").addEventListener("click",async e=>{
  const b=e.target.closest("[data-fa]"),r=e.target.closest("[data-fid]");if(!r)return;const id=r.dataset.fid;
  if(S.fsel){if(e.target.closest("[data-fa]")&&!e.target.closest("[data-fsel]")){}else{if(S.fsel.has(id))S.fsel.delete(id);else S.fsel.add(id);const k=r.querySelector("[data-fsel]");if(k)k.checked=S.fsel.has(id);selBar();return}}
  try{
+  if(b&&b.dataset.fa==="dte"){location.href="dte.html?f="+encodeURIComponent(id);return}
   if(!b||b.dataset.fa==="ver"){const f=await espera(()=>cargarFactura(id));if(f)abrirFactura(f)}
   else if(b.dataset.fa==="print"){const f=await espera(()=>cargarFactura(id));if(f){const fm=LS("dms_fmt2")||"t80",h=await facHTML(f,fm);if(fm==="t80")descargarPdf(h,fm,fnum(f.numero)+"-ticket.pdf","imprimir");else imprimir(h,fm)}}
   else if(b.dataset.fa==="mail"){const f=await espera(()=>cargarFactura(id));if(f)await modalEnviarFactura(f,pintarFacturas)}

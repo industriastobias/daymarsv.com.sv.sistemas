@@ -32,30 +32,36 @@ function letras(n){
  let t="";if(mill)t+=(mill===1?"UN MILLÓN":c999(mill)+" MILLONES")+" ";
  const m2=Math.floor((ent%1e6)/1000);if(m2)t+=(m2===1?"MIL":c999(m2)+" MIL")+" ";
  t+=resto?c999(resto):(ent?"":"CERO");void mil;
- return (t.trim().replace(/UNO$/,"UN")+" "+pad(cen,2)+"/100 USD").replace(/\s+/g," ")}
+ return (t.trim()+" "+pad(cen,2)+"/100 USD").replace(/\s+/g," ")}
 
 const PAGO={efectivo:"01",tarjeta:"03",transferencia:"05",bitcoin:"11"};
 const DPAGO={"01":"Billetes y monedas","02":"Tarjeta débito","03":"Tarjeta crédito","05":"Transferencia","11":"Bitcoin","99":"Otros"};
 function uuid(){return (crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==="x"?r:(r&3|8)).toString(16)})).toUpperCase()}
 
+/* Venta o factura del sistema → datos comunes para armar el DTE */
+function desdeVenta(v){return {tipo:"venta",id:v.id,numero:v.numero,fecha:v.created_at,cliente:v.cliente_nombre,doc:null,metodo:v.metodo_pago,total:+v.total||0,descGlobal:0,envio:null,
+ items:(v.venta_items||[]).map(i=>{const q=+i.cantidad||0,pu=r2(+i.precio_original>0&&+i.precio_original>+i.precio_unit?+i.precio_original:+i.precio_unit);return {q,pu,desc:r2((pu-r2(+i.precio_unit))*q),nombre:i.nombre,codigo:i.codigo_barras||i.codigo}})}}
+function desdeFactura(f){const k=f.iva_modo==="agregado"?1+(+f.iva_pct||0)/100:1;
+ return {tipo:"factura",id:f.id,numero:f.numero,fecha:f.created_at||f.fecha,cliente:f.cliente_nombre,doc:f.cliente_doc,direccion:f.cliente_direccion,metodo:f.metodo_pago,total:+f.total||0,descGlobal:r2((+f.descuento_monto||0)*k),envio:r2((+f.envio||0)*k),
+  items:(f.factura_items||[]).sort((a,b)=>(a.orden||0)-(b.orden||0)).map(i=>({q:+i.cantidad||0,pu:r2((+i.precio_unit||0)*k),desc:0,nombre:i.nombre,codigo:i.codigo}))}}
 /* Arma el DTE (Factura, tipo 01). En la factura de consumidor final los precios incluyen IVA. */
-function armarDTE(v,em){
+function armarDTE(d,em){const v={numero:d.numero,created_at:d.fecha,metodo_pago:d.metodo,total:d.total,cliente_nombre:d.cliente};
  const f=new Date(v.created_at),fecEmi=f.getFullYear()+"-"+pad(f.getMonth()+1,2)+"-"+pad(f.getDate(),2),horEmi=pad(f.getHours(),2)+":"+pad(f.getMinutes(),2)+":"+pad(f.getSeconds(),2);
- const items=(v.venta_items||[]).map((i,k)=>{const q=+i.cantidad||0,pu=r2(+i.precio_original>0&&+i.precio_original>+i.precio_unit?+i.precio_original:+i.precio_unit),desc=r2((pu-r2(+i.precio_unit))*q),grav=r2(pu*q-desc);
-  return {numItem:k+1,tipoItem:1,numeroDocumento:null,cantidad:q,codigo:String(i.codigo_barras||i.codigo||"").slice(0,25)||null,codTributo:null,uniMedida:59,descripcion:String(i.nombre||"Producto").slice(0,1000),
+ const items=d.items.map((i,k)=>{const q=i.q,pu=i.pu,desc=i.desc,grav=r2(pu*q-desc);
+  return {numItem:k+1,tipoItem:1,numeroDocumento:null,cantidad:q,codigo:String(i.codigo||"").slice(0,25)||null,codTributo:null,uniMedida:59,descripcion:String(i.nombre||"Producto").slice(0,1000),
    precioUni:pu,montoDescu:desc,ventaNoSuj:0,ventaExenta:0,ventaGravada:grav,tributos:null,psv:0,noGravado:0,ivaItem:r2(grav-grav/1.13)}});
- const sub=r2(items.reduce((t,x)=>t+x.ventaGravada,0)),extra=r2((+v.total||0)-sub);
+ const dg=r2(d.descGlobal||0),sub=r2(items.reduce((t,x)=>t+x.ventaGravada,0)),extra=d.envio!=null?r2(d.envio):r2((+v.total||0)-sub);
  if(extra>0.004)items.push({numItem:items.length+1,tipoItem:2,numeroDocumento:null,cantidad:1,codigo:"ENVIO",codTributo:null,uniMedida:99,descripcion:"Envío",precioUni:extra,montoDescu:0,ventaNoSuj:0,ventaExenta:0,ventaGravada:extra,tributos:null,psv:0,noGravado:0,ivaItem:r2(extra-extra/1.13)});
- const tg=r2(items.reduce((t,x)=>t+x.ventaGravada,0)),td=r2(items.reduce((t,x)=>t+x.montoDescu,0)),iva=r2(items.reduce((t,x)=>t+x.ivaItem,0));
- const cp=PAGO[String(v.metodo_pago||"").toLowerCase()]||"99";
+ const tg=r2(items.reduce((t,x)=>t+x.ventaGravada,0)),td=r2(items.reduce((t,x)=>t+x.montoDescu,0)+dg),stt=r2(tg-dg),iva=r2(stt-stt/1.13);
+ const mp=String(v.metodo_pago||"").toLowerCase(),cp=PAGO[mp]||(mp.includes("efect")?"01":mp.includes("tarj")?"03":mp.includes("transf")?"05":"99");
  return {identificacion:{version:1,ambiente:"00",tipoDte:"01",numeroControl:`DTE-01-${em.codEstableMH}${em.codPuntoVentaMH}-${pad(v.numero||1,15)}`,codigoGeneracion:uuid(),tipoModelo:1,tipoOperacion:1,tipoContingencia:null,motivoContin:null,fecEmi,horEmi,tipoMoneda:"USD"},
   documentoRelacionado:null,
   emisor:{nit:em.nit,nrc:em.nrc,nombre:em.nombre,codActividad:em.codActividad,descActividad:em.descActividad,nombreComercial:em.nombreComercial,tipoEstablecimiento:"01",
    direccion:{departamento:em.departamento,municipio:em.municipio,complemento:em.complemento},telefono:em.telefono,correo:em.correo,codEstableMH:em.codEstableMH,codEstable:null,codPuntoVentaMH:em.codPuntoVentaMH,codPuntoVenta:null},
-  receptor:{tipoDocumento:null,numDocumento:null,nrc:null,nombre:v.cliente_nombre||"Clientes varios",codActividad:null,descActividad:null,direccion:null,telefono:null,correo:null},
+  receptor:{tipoDocumento:d.doc?"13":null,numDocumento:d.doc?String(d.doc).replace(/\D/g,"")||null:null,nrc:null,nombre:v.cliente_nombre||"Clientes varios",codActividad:null,descActividad:null,direccion:null,telefono:null,correo:null},
   otrosDocumentos:null,ventaTercero:null,cuerpoDocumento:items,
-  resumen:{totalNoSuj:0,totalExenta:0,totalGravada:tg,subTotalVentas:tg,descuNoSuj:0,descuExenta:0,descuGravada:0,porcentajeDescuento:0,totalDescu:td,tributos:null,subTotal:tg,ivaRete1:0,reteRenta:0,
-   montoTotalOperacion:tg,totalNoGravado:0,totalPagar:tg,totalLetras:letras(tg),totalIva:iva,saldoFavor:0,condicionOperacion:1,pagos:[{codigo:cp,montoPago:tg,referencia:null,plazo:null,periodo:null}],numPagoElectronico:null},
+  resumen:{totalNoSuj:0,totalExenta:0,totalGravada:tg,subTotalVentas:tg,descuNoSuj:0,descuExenta:0,descuGravada:dg,porcentajeDescuento:tg?r2(dg/tg*100):0,totalDescu:td,tributos:null,subTotal:stt,ivaRete1:0,reteRenta:0,
+   montoTotalOperacion:stt,totalNoGravado:0,totalPagar:stt,totalLetras:letras(stt),totalIva:iva,saldoFavor:0,condicionOperacion:1,pagos:[{codigo:cp,montoPago:stt,referencia:null,plazo:null,periodo:null}],numPagoElectronico:null},
   extension:null,apendice:[{campo:"aviso",etiqueta:"Aviso",valor:"SIMULACIÓN SIN VALIDEZ FISCAL"}]}}
 
 /* Representación gráfica (lo que recibe el cliente), con marca de agua de simulación */
@@ -75,12 +81,12 @@ async function representacion(j){
   <tr><td style="padding:3px 0;color:#555">Sello de recepción</td><td style="color:#b3261e;font-weight:700">— (no enviado: simulación)</td></tr>
   <tr><td style="padding:3px 0;color:#555">Fecha y hora</td><td>${id.fecEmi} ${id.horEmi}</td></tr>
   <tr><td style="padding:3px 0;color:#555">Ambiente</td><td>${id.ambiente} · Modelo previo · Transmisión normal</td></tr>
-  <tr><td style="padding:3px 0;color:#555">Cliente</td><td>${esc(j.receptor.nombre)}</td></tr></table>
+  <tr><td style="padding:3px 0;color:#555">Cliente</td><td>${esc(j.receptor.nombre)}${j.receptor.numDocumento?" · Doc. "+esc(j.receptor.numDocumento):""}</td></tr></table>
  <table style="width:100%;border-collapse:collapse"><thead><tr style="background:#6B2D3E;color:#fff;font-size:12px"><th style="padding:6px;text-align:left">#</th><th style="padding:6px;text-align:left">Cant.</th><th style="padding:6px;text-align:left">Descripción</th><th style="padding:6px;text-align:right">Precio unit.</th><th style="padding:6px;text-align:right">Descuento</th><th style="padding:6px;text-align:right">Ventas gravadas</th></tr></thead>
  <tbody>${filas.replace(/<td/g,'<td style="padding:6px;border-bottom:1px solid #eee;vertical-align:top"').replace(/class="r"/g,'align="right"')}</tbody></table>
  <table style="width:300px;margin:12px 0 0 auto;border-collapse:collapse;font-size:13px">
   <tr><td style="padding:3px 0">Total gravado</td><td align="right">${money(r.totalGravada)}</td></tr>
-  <tr><td style="padding:3px 0">Descuentos</td><td align="right">${money(r.totalDescu)}</td></tr>
+  <tr><td style="padding:3px 0">Descuentos</td><td align="right">${money(r.totalDescu)}</td></tr>${r.descuGravada?`<tr><td style="padding:3px 0;color:#555">Subtotal</td><td align="right" style="color:#555">${money(r.subTotal)}</td></tr>`:""}
   <tr><td style="padding:3px 0;color:#555">IVA incluido (13%)</td><td align="right" style="color:#555">${money(r.totalIva)}</td></tr>
   <tr><td style="padding:6px 0;font-weight:800;border-top:2px solid #6B2D3E">Total a pagar</td><td align="right" style="font-weight:800;border-top:2px solid #6B2D3E">${money(r.totalPagar)}</td></tr></table>
  <div style="margin-top:6px;font-size:12px;color:#555">${esc(r.totalLetras)} · Pago: ${esc(DPAGO[r.pagos[0].codigo]||"Otros")} · Condición: contado</div>
@@ -88,8 +94,8 @@ async function representacion(j){
 
 function descargarJSON(j,nombre){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(j,null,2)],{type:"application/json"}));a.download=nombre+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
-async function simular(v){
- const j=armarDTE(v,leerEm()),nom="DTE-venta-"+(v.numero||"");
+async function simular(d){
+ const j=armarDTE(d,leerEm()),nom="DTE-"+d.tipo+"-"+(d.numero||"");
  const m=modal("Factura electrónica",`<div class="pasos">
   <div class="paso"><b>1. Armar ✓</b><small>Venta convertida al formato de Hacienda.</small></div>
   <div class="paso no"><b>2. Firmar ✗</b><small>Necesita tu firma electrónica.</small></div>
@@ -115,6 +121,11 @@ async function cargar(){
 function pintar(){
  $("dash").innerHTML=`<div class="aviso"><b>Simulación.</b> Con tus ventas reales y los datos del emisor, aquí ves cómo quedaría una factura electrónica de Hacienda. Todavía no se firma ni se envía, así que <b>no tiene validez fiscal</b> hasta conectar tu registro de Hacienda.</div>
  <div class="pn s12"><div class="mhd"><h3>Elige una venta para simular su factura</h3></div>${V.length?V.map(v=>`<div class="vl"><div class="ti"><b>Venta #${v.numero}</b> · ${money(v.total)}<br><small>${new Date(v.created_at).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"})} · ${esc(v.cliente_nombre||"Clientes varios")} · ${(v.venta_items||[]).length} producto${(v.venta_items||[]).length===1?"":"s"}</small></div><button class="btn sm" data-v="${v.id}" type="button">Simular factura</button></div>`).join(""):'<div class="nod">No hay ventas completadas.</div>'}</div>`;
- $("dash").onclick=e=>{const b=e.target.closest("[data-v]");if(b)simular(V.find(x=>x.id===b.dataset.v))}}
+ $("dash").onclick=e=>{const b=e.target.closest("[data-v]");if(b)simular(desdeVenta(V.find(x=>x.id===b.dataset.v)))}}
+const SELV="id,numero,total,subtotal,created_at,cliente_nombre,metodo_pago,venta_items(cantidad,precio_unit,precio_original,nombre,codigo,codigo_barras)";
 try{await cargar();pintar()}catch(e){$("dash").innerHTML='<div class="nod">No se pudieron cargar las ventas: '+esc(e.message||e)+'</div>'}
+/* Abierto desde el punto de venta (?v=venta) o desde Facturas (?f=factura) */
+try{const u=new URLSearchParams(location.search),vid=u.get("v"),fid=u.get("f");
+ if(vid){let v=V.find(x=>x.id===vid);if(!v){const r=await db.from("ventas").select(SELV).eq("id",vid).maybeSingle();v=r.data}if(v)simular(desdeVenta(v));else toast("No se encontró la venta")}
+ else if(fid){const r=await db.from("facturas").select("*,factura_items(*)").eq("id",fid).maybeSingle();if(r.data)simular(desdeFactura(r.data));else toast("No se encontró la factura")}}catch(e){}
 })();
