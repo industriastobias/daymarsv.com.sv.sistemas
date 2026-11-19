@@ -315,3 +315,10 @@ dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
  html[data-tab]:not([data-tab=inv]) .hact .more,html[data-h] .hact .more{width:46px}
  html[data-tab]:not([data-tab=inv]) .hact .more .btn.icb,html[data-h] .hact .more .btn.icb{width:46px;height:46px}
 }
+/* Facturas (celular): las cuatro opciones en una sola fila, cada una en su casilla y del mismo ancho */
+@media(max-width:799px){
+ #fcCtl{display:flex!important;flex-wrap:nowrap;gap:6px}
+ #fcCtl .grow{display:none}
+ #fcCtl .btn{flex:1 1 0;min-width:0;min-height:48px;padding:6px 4px;font-size:12px;line-height:1.15;white-space:normal;order:0;grid-column:auto}
+ #fcCtl #fcSel{order:1}#fcCtl #fcCfg{order:2}#fcCtl #fcDte{order:3}#fcCtl #fcNew{order:4}
+}
