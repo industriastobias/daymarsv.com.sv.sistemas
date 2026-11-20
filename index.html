@@ -27,7 +27,7 @@
 </form>
 <div class="lx-ft">© DAYMARSV · Acceso solo para usuarios autorizados</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="js/app.js?v=202611201455"></script>
+<script src="js/app.js?v=202611201505"></script>
 <script>
 (async()=>{const {db}=DAY,$=i=>document.getElementById(i);
 if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
@@ -41,9 +41,11 @@ if(REC){$("lf").classList.add("hidden");$("rf").classList.remove("hidden");$("le
 $("fg").onclick=async()=>{const email=$("u").value.trim();$("le").style.color="";
  if(!email){$("le").textContent="Escribe tu correo arriba y vuelve a pulsar «¿Olvidaste tu contraseña?».";$("u").focus();return}
  $("fg").disabled=true;
+ const cta=await db.rpc("correo_tiene_cuenta",{p_email:email}).then(r=>r,()=>({error:1}));
+ if(!cta.error&&cta.data===false){$("fg").disabled=false;$("le").textContent="Ese correo no tiene cuenta en el sistema. Solo pueden entrar usuarios autorizados por el administrador.";return}
  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});$("fg").disabled=false;
  if(error&&/rate|seconds|limit/i.test(error.message)){$("le").textContent="Espera unos minutos antes de pedir otro enlace.";return}
- $("le").style.color="var(--ok)";$("le").textContent="Si ese correo tiene cuenta, te enviamos un enlace para crear una nueva contraseña. Revisa también el spam."};
+ $("le").style.color="var(--ok)";$("le").textContent=cta.error?"Si ese correo tiene cuenta, te enviamos un enlace para crear una nueva contraseña. Revisa también el spam.":"Te enviamos un enlace a ese correo para crear una nueva contraseña. Revisa también el spam."};
 $("rf").onsubmit=async e=>{e.preventDefault();const a=$("n1").value,b=$("n2").value;$("re").textContent="";
  if(a.length<8){$("re").textContent="La contraseña debe tener al menos 8 caracteres.";return}
  if(a!==b){$("re").textContent="Las contraseñas no coinciden.";return}
