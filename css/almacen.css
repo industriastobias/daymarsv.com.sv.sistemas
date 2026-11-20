@@ -243,7 +243,11 @@ a.rsv:hover{text-decoration:underline}
 .btn.tgt.shop-on{color:var(--ok)}.btn.tgt.shop-on::before{background:var(--ok)}
 .pc .pb .ac{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pc .pb .ac .btn{min-width:0;min-height:40px;word-break:normal;overflow-wrap:normal;white-space:nowrap;padding:8px 6px;border-radius:10px;font-size:14px}
-.pc .pb .ac [data-a="sell"],.pc .pb .ac .tgt{grid-column:1/-1}
+/* 2 arriba (Vender · En tienda) y 2 abajo (Precio · Stock) */
+.pc .pb .ac{container-type:inline-size}.pc .pb .ac [data-a="sell"]{order:1}.pc .pb .ac .tgt{order:2;padding:8px 3px;gap:5px;font-size:13px;overflow:hidden}.pc .pb .ac [data-a="price"]{order:3}.pc .pb .ac [data-a="stock"]{order:4}
+.pc .pb .ac [data-a="sell"]:only-child{grid-column:1/-1}
+@container (max-width:190px){.pc .pb .ac .tgt{font-size:12px;gap:4px}.pc .pb .ac .tgt::before{width:6px;height:6px}}
+@container (max-width:150px){.pc .pb .ac .tgt::before{display:none}.pc .pb .ac .btn{font-size:13px}}
 .po .sgb{margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:12px}
 .po .sgc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .po .sgc span{grid-column:1/-1;font-size:12px;color:var(--mute)}
