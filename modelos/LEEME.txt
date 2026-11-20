@@ -1,0 +1,9 @@
+Modelo para quitar el fondo de las fotos (js/fondo.js)
+
+- Archivo: u2netp.onnx (4.6 MB)
+- Modelo: U-2-Netp, proyecto original https://github.com/xuebinqin/U-2-Net
+- Licencia: Apache License 2.0 (texto en LICENCIA-Apache-2.0.txt)
+- Descargado de: https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx
+- SHA-256: 309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8
+
+Corre en el navegador con ONNX Runtime Web (licencia MIT). No envía las fotos a ningún servidor.
