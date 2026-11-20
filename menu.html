@@ -19,25 +19,15 @@
 .tile .nbd{top:5px!important;right:5px!important;min-width:18px;height:18px;font-size:10.5px;line-height:18px}
 .tile.off{opacity:.55}.tile.off:after{content:"Pronto";position:absolute;top:6px;right:8px;font-size:10px;color:var(--mute)}
 .tile:active{background:var(--chip)}
-/* Computadora: cada grupo en su propio panel, con filas completas (sin cuadros sueltos) */
-@media(min-width:800px){
- main{max-width:1480px;margin:0}
- .kp{grid-template-columns:repeat(4,minmax(0,1fr));max-width:none}
- #mods{display:grid;gap:16px}
- .grp{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
- .grp .gt{margin:0 0 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
- .tiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
- .tile{flex-direction:row;justify-content:flex-start;gap:12px;min-height:62px;padding:12px 14px;font-size:14px;text-align:left;background:var(--bg);border-color:transparent;transition:border-color .15s,background .15s,transform .15s}
- .tile .ic{width:38px;height:38px;flex:none;box-sizing:border-box;padding:9px;border-radius:11px;background:var(--card);box-shadow:0 0 0 1px var(--line)}
+/* Computadora: cuadritos pequeños, 9 por fila cuando hay espacio (cada grupo en una sola fila, todo visible sin bajar) */
+#mods{container-type:inline-size}
+@media(min-width:800px){main{max-width:1480px;margin:0}.kp{grid-template-columns:repeat(4,minmax(0,1fr))}.gt{margin:20px 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+ .tile{transition:border-color .15s,transform .15s,box-shadow .15s}.tile:hover{border-color:var(--wine);transform:translateY(-2px);box-shadow:0 8px 18px -10px #6B2D3E66}}
+@container (min-width:880px){
+ .tiles{grid-template-columns:repeat(9,minmax(0,1fr));gap:10px}
+ .tile{min-height:96px;padding:12px 6px;gap:8px;font-size:13px}
+ .tile .ic{width:26px;height:26px}
  .tile span{overflow-wrap:normal;word-break:normal;hyphens:none}
- .tile:hover{border-color:var(--wine);background:var(--card);transform:translateY(-1px)}
- .tile .nbd{top:6px!important;right:6px!important}
-}
-@media(min-width:1400px){
- #mods{grid-template-columns:1fr 1fr minmax(240px,.5fr);align-items:stretch}
- .grp .tile{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;min-height:104px;padding:14px 8px}
- .grp[data-n="3"] .tiles,.grp[data-n="2"] .tiles,.grp[data-n="1"] .tiles{grid-template-columns:1fr}
- .grp[data-n="3"] .tile,.grp[data-n="2"] .tile,.grp[data-n="1"] .tile{flex-direction:row;justify-content:flex-start;text-align:left;min-height:62px;padding:12px 14px}
 }
 @media(min-width:800px){.top h1{font-size:30px}}
 </style><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=4"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
