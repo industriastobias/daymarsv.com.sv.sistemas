@@ -4,7 +4,7 @@ self.addEventListener("activate",e=>e.waitUntil(Promise.all([self.clients.claim(
 /* Caché solo de archivos con versión (?v=…) y librerías fijas: la URL cambia cuando el archivo cambia, así que nunca se ve código viejo. Las páginas y los datos siempre van a la red. */
 const CACHE="dms-estaticos-1";
 self.addEventListener("fetch",e=>{const r=e.request;if(r.method!=="GET")return;let u;try{u=new URL(r.url)}catch(x){return}
- const fijo=/(^|\.)(cdn\.jsdelivr\.net|fonts\.gstatic\.com|fonts\.googleapis\.com)$/.test(u.hostname),ver=u.origin===self.location.origin&&u.searchParams.has("v")&&/\.(js|css|png|webmanifest)$/.test(u.pathname);
+ const fijo=/(^|\.)(cdn\.jsdelivr\.net|fonts\.gstatic\.com|fonts\.googleapis\.com)$/.test(u.hostname),ver=u.origin===self.location.origin&&u.searchParams.has("v")&&/\.(js|css|png|webmanifest|onnx)$/.test(u.pathname);
  if(!fijo&&!ver)return;
  e.respondWith(caches.open(CACHE).then(c=>c.match(r).then(h=>h||fetch(r).then(n=>{if(n&&(n.ok||n.type==="opaque"))c.put(r,n.clone()).catch(()=>{});return n}))))});
 

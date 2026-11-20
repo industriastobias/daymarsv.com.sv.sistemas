@@ -22,7 +22,7 @@ async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:Mat
 async function fetchAll(mk){const out=[];for(let f=0;;f+=1000){const r=await mk().range(f,f+999);if(r.error){toast(r.error.message);throw r.error}out.push(...r.data);if(r.data.length<1000)break}return out}
 function openDlg(id){const d=$(id);if(!d.open)d.showModal()}
 document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>$(b.dataset.x).close());
-["dgTrash","dgStock0","dgDet","dgKeys"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))$(id).close()}));
+["dgTrash","dgStock0","dgDet","dgKeys","dgFondo"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))$(id).close()}));
 
 /* ---------- carga de datos ---------- */
 async function load(){
@@ -122,10 +122,32 @@ async function comprimir(file,max,q){return recomprimir(await abrirImg(file),max
 /* una sola foto por imagen (1000 px): sirve para las tarjetas y para verla en grande */
 const par=async f=>{const o=await abrirImg(f);const m=await recomprimir(o,1000,.82);if(o.src.close)o.src.close();return {main:m,thumb:m}};
 function renderPrevs(){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=galeria.map(g=>g.db?(g.thumb_url||g.url):URL.createObjectURL(g.thumb));
- $("prevs").innerHTML=galeria.map((g,i)=>`<figure class="pv${i===0?" first":""}"><img src="${prevUrls[i]}" alt="Imagen ${i+1}">${i===0?'<span class="pvp">Principal</span>':`<button type="button" class="pvs" data-g="${i}" data-k="p" title="Hacer principal" aria-label="Hacer principal">★</button>`}<button type="button" class="pvx" data-g="${i}" data-k="x" title="Quitar esta imagen" aria-label="Quitar esta imagen">×</button></figure>`).join("")}
+ $("prevs").innerHTML=galeria.map((g,i)=>`<figure class="pv${i===0?" first":""}"><img src="${prevUrls[i]}" alt="Imagen ${i+1}">${i===0?'<span class="pvp">Principal</span>':`<button type="button" class="pvs" data-g="${i}" data-k="p" title="Hacer principal" aria-label="Hacer principal">★</button>`}<button type="button" class="pvx" data-g="${i}" data-k="x" title="Quitar esta imagen" aria-label="Quitar esta imagen">×</button><button type="button" class="pvf" data-g="${i}" data-k="f" title="Quitar fondo" aria-label="Quitar fondo">✨</button></figure>`).join("")}
 $("prevs").addEventListener("click",e=>{const b=e.target.closest("button[data-g]");if(!b)return;const i=+b.dataset.g;
+ if(b.dataset.k==="f"){quitarFondo(i);return}
  if(b.dataset.k==="x"){const [g]=galeria.splice(i,1);if(g&&g.db)galQuitar.push(g)}else{const [g]=galeria.splice(i,1);galeria.unshift(g)}
  galSucia=true;renderPrevs()});
+/* ✨ Quitar fondo de una foto (js/fondo.js: corre en el dispositivo, gratis). La foto nueva reemplaza a la anterior al guardar el producto. */
+let fdIdx=-1,fdRec=null,fdBlob=null,fdUrlA=null,fdUrlB=null,fdSel="rosado";try{fdSel=localStorage.getItem("dms_fondo")||"rosado"}catch(e){}
+const cargarFondo=()=>window.FONDO?Promise.resolve():new Promise((ok,ko)=>{const s=document.createElement("script");s.src="js/fondo.js?v=202611201730";s.onload=ok;s.onerror=()=>ko(new Error("Revisa tu internet."));document.head.appendChild(s)});
+const fdCarga=(on,t)=>{$("fdL").classList.toggle("on",on);if(t)$("fdT").textContent=t};
+function fdPintar(){$("fdC").innerHTML=(window.FONDO?FONDO.FONDOS:[]).map(f=>`<button type="button" class="fdc${f.k===fdSel?" on":""}" data-k="${f.k}" title="${f.n}" aria-label="${f.n}" style="background:${f.c2?`linear-gradient(${f.c},${f.c2})`:f.c}"></button>`).join("")}
+async function fdComponer(){const f=FONDO.FONDOS.find(x=>x.k===fdSel)||FONDO.FONDOS[0];
+ fdBlob=await FONDO.aBlob(FONDO.componer(fdRec,{fondo:f.c,fondo2:f.c2||null,lado:1000}),"image/jpeg",.86);
+ if(fdUrlB)URL.revokeObjectURL(fdUrlB);fdUrlB=URL.createObjectURL(fdBlob);$("fdB").src=fdUrlB;fdCarga(false);$("fdOk").disabled=false}
+async function quitarFondo(i){const g=galeria[i];if(!g)return;fdIdx=i;fdRec=null;fdBlob=null;
+ if(fdUrlA)URL.revokeObjectURL(fdUrlA);fdUrlA=g.db?null:URL.createObjectURL(g.main);$("fdA").src=g.db?g.url:fdUrlA;$("fdB").removeAttribute("src");$("fdOk").disabled=true;
+ fdCarga(true,"Preparando…");openDlg("dgFondo");
+ try{await cargarFondo();fdPintar();
+  if(!FONDO.listo()){fdCarga(true,"Descargando la herramienta (solo la primera vez)…");await FONDO.preparar()}
+  fdCarga(true,"Quitando el fondo…");
+  let fuente=g.main;if(g.db){const r=await fetch(g.url,{cache:"no-store"});if(!r.ok)throw new Error("No se pudo abrir la foto");fuente=await r.blob()}
+  const rc=await FONDO.recortar(fuente);if(fdIdx!==i||!$("dgFondo").open)return;fdRec=rc;await fdComponer()}
+ catch(e){if($("dgFondo").open){$("dgFondo").close();DAY.say("No se pudo quitar el fondo. "+(e.message||""))}}}
+$("fdC").addEventListener("click",async e=>{const b=e.target.closest(".fdc");if(!b)return;fdSel=b.dataset.k;try{localStorage.setItem("dms_fondo",fdSel)}catch(x){}fdPintar();if(fdRec){$("fdOk").disabled=true;await fdComponer()}});
+$("fdOk").onclick=()=>{if(!fdBlob||!galeria[fdIdx])return;const g=galeria[fdIdx];if(g.db)galQuitar.push(g);
+ galeria[fdIdx]={db:false,main:fdBlob,thumb:fdBlob};galSucia=true;renderPrevs();$("dgFondo").close();toast("Listo. Guarda el producto para que se aplique.")};
+$("dgFondo").addEventListener("close",()=>{fdIdx=-1;fdRec=null});
 async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.type&&f.type.startsWith("image/"));if(!fs.length)return false;
  busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));n.forEach(x=>galeria.push({db:false,main:x.main,thumb:x.thumb}));galSucia=true;renderPrevs()}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
 $("upArea").onclick=e=>{if(e.target.id!=="imageFile")$("imageFile").click()};

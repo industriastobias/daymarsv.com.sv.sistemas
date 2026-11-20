@@ -46,6 +46,7 @@ Léelo completo antes de cambiar algo. Última actualización: 20 de noviembre d
 - **Facturas**: formato Carta/A4 parecido al de Hacienda, botón Eliminar (solo principal), aviso de anulación por correo (también cuando se anula sin devolver stock).
 - **Equipo y tareas** con número en el menú; centro de avisos (campana) y búsqueda global (lupa); notificaciones push.
 - **Búsqueda por foto** (`js/fotobusq.js`, MobileNet en el navegador): funciona pero no es muy precisa.
+- **Quitar fondo** (`js/fondo.js` + `modelos/u2netp.onnx`, gratis, corre en el dispositivo): botón ✨ en cada foto de la galería de Compra (Nuevo/Editar producto). Muestra antes/después, fondos blanco/rosado/vino suave/crema y reemplaza la foto al guardar el producto. El dueño eligió esta opción (A: botón en cada foto). Funciona bien con fotos de solo el producto; con personas deja parte de la persona.
 
 ## 7. Pendiente / ideas ofrecidas
 - **Factura electrónica real**: el dueño se está inscribiendo en Hacienda. Faltan sus datos: NIT, NRC, nombre legal y comercial, actividad económica (código y descripción), dirección, teléfono, correo, códigos de establecimiento y punto de venta. La contraseña y la firma las pone él como secretos, nunca por chat.

@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMARSV – Compra</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="css/estilo.css?v=202611201540">
-<link rel="stylesheet" href="css/compra.css?v=202611191620"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=4"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<link rel="stylesheet" href="css/compra.css?v=202611201730"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=4"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
 <div class="shell hidden" id="app">
 <aside class="side" id="side" aria-label="Navegación principal"></aside>
 <main class="wide">
@@ -98,6 +98,17 @@
  <div class="db"><div class="lg" id="editLoteGrid"></div></div>
 </dialog>
 
+<!-- Quitar fondo de una foto -->
+<dialog id="dgFondo" class="dfondo">
+ <div class="dh"><h2>✨ Quitar fondo</h2><button class="x" data-x="dgFondo" aria-label="Cerrar">×</button></div>
+ <div class="db">
+  <div class="fba"><figure><img id="fdA" alt="Antes"><figcaption>Antes</figcaption></figure><figure><div class="fdw"><img id="fdB" alt="Después"><div class="fdl" id="fdL"><span class="fdsp"></span><span id="fdT">Preparando…</span></div></div><figcaption>Después</figcaption></figure></div>
+  <div class="ffd"><span>Fondo:</span><span id="fdC"></span></div>
+  <p class="fnota">Queda mejor con fotos donde sale solo el producto.</p>
+ </div>
+ <div class="df"><button class="btn g" data-x="dgFondo" type="button">Cancelar</button><button class="btn" id="fdOk" type="button" disabled>Usar esta foto</button></div>
+</dialog>
+
 <!-- Papelera -->
 <dialog id="dgTrash">
  <div class="dh"><h2>Papelera <span class="badge" id="trashCount">0</span></h2><button class="x" data-x="dgTrash" aria-label="Cerrar">×</button></div>
@@ -138,6 +149,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<script src="js/app.js?v=202611201610"></script>
-<script src="js/compra.js?v=202611201610"></script>
+<script src="js/app.js?v=202611201730"></script>
+<script src="js/compra.js?v=202611201730"></script>
 </body></html>
