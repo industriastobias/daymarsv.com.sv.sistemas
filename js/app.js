@@ -1,6 +1,6 @@
 /* DAYMAR-SHOP · funciones compartidas (conexión, sesión y utilidades) */
 (function(){
-try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611201510";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
+try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611201525";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 /* Ninguna consulta puede quedarse colgada para siempre: a los 30 s se corta y la pantalla vuelve a responder (las subidas de archivos quedan fuera) */
 /* Las peticiones de inicio de sesión (/auth/) tampoco se cortan: si se corta una renovación a medias, Supabase invalida la sesión y hay que volver a entrar */

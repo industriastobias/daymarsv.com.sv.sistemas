@@ -14,18 +14,16 @@ body{margin:0;background:#f6e3e8}
 @keyframes fl{0%,100%{transform:translateY(0) rotate(var(--r))}50%{transform:translateY(-12px) rotate(calc(var(--r) + 6deg))}}
 
 /* marca */
-.hero{text-align:center;margin-bottom:44px;animation:ap .7s ease both}
+.hero{text-align:center;margin-bottom:28px;animation:ap .7s ease both}
 .logo{margin:0;font:700 clamp(32px,9.5vw,46px)/1 "Playfair Display",Georgia,serif;letter-spacing:.06em;padding-left:.06em;color:var(--wine)}
 .logo em{font-style:normal;color:var(--gold)}
 .lc-sl{margin-top:8px;font-size:11px;letter-spacing:.35em;padding-left:.35em;text-transform:uppercase;color:var(--rose)}
 @keyframes ap{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 
 /* tarjeta */
-.lc{position:relative;width:100%;max-width:370px;box-sizing:border-box;background:var(--card);border-radius:28px;padding:34px 22px 18px;text-align:center;
+.lc{position:relative;width:100%;max-width:370px;box-sizing:border-box;background:var(--card);border-radius:28px;padding:28px 22px 18px;text-align:center;
  box-shadow:0 24px 50px -18px #9b3a5866,0 2px 6px #9b3a5814;animation:ap .7s .12s ease both}
-.bdg{position:absolute;top:-24px;left:50%;transform:translateX(-50%);width:48px;height:48px;border-radius:50%;display:grid;place-items:center;
- background:#6B2D3E;color:#f1d08a;font:700 22px "Playfair Display",Georgia,serif;box-shadow:0 0 0 6px var(--card),0 8px 18px -6px #6B2D3E99}
-.lc h2{margin:6px 0 0;font:700 25px/1.2 "Playfair Display",Georgia,serif;color:var(--ink)}
+.lc h2{margin:0;font:700 25px/1.2 "Playfair Display",Georgia,serif;color:var(--ink)}
 .lc .sub{margin:4px 0 20px;color:var(--mute);font-size:14px}
 .fld{position:relative;margin-bottom:12px;text-align:left}
 .rs .fld input{display:block;width:100%;box-sizing:border-box;min-height:58px;margin:0;padding:24px 16px 8px;border:1.5px solid transparent;border-radius:16px;background:var(--field);color:var(--ink);font:inherit;font-size:17px;transition:border-color .2s,background .2s,box-shadow .2s}
@@ -46,6 +44,28 @@ body{margin:0;background:#f6e3e8}
 @media(prefers-color-scheme:dark){.lx-ft{background:#ffffff0f}}
 
 @media(max-height:680px){.rs{justify-content:flex-start}.hero{margin-bottom:36px}.f6,.f7{display:none}}
-@media(min-width:900px){.f{opacity:.28}.f0{width:70px}.f2{width:90px}.f3{width:96px}.f4{width:72px}.f8,.f9{width:44px}.lc{max-width:400px;padding:38px 30px 22px}}
+/* contenedor: en celular solo ordena; en computadora es una tarjeta grande de dos lados */
+.box{width:100%;max-width:370px;display:flex;flex-direction:column;align-items:center}
+.pane{width:100%}.col{width:100%;display:flex;justify-content:center}
+.pi,.pq{display:none}
+@media(min-width:900px){
+ .f{opacity:.28}.f0{width:70px}.f2{width:90px}.f3{width:96px}.f4{width:72px}.f8,.f9{width:44px}
+ .box{max-width:980px;display:grid;grid-template-columns:1.05fr 1fr;align-items:stretch;min-height:560px;background:var(--card);border-radius:34px;overflow:hidden;
+  box-shadow:0 40px 80px -30px #9b3a5880,0 2px 8px #9b3a5814;animation:ap .7s ease both}
+ .pane{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;text-align:center;
+  background:radial-gradient(120% 90% at 30% 10%,#8f4559 0%,#6B2D3E 50%,#4a1d2a 100%)}
+ .pane:after{content:"";position:absolute;inset:18px;border:1px solid #e2b45a40;border-radius:24px;pointer-events:none}
+ .pane .hero{margin:0;animation:none}
+ .pane .logo{color:#fbf1ee;font-size:54px}.pane .logo em{color:#e2b45a}
+ .pane .lc-sl{color:#ecd2d9}
+ .pq{display:block;position:relative;margin:26px 0 0;font:italic 600 19px "Playfair Display",Georgia,serif;color:#f1d08a}
+ .pq:before,.pq:after{content:"";display:inline-block;vertical-align:middle;width:26px;height:1px;margin:0 12px;background:#e2b45a99}
+ .pi{display:block;position:absolute;color:#e2b45a;opacity:.38;animation:fl 9s ease-in-out infinite}.pi svg{display:block;width:100%;height:100%}
+ .p0{left:12%;top:14%;width:54px;--r:-12deg}.p1{right:14%;top:12%;width:44px;--r:14deg;animation-delay:-3s}.p2{left:10%;bottom:16%;width:58px;--r:8deg;animation-delay:-5s}
+ .p3{right:12%;bottom:14%;width:52px;--r:-16deg;animation-delay:-2s}.p4{left:44%;top:7%;width:40px;--r:0deg;animation-delay:-6s}.p5{left:46%;bottom:7%;width:42px;--r:10deg;animation-delay:-4s}
+ .col{align-items:center;padding:48px 52px}
+ .lc{max-width:380px;padding:0;background:none;box-shadow:none;animation:none}
+ .lc h2{font-size:30px}
+}
 @media(prefers-reduced-motion:reduce){.f,.hero,.lc{animation:none}}
 dialog.big{height:92vh;height:92dvh;max-height:92dvh}
