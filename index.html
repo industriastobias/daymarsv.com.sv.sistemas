@@ -26,13 +26,13 @@
 </form>
 <div class="lx-ft">© DAYMARSV · Acceso solo para usuarios autorizados</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
-<script src="js/app.js?v=202611191800"></script>
+<script src="js/app.js?v=202611201430"></script>
 <script>
 (async()=>{const {db}=DAY,$=i=>document.getElementById(i);
 if(location.search.indexOf("e=perfil")>-1)$("le").textContent="No se encontró tu perfil o tu usuario está desactivado. Habla con el administrador.";
 else if(location.search.indexOf("e=cerrada")>-1){$("le").style.color="#ecd2d9";$("le").textContent="El administrador cerró tu sesión. Inicia sesión de nuevo."}
 else if(/type=recovery/.test(location.hash)||/[?&]recuperar=1/.test(location.search)){}
-else{const {data}=await db.auth.getSession();if(data.session)location.replace("menu.html")}
+else{const s=await DAY.sesionActual();if(s&&s!=="red")location.replace("menu.html");else if(s==="red"){$("le").style.color="#ecd2d9";$("le").innerHTML='Sin conexión: tu sesión sigue abierta. <a href="menu.html" style="color:#DDB76B;font-weight:700">Reintentar</a>'}}
 
 const REC=/type=recovery/.test(location.hash);
 if(/error_code=otp_expired|error=access_denied/.test(location.hash)){$("le").textContent="El enlace venció o ya se usó. Pide otro con «¿Olvidaste tu contraseña?»."}

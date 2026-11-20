@@ -1,9 +1,10 @@
 /* DAYMAR-SHOP · funciones compartidas (conexión, sesión y utilidades) */
 (function(){
-try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611191800";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
+try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611201430";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 /* Ninguna consulta puede quedarse colgada para siempre: a los 30 s se corta y la pantalla vuelve a responder (las subidas de archivos quedan fuera) */
-const fetchLimite=(u,o)=>{const url=String(u&&u.url||u);if(/\/storage\/v1\//.test(url))return fetch(u,o);
+/* Las peticiones de inicio de sesión (/auth/) tampoco se cortan: si se corta una renovación a medias, Supabase invalida la sesión y hay que volver a entrar */
+const fetchLimite=(u,o)=>{const url=String(u&&u.url||u);if(/\/(storage|auth)\/v1\//.test(url))return fetch(u,o);
  const c=new AbortController(),t=setTimeout(()=>c.abort(),30000);if(o&&o.signal){if(o.signal.aborted)c.abort();else o.signal.addEventListener("abort",()=>c.abort())}
  return fetch(u,{...(o||{}),signal:c.signal}).finally(()=>clearTimeout(t))};
 const db=supabase.createClient(CFG.url,CFG.key,{global:{fetch:fetchLimite}});
@@ -358,11 +359,21 @@ async function logout(){await db.auth.signOut();location.replace("index.html")}
 /* La sesión no vence sola: dura hasta que la persona cierre sesión o el administrador principal la cierre (profiles.sesion_desde) */
 const sesionCerrada=(perfil,ses)=>{const f=Date.parse(perfil&&perfil.sesion_desde||""),t=Date.parse(ses&&ses.user&&ses.user.last_sign_in_at||"");return isFinite(f)&&isFinite(t)&&f>t};
 async function cerrarPorAdmin(){try{await db.auth.signOut()}catch(e){}location.replace("index.html?e=cerrada")}
+/* Si el teléfono acaba de despertar o la señal está floja, la renovación de la sesión puede fallar un momento.
+   Mientras la sesión siga guardada en el dispositivo, se reintenta en vez de mandar al inicio de sesión. */
+const LS_SES="sb-"+CFG.url.split("//")[1].split(".")[0]+"-auth-token";
+const sesGuardada=()=>{try{return !!localStorage.getItem(LS_SES)}catch(e){return false}};
+const espera=ms=>new Promise(r=>setTimeout(r,ms));
+async function sesionActual(){for(let i=0;i<4;i++){let s=null;try{s=(await db.auth.getSession()).data.session}catch(e){}if(s)return s;if(!sesGuardada())return null;if(i<3)await espera(1000*(i+1))}return sesGuardada()?"red":null}
+function sinConexion(){document.body.innerHTML='<div style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:DM Sans,system-ui,sans-serif;text-align:center;background:var(--bg,#f6f1f2);color:var(--ink,#2a1a1f)"><div><h2 style="margin:0 0 8px">Sin conexión</h2><p style="margin:0 0 18px;color:#7a6a6f">No se pudo conectar con el sistema. Tu sesión sigue abierta: revisa tu internet y vuelve a intentar.</p><button class="btn" style="padding:12px 22px;border-radius:999px;border:0;background:#6B2D3E;color:#fff;font:inherit;font-weight:700" onclick="location.reload()">Reintentar</button></div></div>'}
 async function requireSession(){
- const {data}=await db.auth.getSession();
- if(!data.session){location.replace("index.html");return null}
- const r=await db.from("profiles").select("*").eq("id",data.session.user.id).single();
- if(r.error||!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
+ const ses=await sesionActual();
+ if(ses==="red"){sinConexion();return null}
+ if(!ses){location.replace("index.html");return null}
+ const data={session:ses};
+ let r;for(let i=0;i<3;i++){r=await db.from("profiles").select("*").eq("id",ses.user.id).single();if(!r.error||r.error.code==="PGRST116")break;await espera(1500*(i+1))}
+ if(r.error&&r.error.code!=="PGRST116"){sinConexion();return null}
+ if(!r.data||!r.data.activo){await db.auth.signOut();location.replace("index.html?e=perfil");return null}
  if(sesionCerrada(r.data,data.session)){await cerrarPorAdmin();return null}
  {const mk=moduloDePagina();if(mk&&ocultoPara(mk,r.data)){location.replace("menu.html");return null}}
  const vigilar=async()=>{try{const {data:d}=await db.auth.getSession();if(!d.session)return;const p=await db.from("profiles").select("activo,sesion_desde").eq("id",d.session.user.id).single();if(p.data&&(!p.data.activo||sesionCerrada(p.data,d.session)))cerrarPorAdmin()}catch(e){}};
@@ -433,7 +444,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 let _csv=null;
 async function catsSinValor(f){if(_csv&&!f)return _csv;let n=[];try{const {data}=await db.from("config_negocio").select("cats_sin_valor").eq("id",1).maybeSingle();n=(data&&data.cats_sin_valor)||[]}catch(e){}_csv=new Set(n.map(x=>String(x).trim().toLowerCase()));return _csv}
 {const s=document.createElement("script");s.src="js/busqueda.js?v=202611191610";s.defer=true;setTimeout(()=>document.head.appendChild(s),0);const s2=document.createElement("script");s2.src="js/avisos.js?v=202611191610";s2.defer=true;setTimeout(()=>document.head.appendChild(s2),0)}
-window.DAY={catsSinValor,fotosAlm,refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
+window.DAY={catsSinValor,fotosAlm,refrescarBadges,selectBonito,h2c,grande,colorDot,colorHex,kiosco,db,esc,$$,ymd,toast,toggleTheme,ICON,GRUPOS,svg,visibles,enlace,mountSide,logout,requireSession,sesionActual,abrirConfig,ask,say,input,salir,avatarHTML,aplicarPrefs,PREF,me:null,email:""};
 if(PREF("dms_kiosco")==="1")kiosco(true,true);
 })();
 try{if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}catch(e){}
