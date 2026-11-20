@@ -47,11 +47,11 @@ const me=await requireSession();if(!me)return;
 $("app").classList.remove("hidden");
 const hr=new Date().getHours(),saludo=()=>{$("gr").textContent=(hr<12?"Buenos días":hr<19?"Buenas tardes":"Buenas noches")+", "+DAY.me.nombre;$("av").innerHTML=DAY.me.avatar?`<img src="${esc(DAY.me.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:esc((DAY.me.nombre||"?").charAt(0).toUpperCase())};saludo();addEventListener("day:perfil",saludo);
 $("dt").textContent=new Date().toLocaleDateString(localStorage.getItem("dms_lang")==="en"?"en-US":"es-SV",{weekday:"long",day:"numeric",month:"long"});
-$("mods").innerHTML=GRUPOS.filter(g=>visibles(g,me.rol).length).map(g=>`<section class="grp" data-n="${visibles(g,me.rol).length}"><div class="gt">${g.t}</div><div class="tiles">${visibles(g,me.rol).map(x=>enlace(x,"tile")).join("")}</div></section>`).join("");DAY.refrescarBadges();
+$("mods").innerHTML=GRUPOS.filter(g=>visibles(g,me.rol).length).map(g=>`<section class="grp"><div class="gt">${g.t}</div><div class="tiles">${visibles(g,me.rol).map(x=>enlace(x,"tile")).join("")}</div></section>`).join("");DAY.refrescarBadges();
 mountSide($("side"),"menu",me.rol);
 const unaVez=(k,firma)=>{const h=ymd(new Date());try{const v=localStorage.getItem(k)||"";if(v===h+"|"+firma)return false;localStorage.setItem(k,h+"|"+firma)}catch(e){}return true};
 
-document.addEventListener("click",e=>{const a=e.target.closest("#mods [data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
+document.addEventListener("click",e=>{const a=e.target.closest("#mods a[data-n]");if(a){e.preventDefault();toast(a.dataset.n+" se conectará a la base de datos pronto.")}});
 $("av").onclick=DAY.abrirConfig;
 if(me.rol==="admin")(async()=>{try{const d=new Date(Date.now()-7*864e5).toISOString();let {data}=await db.from("accesos").select("nombre,dispositivo,navegador,created_at").eq("nuevo",true).eq("exito",true).gte("created_at",d);
  let visto="";try{visto=localStorage.getItem("dms_acc_visto")||""}catch(x){}
