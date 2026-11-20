@@ -52,6 +52,18 @@ Léelo completo antes de cambiar algo. Última actualización: 20 de noviembre d
 - Búsqueda por foto más precisa (modelo más pesado tipo CLIP), si el dueño lo quiere.
 - Etiquetas: cantidades por producto, formato para impresora térmica.
 
-## 8. Notas técnicas útiles
+## 8. Servicios conectados y cómo conectarse (sin claves aquí)
+Las claves **nunca** van en el chat, en este archivo ni en el código. Cada servicio las guarda en su propio lugar seguro; aquí solo se dice dónde.
+
+| Servicio | Para qué | Dónde están las claves | Cómo se conecta un agente |
+|---|---|---|---|
+| **GitHub** (`industriastobias`) | Código de los 2 repos, GitHub Pages, Actions | Secretos del repo: `SUPABASE_DB_URL` (migraciones y respaldo), `RESPALDO_CLAVE` (respaldo) | En claude.ai: conector de GitHub / añadir el repo a la sesión. En la computadora: `gh auth login` con la cuenta del dueño. |
+| **Supabase** | Base de datos, usuarios, correos automáticos, avisos | Contraseña de la base: solo en el secreto `SUPABASE_DB_URL` de GitHub. La clave pública `sb_publishable_…` está en `js/app.js` (es pública a propósito). | Los cambios de base se hacen con **migraciones** (`migraciones/NNN_*.sql`) y el Action las aplica. No hace falta acceso directo. |
+| **Cloudflare** (cuenta `daymarsv`) | Worker **daymar-push** (notificaciones push, `…/enviar`) y Worker **daymar-fotos** + bucket R2 **daymar-fotos** (fotos) | Variables del Worker en el panel de Cloudflare: push → `VAPID_PUBLICA`, `VAPID_PRIVADA`, `CONTACTO`, `AVISOS`, `PERMITIR_TODO`; fotos → `SUPABASE_URL`, `SUPABASE_KEY`, `ORIGENES` y el enlace R2 `FOTOS` | En claude.ai: **Configuración → Conectores → Cloudflare** (el dueño inicia sesión una vez). En la computadora: `npx wrangler login` con la cuenta del dueño. El código de los Workers está en `cloudflare/`. |
+| **Hacienda (DTE)** | Factura electrónica real (pendiente) | Usuario, contraseña y firma: el dueño los guardará como secretos del servidor | Aún no conectado. |
+
+Si un agente nuevo no tiene acceso a un servicio, debe pedirle al dueño que **conecte el conector** o inicie sesión él mismo, nunca pedirle la clave por chat.
+
+## 9. Notas técnicas útiles
 - Algunas herramientas bloquean comandos que leen `js/app.js` porque contiene un correo; usa lectura/edición directa del archivo.
 - Para probar sin tocar datos reales se usa un `window.supabase` falso (mock) en Playwright.
