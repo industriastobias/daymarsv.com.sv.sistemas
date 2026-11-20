@@ -73,7 +73,7 @@ input[type=checkbox]{width:auto;min-height:0}
  .side a.off{opacity:.55}
  .side .lo{margin-top:auto;border:1px solid var(--line);justify-content:center}.side .usr{margin-top:auto;padding-top:12px}.side .usr+.lo{margin-top:6px}
  .side .ub{border:1px solid var(--line);padding:8px 10px}.side .ub .un{display:flex;flex-direction:column;line-height:1.2;min-width:0}.side .ub .un b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.side .ub .un small{color:var(--mute);font-size:12px}
- .shell.nosd{grid-template-columns:1fr}.shell.nosd main{padding-left:76px}.shell.nosd .side{display:none}
+ .shell.nosd{grid-template-columns:1fr}.shell.nosd main{padding-left:32px}.shell.nosd main>:first-child{padding-left:58px;min-height:44px;box-sizing:border-box}.shell.nosd .side{display:none}
  #sdOpen{position:fixed;top:14px;left:14px;z-index:30;width:42px;height:42px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--wine);cursor:pointer}
  main{padding:28px 32px}
 }
