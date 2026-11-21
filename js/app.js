@@ -1,6 +1,6 @@
 /* DAYMAR-SHOP · funciones compartidas (conexión, sesión y utilidades) */
 (function(){
-try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611211900";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
+try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611212000";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 /* Ninguna consulta puede quedarse colgada para siempre: a los 30 s se corta y la pantalla vuelve a responder (las subidas de archivos quedan fuera) */
 /* Las peticiones de inicio de sesión (/auth/) tampoco se cortan: si se corta una renovación a medias, Supabase invalida la sesión y hay que volver a entrar */
@@ -171,6 +171,7 @@ shield:'<path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6z"/><path d="M
 pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 3.9 5.7 3.9 9s-1.3 6.3-3.9 9c-2.6-2.7-3.9-5.7-3.9-9S9.4 5.7 12 3z"/>',
  hourglass:'<path d="M6 3h12M6 21h12M7 3v3.5a5 5 0 002 4 5 5 0 01-2 4V21M17 3v3.5a5 5 0 01-2 4 5 5 0 012 4V21"/>',
+ preventa:'<path d="M12 3.5l2.4 5 5.4.7-4 3.8 1 5.4L12 15.8l-4.8 2.6 1-5.4-4-3.8 5.4-.7z"/>',
  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
  cart:'<circle cx="9" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/><path d="M2 3h3l2.7 12.4a1 1 0 001 .8h9.7a1 1 0 001-.8L21 7H6"/>',
  box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
@@ -190,9 +191,9 @@ pulse:'<path d="M3 12h4l3-8 4 16 3-8h4"/>',
  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
  sliders:'<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'};
 const GRUPOS=[
- {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"inbox",h:"pedidos.html",ok:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1},{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1}]},
+ {t:"Vender",m:[{k:"almacenamiento",n:"Punto de venta",i:"sale",h:"almacenamiento.html",ok:1},{k:"compra",n:"Compra",i:"cart",h:"compra.html",ok:1,adm:1},{k:"pendientes",n:"Pendientes",i:"hourglass",h:"pendientes.html",ok:1},{k:"pedidos",n:"Pedidos en línea",i:"inbox",h:"pedidos.html",ok:1},{k:"preventa",n:"Preventa",i:"preventa",h:"preventa.html",ok:1},{k:"ventas",n:"Historial de ventas",i:"clock",h:"ventas.html",ok:1},{k:"facturas",n:"Facturas",i:"receipt",h:"almacenamiento.html#fac",ok:1},{k:"clientes",n:"Clientes",i:"users",h:"clientes.html",ok:1},{k:"devoluciones",n:"Devoluciones",i:"undo",h:"devoluciones.html",ok:1,adm:1}]},
  {t:"Almacén",m:[{k:"inventario",n:"Inventario",i:"box",h:"reportes.html",ok:1},{k:"fotos",n:"Fotos",i:"image",h:"fotos.html",ok:1,adm:1},{k:"catalogo",n:"Catálogo",i:"book",h:"catalogo.html",ok:1},{k:"equipo",n:"Equipo y tareas",i:"tareas",h:"equipo.html",ok:1},{k:"dashboard",n:"Dashboard",i:"grafica",h:"dashboard.html",ok:1,adm:1},{k:"kardex",n:"Kardex",i:"kardex",h:"kardex.html",ok:1,adm:1},{k:"cotizacion",n:"Cotización",i:"quote",h:"cotizacion.html",ok:1,adm:1},{k:"correos",n:"Correos enviados",i:"mail",h:"correos.html",ok:1,adm:1},{k:"conteo",n:"Conteo físico",i:"stock",h:"conteo.html",ok:1,adm:1,pri:1}]},
- {t:"Negocio",m:[{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1},{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1}]}];
+ {t:"Negocio",m:[{k:"descuentos",n:"Descuentos",i:"tag",h:"descuentos.html",ok:1,adm:1},{k:"finanzas",n:"Finanzas",i:"bank",h:"finanzas.html",ok:1,adm:1},{k:"actividad",n:"Actividad",i:"pulse",h:"actividad.html",ok:1,adm:1},{k:"tienda",n:"Tienda en línea",i:"globe",h:"https://industriastobias.github.io/klohesvtiendaonline/",ok:1,ext:1}]}];
 const svg=k=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 /* Permisos por módulo: un vendedor no ve (ni abre) los módulos que el administrador principal le ocultó */
 const ocultoPara=(k,perfil)=>{const p=perfil||DAY.me;return !!(p&&p.rol!=="admin"&&Array.isArray(p.modulos_ocultos)&&p.modulos_ocultos.includes(k))};

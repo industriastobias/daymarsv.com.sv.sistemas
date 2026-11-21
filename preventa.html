@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es" translate="no"><head><meta charset="utf-8"><meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6B2D3E"><meta name="robots" content="noindex,nofollow"><title>DAYMARSV – Preventa</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/estilo.css?v=202611201540">
+<link rel="stylesheet" href="css/compra.css?v=202611211600">
+<link rel="stylesheet" href="css/almacen.css?v=202611211300">
+<link rel="stylesheet" href="css/paginas.css?v=202611021220">
+<link rel="stylesheet" href="css/preventa.css?v=202611212000"><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=4"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
+<div class="shell hidden" id="app">
+<aside class="side" id="side" aria-label="Navegación principal"></aside>
+<main class="wide">
+ <div class="head hfila">
+  <a class="back" href="menu.html">‹ Menú</a>
+  <div><h1>Preventa</h1><small>Próxima colección y apartados</small></div>
+  <div class="hact"><button class="btn hbtn" id="pvNew" type="button" title="Apartar"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Apartar</span></button></div>
+ </div>
+ <nav class="bnav" id="bnav" aria-label="Secciones"></nav>
+ <div class="kp pvk" id="pvK"></div>
+ <div class="seg2 seg1" id="pvSeg"><button data-t="pro" type="button">Productos</button><button data-t="apa" class="on" type="button">Apartados</button></div>
+ <section id="pvApa">
+  <div class="pvf" id="pvF"></div>
+  <input id="pvQ" type="search" placeholder="Buscar por cliente, teléfono o producto" autocomplete="off" style="margin:0 0 10px">
+  <div id="pvL"></div>
+ </section>
+ <section id="pvPro" class="hidden"><div id="pvP"></div></section>
+</main>
+</div>
+<div class="ov" id="ov"><div><span class="spin"></span><span id="ovT">Procesando…</span></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="js/app.js?v=202611212000"></script>
+<script src="js/comun.js?v=202611191620"></script>
+<script src="js/preventa.js?v=202611212000"></script>
+</body></html>
