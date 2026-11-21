@@ -22,7 +22,7 @@ async function pool(items,n,fn){let i=0;await Promise.all(Array.from({length:Mat
 async function fetchAll(mk){const out=[];for(let f=0;;f+=1000){const r=await mk().range(f,f+999);if(r.error){toast(r.error.message);throw r.error}out.push(...r.data);if(r.data.length<1000)break}return out}
 function openDlg(id){const d=$(id);if(!d.open)d.showModal()}
 document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>$(b.dataset.x).close());
-["dgTrash","dgStock0","dgDet","dgKeys","dgFondo"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))$(id).close()}));
+["dgTrash","dgStock0","dgDet","dgKeys","dgFondo","dgVF"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target===$(id))$(id).close()}));
 
 /* ---------- carga de datos ---------- */
 async function load(){
@@ -90,16 +90,32 @@ function lotStock(){const a=Math.max(0,Math.trunc(num($("lotQuantity").value))),
 $("lotQuantity").addEventListener("input",lotStock);$("unitsPerLot").addEventListener("input",lotStock);
 /* ---------- colores / variantes ---------- */
 let VARS=[],VARS_DB=[];
-function varRender(){const on=VARS.length>0;$("varPanel").classList.toggle("hidden",!on);$("varTog").classList.toggle("hidden",on);
- $("varRows").innerHTML=VARS.map((v,i)=>`<div class="vr" data-i="${i}"><span class="vn">${DAY.colorDot(v.nombre)}<input data-f="nombre" placeholder="Color (ej. Rosado)" maxlength="40" value="${esc(v.nombre||"")}"></span><input data-f="cantidad" type="number" min="0" step="1" inputmode="numeric" placeholder="Cant." value="${v.cantidad===""||v.cantidad==null?"":v.cantidad}"><input class="vb" data-f="codigo_barras" placeholder="Código de barras (automático si lo dejas vacío)" value="${esc(v.codigo_barras||"")}"><button type="button" class="btn g" data-x="${i}" aria-label="Quitar color">×</button></div>`).join("");
+function fotoSrc(v){if(v.fref){const i=galeria.indexOf(v.fref);if(i>=0)return prevUrls[i]||"";v.fref=null}return v.foto_url||""}
+function varRender(){const on=VARS.length>0;$("varPanel").classList.toggle("hidden",!on);$("varSw").checked=on;
+ $("varRows").innerHTML=VARS.map((v,i)=>{const src=fotoSrc(v);return `<div class="vr" data-i="${i}"><button type="button" class="vph${src?" on":""}" data-ph="${i}" aria-label="Foto del color" title="Foto del color">${src?`<img src="${esc(src)}" alt="">`:"Foto"}</button><span class="vn">${DAY.colorDot(v.nombre)}<input data-f="nombre" placeholder="Color (ej. Rosado)" maxlength="40" value="${esc(v.nombre||"")}"></span><input data-f="cantidad" type="number" min="0" step="1" inputmode="numeric" placeholder="Cant." value="${v.cantidad===""||v.cantidad==null?"":v.cantidad}"><input class="vb" data-f="codigo_barras" placeholder="Código de barras (automático si lo dejas vacío)" value="${esc(v.codigo_barras||"")}"><button type="button" class="btn g" data-x="${i}" aria-label="Quitar color">×</button></div>`}).join("");
  varSuma()}
 function varSuma(){if(!VARS.length){$("quantity").readOnly=esLote&&!edit;$("quantity").required=true;return}
  $("quantity").value=VARS.reduce((s,v)=>s+Math.max(0,Math.trunc(num(v.cantidad))),0);$("quantity").readOnly=true;$("quantity").required=false}
 function varSet(L){VARS=L.map(v=>({...v}));varRender()}
-$("varTog").onclick=()=>{VARS=[{nombre:"",cantidad:""},{nombre:"",cantidad:""}];varRender();$("varRows").querySelector("input").focus()};
+$("varSw").addEventListener("change",async()=>{if($("varSw").checked){if(!VARS.length){VARS=[{nombre:"",cantidad:""},{nombre:"",cantidad:""}];varRender();const f=$("varRows").querySelector("input[data-f=nombre]");if(f)f.focus()}return}
+ if(VARS.some(v=>String(v.nombre||"").trim()||String(v.cantidad||"").trim())&&!await DAY.ask("Se quitarán los colores de este producto. ¿Continuar?",{titulo:"Quitar colores",ok:"Quitar"})){$("varSw").checked=true;return}
+ VARS=[];varRender()});
+/* foto de cada color: se elige de las imágenes del producto */
+let vfIdx=-1;
+function vfAbrir(i){if(!galeria.length){toast("Primero sube las imágenes del producto");return}vfIdx=i;const v=VARS[i];
+ $("vfT").textContent="Foto del color"+(String(v.nombre||"").trim()?" «"+String(v.nombre).trim()+"»":"");
+ $("vfG").innerHTML=galeria.map((g,k)=>`<button type="button" data-k="${k}" class="${v.fref===g||(g.db&&v.foto_url&&(v.foto_url===g.url||v.foto_url===g.thumb_url))?"on":""}" aria-label="Imagen ${k+1}"><img src="${esc(prevUrls[k]||"")}" alt=""></button>`).join("");openDlg("dgVF")}
+$("vfG").addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b||!VARS[vfIdx])return;const g=galeria[+b.dataset.k];
+ VARS[vfIdx].fref=g;VARS[vfIdx].foto_url=g.db?(g.url||g.thumb_url||null):null;$("dgVF").close();varRender()});
+$("vfNo").onclick=()=>{if(VARS[vfIdx]){VARS[vfIdx].fref=null;VARS[vfIdx].foto_url=null}$("dgVF").close();varRender()};
+async function guardarFotosColores(id,vl){if(!vl.length)return;
+ const L=await ok(db.from("producto_variantes").select("id,nombre").eq("producto_id",id));
+ for(const v of vl){const r=L.find(x=>String(x.nombre).toLowerCase()===v.nombre.toLowerCase());if(!r)continue;
+  const u=v.fref?(v.fref.url||v.fref.thumb_url||null):(v.foto_url||null);
+  await ok(db.from("producto_variantes").update({foto_url:u}).eq("id",r.id))}}
 $("varAdd").onclick=()=>{VARS.push({nombre:"",cantidad:""});varRender();const r=$("varRows").querySelectorAll(".vr");r[r.length-1].querySelector("input").focus()};
 $("varRows").addEventListener("input",e=>{const r=e.target.closest(".vr");if(!r)return;VARS[+r.dataset.i][e.target.dataset.f]=e.target.value;if(e.target.dataset.f==="nombre"){const w=e.target.parentNode,d=DAY.colorDot(e.target.value),o=w.querySelector(".cdot");if(o)o.remove();if(d)w.insertAdjacentHTML("afterbegin",d)}varSuma()});
-$("varRows").addEventListener("click",e=>{const b=e.target.closest("[data-x]");if(!b)return;VARS.splice(+b.dataset.x,1);varRender()});
+$("varRows").addEventListener("click",e=>{const ph=e.target.closest("[data-ph]");if(ph){vfAbrir(+ph.dataset.ph);return}const b=e.target.closest("[data-x]");if(!b)return;VARS.splice(+b.dataset.x,1);varRender()});
 function setTab(t){esLote=t==="lote";document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
  $("lotQuantityGroup").classList.toggle("hidden",!esLote);$("unitsPerLotGroup").classList.toggle("hidden",!esLote);
  $("lotQuantity").required=esLote&&!edit;$("unitsPerLot").required=esLote&&!edit;$("quantity").readOnly=esLote&&!edit;
@@ -122,10 +138,10 @@ async function comprimir(file,max,q){return recomprimir(await abrirImg(file),max
 /* una sola foto por imagen (1000 px): sirve para las tarjetas y para verla en grande */
 const par=async f=>{const o=await abrirImg(f);const m=await recomprimir(o,1000,.82);if(o.src.close)o.src.close();return {main:m,thumb:m}};
 function renderPrevs(){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=galeria.map(g=>g.db?(g.thumb_url||g.url):URL.createObjectURL(g.thumb));
- $("prevs").innerHTML=galeria.map((g,i)=>`<figure class="pv${i===0?" first":""}"><img src="${prevUrls[i]}" alt="Imagen ${i+1}">${i===0?'<span class="pvp">Principal</span>':`<button type="button" class="pvs" data-g="${i}" data-k="p" title="Hacer principal" aria-label="Hacer principal">★</button>`}<button type="button" class="pvx" data-g="${i}" data-k="x" title="Quitar esta imagen" aria-label="Quitar esta imagen">×</button><button type="button" class="pvf" data-g="${i}" data-k="f" title="Quitar fondo" aria-label="Quitar fondo">✨</button></figure>`).join("")}
+ $("prevs").innerHTML=galeria.map((g,i)=>`<figure class="pv${i===0?" first":""}"><img src="${prevUrls[i]}" alt="Imagen ${i+1}">${i===0?'<span class="pvp">Principal</span>':`<button type="button" class="pvs" data-g="${i}" data-k="p" title="Hacer principal" aria-label="Hacer principal">★</button>`}<button type="button" class="pvx" data-g="${i}" data-k="x" title="Quitar esta imagen" aria-label="Quitar esta imagen">×</button><button type="button" class="pvf" data-g="${i}" data-k="f" title="Quitar fondo" aria-label="Quitar fondo">✨</button></figure>`).join("");if(VARS.length)varRender()}
 $("prevs").addEventListener("click",e=>{const b=e.target.closest("button[data-g]");if(!b)return;const i=+b.dataset.g;
  if(b.dataset.k==="f"){quitarFondo(i);return}
- if(b.dataset.k==="x"){const [g]=galeria.splice(i,1);if(g&&g.db)galQuitar.push(g)}else{const [g]=galeria.splice(i,1);galeria.unshift(g)}
+ if(b.dataset.k==="x"){const [g]=galeria.splice(i,1);if(g&&g.db)galQuitar.push(g);VARS.forEach(v=>{if(v.fref===g)v.fref=null;if(g&&g.db&&v.foto_url&&(v.foto_url===g.url||v.foto_url===g.thumb_url))v.foto_url=null})}else{const [g]=galeria.splice(i,1);galeria.unshift(g)}
  galSucia=true;renderPrevs()});
 /* ✨ Quitar fondo de una foto (js/fondo.js: corre en el dispositivo, gratis). La foto nueva reemplaza a la anterior al guardar el producto. */
 let fdIdx=-1,fdRec=null,fdBlob=null,fdUrlA=null,fdUrlB=null,fdSel="rosado";try{fdSel=localStorage.getItem("dms_fondo")||"rosado"}catch(e){}
@@ -146,7 +162,7 @@ async function quitarFondo(i){const g=galeria[i];if(!g)return;fdIdx=i;fdRec=null
  catch(e){if($("dgFondo").open){$("dgFondo").close();DAY.say("No se pudo quitar el fondo. "+(e.message||""))}}}
 $("fdC").addEventListener("click",async e=>{const b=e.target.closest(".fdc");if(!b)return;fdSel=b.dataset.k;try{localStorage.setItem("dms_fondo",fdSel)}catch(x){}fdPintar();if(fdRec){$("fdOk").disabled=true;await fdComponer()}});
 $("fdOk").onclick=()=>{if(!fdBlob||!galeria[fdIdx])return;const g=galeria[fdIdx];if(g.db)galQuitar.push(g);
- galeria[fdIdx]={db:false,main:fdBlob,thumb:fdBlob};galSucia=true;renderPrevs();$("dgFondo").close();toast("Listo. Guarda el producto para que se aplique.")};
+ const ng={db:false,main:fdBlob,thumb:fdBlob};VARS.forEach(v=>{if(v.fref===g||(g.db&&v.foto_url&&(v.foto_url===g.url||v.foto_url===g.thumb_url))){v.fref=ng;v.foto_url=null}});galeria[fdIdx]=ng;galSucia=true;renderPrevs();$("dgFondo").close();toast("Listo. Guarda el producto para que se aplique.")};
 $("dgFondo").addEventListener("close",()=>{fdIdx=-1;fdRec=null});
 async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.type&&f.type.startsWith("image/"));if(!fs.length)return false;
  busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));n.forEach(x=>galeria.push({db:false,main:x.main,thumb:x.thumb}));galSucia=true;renderPrevs()}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
@@ -176,7 +192,7 @@ async function guardarGaleria(id){
   if(g.db){await ok(db.from("producto_imagenes").update({orden:i}).eq("id",g.id));if(i===0)first=g.thumb_url||g.url}
   else{const base=`${id}/${crypto.randomUUID()}`,p1=base+".jpg",una=!g.thumb||g.thumb===g.main,p2=una?p1:base+"_t.jpg";
    const [u1,u2]=await Promise.all([DAY.fotosAlm.subir(p1,g.main),una?null:DAY.fotosAlm.subir(p2,g.thumb)]);
-   await ok(db.from("producto_imagenes").insert({producto_id:id,url:u1,thumb_url:una?u1:u2,path:p1,thumb_path:p2,orden:i}));if(i===0)first=una?u1:u2}}
+   await ok(db.from("producto_imagenes").insert({producto_id:id,url:u1,thumb_url:una?u1:u2,path:p1,thumb_path:p2,orden:i}));g.url=u1;g.thumb_url=una?u1:u2;if(i===0)first=una?u1:u2}}
  await ok(db.from("productos").update({foto_url:first}).eq("id",id))}
 
 /* subir imágenes de un producto a Storage */
@@ -198,7 +214,7 @@ async function validar(it){if(it.precio_costo&&it.precio_venta&&it.precio_costo>
  if(it.fecha_compra>hoy){await DAY.say("La fecha de compra no puede ser futura.");return false}return true}
 $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
  const lq=esLote?Math.max(0,Math.trunc(num($("lotQuantity").value))):0,upl=esLote?Math.max(0,Math.trunc(num($("unitsPerLot").value))):0,uq=Math.max(0,Math.trunc(num($("quantity").value)));
- const vl=VARS.map(v=>({id:v.id,nombre:String(v.nombre||"").trim(),cantidad:Math.max(0,Math.trunc(num(v.cantidad))),codigo_barras:String(v.codigo_barras||"").trim()}));
+ const vl=VARS.map(v=>({id:v.id,nombre:String(v.nombre||"").trim(),cantidad:Math.max(0,Math.trunc(num(v.cantidad))),codigo_barras:String(v.codigo_barras||"").trim(),fref:v.fref||null,foto_url:v.foto_url||null}));
  if(vl.some(v=>!v.nombre))return toast("Escribe el nombre de cada color o quita las filas vacías");
  if(new Set(vl.map(v=>v.nombre.toLowerCase())).size<vl.length)return toast("Hay dos colores con el mismo nombre");
  if(esLote&&vl.length)return toast("Los colores no se pueden combinar con compra por lote");
@@ -233,6 +249,7 @@ $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
    const r=await ok(db.rpc("registrar_compra",{p_items:[it]}));id=r[0].id;
    if(pv.preventa)await ok(db.from("productos").update(pvCols(pv)).eq("id",id))}
   if(galSucia)await guardarGaleria(id);
+  if(vl.length)await guardarFotosColores(id,vl);
   const prevP=edit?inv.find(p=>p.id===id):null,llego=!!(prevP&&prevP.preventa&&stock>num(prevP.stock));
   await refresh();resetForm(true);beep();toast("Producto guardado");
   if(llego)avisoLlegada(id)
@@ -272,8 +289,8 @@ async function startEdit(id){const p=inv.find(x=>x.id===id);if(!p)return;
  const lote=p.tipo_compra==="lote"&&num(p.lotes)>0;setTab(lote?"lote":"normal");
  if(lote){$("lotQuantity").value=p.lotes;$("unitsPerLot").value=p.unidades_por_lote}
  $("moreOpts").open=true;calcSug();showBarcode(p.codigo_barras);galeria=[];galQuitar=[];galSucia=false;renderPrevs();VARS_DB=[];varSet([]);
- ok(db.from("producto_variantes").select("id,nombre,stock,codigo_barras").eq("producto_id",id).order("orden").order("nombre")).then(L=>{if(edit!==id||!L.length)return;VARS_DB=L;
-  varSet(L.map(v=>({id:v.id,nombre:v.nombre,cantidad:v.stock,codigo_barras:v.codigo_barras||""})));
+ ok(db.from("producto_variantes").select("*").eq("producto_id",id).order("orden").order("nombre")).then(L=>{if(edit!==id||!L.length)return;VARS_DB=L;
+  varSet(L.map(v=>({id:v.id,nombre:v.nombre,cantidad:v.stock,codigo_barras:v.codigo_barras||"",foto_url:v.foto_url||null})));
   const s=L.reduce((a,v)=>a+v.stock,0);if(p.stock>s)toast("Hay "+(p.stock-s)+" unidades sin color; al guardar el total se ajusta a la suma de los colores.")}).catch(()=>{});
  $("formTitle").textContent="Editar producto";$("bSave").textContent="Actualizar producto";$("editFlag").classList.add("on");$("bCancelEdit2").classList.remove("hidden");
  setPane("f");scrollTo({top:0,behavior:"smooth"});
