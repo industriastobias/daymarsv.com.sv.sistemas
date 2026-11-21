@@ -81,7 +81,7 @@ async function cargarProductos(){
   S.all.push(p)});
  S.stamp=Date.now();
  const cats=[...new Set(S.prods.map(p=>p.cat).filter(Boolean))].sort(),cur=$("fCat").value;
- $("fCat").innerHTML='<option value="">Todas</option>'+(S.prods.some(p=>p.preventa)?'<option value="__pv">⏳ Preventa · próxima colección</option>':'')+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("fCat").value=cur;
+ $("fCat").innerHTML='<option value="">Todas</option>'+(S.prods.some(p=>p.preventa)?'<option value="__pv">Preventa</option>':'')+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("fCat").value=cur;
  stats()}
 function stats(){
  const v=S.prods.reduce((s,p)=>s+(S.sv&&S.sv.has((p.cat||"").trim().toLowerCase())?0:p.fin*(p.stock||0)),0);$("totalAmount").textContent=$$(v);
