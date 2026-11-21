@@ -332,3 +332,13 @@ dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
 #segPend button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:5px;line-height:1.2;padding:9px 4px}
 @media(max-width:480px){#segPend button{font-size:13px}}
 #segPend button .badge{margin:0}
+
+/* Cabecera en una fila: título a la izquierda y un botón a la derecha (Pedidos en línea, Historial de ventas) */
+.hfila{flex-wrap:nowrap;align-items:center}
+.hfila>div:not(.hact){flex:1 1 auto;min-width:0}
+.hfila .hact{display:flex!important;width:auto!important;margin-left:auto!important;flex:0 0 auto;grid-template-columns:none!important}
+.hfila .hbtn{display:inline-flex!important;align-items:center;gap:6px;white-space:nowrap;min-height:38px;padding:7px 12px!important;border-radius:999px;font-size:13.5px!important;width:auto!important}
+.hfila .hbtn svg{flex:none}
+.hfila .plf{display:none}
+@media(min-width:800px){.hfila .plc{display:none}.hfila .plf{display:inline}}
+@media(max-width:400px){.hfila h1{font-size:22px}.hfila .hbtn{padding:7px 10px!important}.hfila .plc,.hfila .plf{display:none!important}}

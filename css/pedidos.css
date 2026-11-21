@@ -103,12 +103,3 @@ dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
 #kK>div{min-width:0;padding:10px 8px;text-align:center}
 #kK span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Cabecera: «Limpiar historial» a la derecha del título, en la misma fila */
-.hped{flex-wrap:nowrap;align-items:center}
-.hped>div:not(.hact){flex:1 1 auto;min-width:0}
-.hped .hact{display:flex!important;width:auto!important;margin-left:auto!important;flex:0 0 auto;grid-template-columns:none!important}
-.hped .plimp{display:inline-flex!important;align-items:center;gap:6px;white-space:nowrap;min-height:38px;padding:7px 12px!important;border-radius:999px;font-size:13.5px!important;width:auto!important}
-.hped .plimp svg{flex:none}
-.hped .plf{display:none}
-@media(min-width:800px){.hped .plc{display:none}.hped .plf{display:inline}}
-@media(max-width:400px){.hped h1{font-size:22px}.hped .plimp{padding:7px 10px!important}.hped .plc{display:none}}
