@@ -350,3 +350,4 @@ dialog.opcp .sgs .btn[data-a="seg:entregado_pago"]{grid-column:1/-1}
 @media(max-width:480px){.seg1 button{font-size:12.5px}}
 .hfila .hl2{display:none}
 @media(max-width:400px){.hfila .hl1{display:none}.hfila .hl2{display:inline}}
+.rsv.pvr{background:#fbf2df;color:#9a6f1e}html[data-theme=dark] .rsv.pvr{background:rgba(201,151,63,.18);color:#e2b45a}@media(prefers-color-scheme:dark){html:not([data-theme=light]) .rsv.pvr{background:rgba(201,151,63,.18);color:#e2b45a}}

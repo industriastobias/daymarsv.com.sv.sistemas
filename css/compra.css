@@ -144,3 +144,17 @@ dialog.dfondo{width:min(520px,94vw)}
 .ffd{display:flex;align-items:center;gap:10px;margin:14px 0 4px;font-size:13px;color:var(--mute);flex-wrap:wrap}#fdC{display:flex;gap:10px}
 .fdc{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);cursor:pointer;padding:0}.fdc.on{outline:3px solid var(--gold,#C9973F);outline-offset:2px}
 .fnota{font-size:12px;color:var(--mute);margin:8px 0 0}
+
+/* Preventa */
+.pvbox{border:1.5px solid #ecd3a4;background:#fff8ec;border-radius:12px;padding:10px 12px}
+.pvtg{display:flex!important;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;margin:0!important}
+.pvtg b{display:block;color:#6B2D3E;font-size:14px}.pvtg small{display:block;color:var(--mute);font-weight:400;font-size:12px;margin-top:2px}
+.pvsw{appearance:none;-webkit-appearance:none;width:46px!important;height:26px;border-radius:99px;background:#cdbfc3;position:relative;flex:none;cursor:pointer;margin:0;border:0!important;padding:0!important;transition:background .2s}
+.pvsw::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.pvsw:checked{background:#6B2D3E}.pvsw:checked::after{left:23px}.pvsw:focus-visible{outline:3px solid #C9973F;outline-offset:2px}
+.pvg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}.pvg label{font-size:12px}
+.pvchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.pvc{display:inline-block;background:#fbf2df;color:#9a6f1e;font-weight:800;font-size:10.5px;padding:2px 8px;border-radius:99px;letter-spacing:.3px}.pvc.pvw{background:#6B2D3E;color:#fff}
+.pvbar{height:5px;border-radius:99px;background:var(--chip);margin-top:5px;overflow:hidden}.pvbar i{display:block;height:100%;background:linear-gradient(90deg,#C9973F,#e2b45a)}
+html[data-theme=dark] .pvbox{background:rgba(201,151,63,.1);border-color:rgba(201,151,63,.4)}html[data-theme=dark] .pvtg b{color:#e2b45a}html[data-theme=dark] .pvc{background:rgba(201,151,63,.18);color:#e2b45a}
+@media(prefers-color-scheme:dark){html:not([data-theme=light]) .pvbox{background:rgba(201,151,63,.1);border-color:rgba(201,151,63,.4)}html:not([data-theme=light]) .pvtg b{color:#e2b45a}html:not([data-theme=light]) .pvc{background:rgba(201,151,63,.18);color:#e2b45a}}
+@media(max-width:520px){.pvg{grid-template-columns:1fr 1fr}.pvg>div:first-child{grid-column:1/-1}}

@@ -103,3 +103,10 @@ dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
 #kK>div{min-width:0;padding:10px 8px;text-align:center}
 #kK span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+
+/* Preventa */
+.pvl{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.pvc{display:inline-block;background:#fbf2df;color:#9a6f1e;font-weight:800;font-size:10.5px;padding:2px 8px;border-radius:99px;letter-spacing:.3px}
+.pvban{display:flex;flex-direction:column;gap:4px;background:#fff8ec;border:1.5px solid #ecd3a4;border-radius:12px;padding:10px 12px;margin:0 0 12px;font-size:13.5px;color:var(--ink)}
+.pvban>b{color:#6B2D3E;font-size:14px}.pvban small{color:var(--mute);font-size:12px}
+html[data-theme=dark] .pvban{background:rgba(201,151,63,.1);border-color:rgba(201,151,63,.4)}html[data-theme=dark] .pvban>b{color:#e2b45a}html[data-theme=dark] .pvc{background:rgba(201,151,63,.18);color:#e2b45a}
+@media(prefers-color-scheme:dark){html:not([data-theme=light]) .pvban{background:rgba(201,151,63,.1);border-color:rgba(201,151,63,.4)}html:not([data-theme=light]) .pvban>b{color:#e2b45a}html:not([data-theme=light]) .pvc{background:rgba(201,151,63,.18);color:#e2b45a}}

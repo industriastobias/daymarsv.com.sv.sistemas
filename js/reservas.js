@@ -37,7 +37,7 @@ function fila(r){
  let vtxt="";if(r.vence&&!can&&e!=="entregada"&&e!=="porentregar"){const d=dias(r);vtxt=d<0?`<span class="bd or">Venció hace ${-d} día${d===-1?"":"s"}</span>`:d===0?`<span class="bd or">Vence hoy</span>`:d<=3?`<span class="bd wa">Vence en ${d} día${d===1?"":"s"}</span>`:`<small>Vence el ${fdate(r.vence)}</small>`}
  return `<div class="rs ${e==="entregada"||e==="porentregar"?"ok":e==="vencida"?"ve":can?"ca":"pe"}" data-id="${r.id}">
   ${r.imagen_url?`<img class="im" src="${esc(r.imagen_url)}" alt="" loading="lazy" data-img>`:`<div class="im ph0">${esc(ini(r.cliente_nombre))}</div>`}
-  <div class="rtp"><div class="rnm"><b>${esc(r.cliente_nombre)}</b><small>${esc(r.producto)}</small><small>${esc([r.telefono,fdate(r.fecha)].filter(Boolean).join(" · "))} · #${r.numero}</small>${(r.categorias||[]).length?`<div class="rtg">${r.categorias.map(c=>`<span class="tag">${esc(c)}</span>`).join("")}</div>`:""}</div>
+  <div class="rtp"><div class="rnm"><b>${esc(r.cliente_nombre)}</b>${r.preventa?'<span class="pvc">⏳ PREVENTA</span>':""}<small>${esc(r.producto)}</small><small>${esc([r.telefono,fdate(r.fecha)].filter(Boolean).join(" · "))} · #${r.numero}</small>${(r.categorias||[]).length?`<div class="rtg">${r.categorias.map(c=>`<span class="tag">${esc(c)}</span>`).join("")}</div>`:""}</div>
    <div class="rmt"><b>${M(r.precio_total)}</b><span class="bd ${E[1]}">${E[0]}</span>${vtxt?`<div style="margin-top:4px">${vtxt}</div>`:""}</div></div>
   <div class="rpr"><div class="bar2"><i style="width:${pct}%"></i></div><div class="rpl"><span>Pagado <b>${M(r.monto_pagado)}</b> (${pct}%)</span><span>${can?(+r.monto_pagado>0?`A devolver <b>${M(r.monto_pagado)}</b>`:"Sin pagos"):s>0?`Resta <b>${M(s)}</b>`:"Sin saldo"}</span></div></div>
   ${can&&r.cancelada_motivo?`<div class="rnt">Cancelada: ${esc(r.cancelada_motivo)}</div>`:""}${r.notas?`<div class="rnt">${esc(r.notas)}</div>`:""}
@@ -140,8 +140,8 @@ async function verAbonos(r){
   const ok=await espera(async()=>{const {error}=await db.from("reserva_abonos").delete().eq("id",b.dataset.q);if(error)throw new Error(error.message);return true});
   if(ok){m.close();toast("Abono quitado");await recargar()}})}
 async function entregar(r){
- if(!await confirmar(`¿Ya le entregaste <b>${esc(r.producto)}</b> a <b>${esc(r.cliente_nombre)}</b>?`,{titulo:"Marcar entregada",ok:"Sí, entregada"}))return;
- const ok=await espera(async()=>{const {error}=await db.from("reservas").update({entregada_en:new Date().toISOString()}).eq("id",r.id);if(error)throw new Error(error.message);return true});
+ if(!await confirmar(`¿Ya le entregaste <b>${esc(r.producto)}</b> a <b>${esc(r.cliente_nombre)}</b>?`+(r.preventa?"<br><br>Es una preventa: al entregarla se descuentan las unidades del inventario.":""),{titulo:"Marcar entregada",ok:"Sí, entregada"}))return;
+ const ok=await espera(async()=>{const {error}=r.preventa?await db.rpc("entregar_preventa",{p_id:r.id}):await db.from("reservas").update({entregada_en:new Date().toISOString()}).eq("id",r.id);if(error)throw new Error(error.message);return true});
  if(ok){toast("Reserva entregada");await recargar()}}
 function cancelar(r){
  const d=modal("Cancelar reserva",`<p style="margin:0 0 8px"><b>${esc(r.cliente_nombre)}</b> · ${esc(r.producto)}</p>${+r.monto_pagado>0?`<div class="alert warn" style="margin-bottom:8px"><div><b>El cliente ya pagó ${$$(r.monto_pagado)}</b>Elige qué pasa con ese dinero.</div></div><label>Abono</label><select id="cD"><option value="1">Devolverlo al cliente (se registra como gasto)</option><option value="0">Quedármelo (se mantiene como ingreso)</option></select>`:""}
