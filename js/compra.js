@@ -256,12 +256,12 @@ $("purchaseForm").addEventListener("submit",async e=>{e.preventDefault();
  }catch(x){}finally{busy(false);$("bSave").disabled=false}});
 
 /* ---------- preventa ---------- */
-function pvPoner(p){$("pvOn").checked=!!(p&&p.preventa);$("pvLlega").value=(p&&p.preventa_llega)||"";$("pvLimite").value=(p&&p.preventa_limite)||"";$("pvAnt").value=(p&&p.preventa_anticipo)||50;$("pvCampos").classList.toggle("hidden",!$("pvOn").checked)}
+function pvPoner(p){$("pvOn").checked=!!(p&&p.preventa);$("pvLlega").value=(p&&p.preventa_llega)||"";$("pvLimite").value=(p&&p.preventa_limite)||"";$("pvAnt").value=p&&p.preventa_anticipo!=null?p.preventa_anticipo:50;$("pvCampos").classList.toggle("hidden",!$("pvOn").checked)}
 $("pvOn").addEventListener("change",()=>{$("pvCampos").classList.toggle("hidden",!$("pvOn").checked);if($("pvOn").checked&&!edit&&$("quantity").value==="")$("quantity").value=0});
-function pvLeer(){const on=$("pvOn").checked,lim=String($("pvLimite").value).trim(),ant=Math.round(num($("pvAnt").value||50));
+function pvLeer(){const on=$("pvOn").checked,lim=String($("pvLimite").value).trim(),ant=String($("pvAnt").value).trim()===""?50:Math.round(num($("pvAnt").value));
  if(!on)return {preventa:false};
  if(lim!==""&&!(Math.trunc(num(lim))>=1))return {error:"El límite de la preventa debe ser 1 o más (o déjalo vacío para sin límite)"};
- if(ant<10||ant>100)return {error:"El anticipo debe estar entre 10% y 100%"};
+ if(!(ant>=0&&ant<=100))return {error:"El anticipo debe estar entre 0% y 100%"};
  return {preventa:true,llega:$("pvLlega").value||null,limite:lim===""?null:Math.trunc(num(lim)),anticipo:ant}}
 const pvCols=pv=>pv.preventa?{preventa:true,preventa_llega:pv.llega,preventa_limite:pv.limite,preventa_anticipo:pv.anticipo}:{preventa:false};
 let PV_AP={};async function pvCargar(){try{const r=await db.rpc("preventa_resumen");PV_AP={};(r.data||[]).forEach(x=>PV_AP[x.producto_id]=x.apartadas)}catch(e){}}

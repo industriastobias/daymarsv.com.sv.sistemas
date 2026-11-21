@@ -41,7 +41,7 @@
     <div id="unitsPerLotGroup" class="hidden"><label for="unitsPerLot">Unidades por lote *</label><input id="unitsPerLot" type="number" min="0" step="1" placeholder="0"></div>
     <div class="full"><label for="quantity" id="quantityLabel">Stock inicial *</label><input id="quantity" type="number" min="0" step="1" inputmode="numeric" required placeholder="0"><small class="h" id="quantityHelp">Unidades disponibles.</small></div>
     <div class="full fsec" id="pvBox"><label class="fsw" for="pvOn"><span><b>Preventa</b><small>Se puede pedir en la tienda aunque todavía no tengas unidades</small></span><input type="checkbox" id="pvOn" class="pvsw"></label>
-     <div class="pvg fsub hidden" id="pvCampos"><div><label for="pvLlega">Llega aprox.</label><input id="pvLlega" type="date"></div><div><label for="pvLimite">Límite</label><input id="pvLimite" type="number" min="1" max="9999" step="1" inputmode="numeric" placeholder="Sin límite"></div><div><label for="pvAnt">Anticipo</label><div class="ig"><input id="pvAnt" type="number" min="10" max="100" step="5" value="50" inputmode="numeric"><span>%</span></div></div></div></div>
+     <div class="pvg fsub hidden" id="pvCampos"><div><label for="pvLlega">Llega aprox.</label><input id="pvLlega" type="date"></div><div><label for="pvLimite">Límite</label><input id="pvLimite" type="number" min="1" max="9999" step="1" inputmode="numeric" placeholder="Sin límite"></div><div><label for="pvAnt">Anticipo</label><div class="ig"><input id="pvAnt" type="number" min="0" max="100" step="5" value="50" inputmode="numeric"><span>%</span></div></div></div></div>
     <div class="full fsec" id="varBox"><label class="fsw" for="varSw"><span><b>Colores o variantes</b><small>Cada color con su foto y sus unidades</small></span><input type="checkbox" id="varSw" class="pvsw"></label>
      <div id="varPanel" class="fsub hidden"><div id="varRows"></div>
       <button type="button" class="lnk" id="varAdd">+ Agregar color</button><small class="h">Toca el cuadro de foto de un color para elegirla de las imágenes del producto. El stock total es la suma de los colores.</small></div></div>
@@ -158,6 +158,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<script src="js/app.js?v=202611211600"></script>
-<script src="js/compra.js?v=202611211600"></script>
+<script src="js/app.js?v=202611211700"></script>
+<script src="js/compra.js?v=202611211700"></script>
 </body></html>
