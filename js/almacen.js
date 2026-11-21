@@ -81,7 +81,7 @@ async function cargarProductos(){
   S.all.push(p)});
  S.stamp=Date.now();
  const cats=[...new Set(S.prods.map(p=>p.cat).filter(Boolean))].sort(),cur=$("fCat").value;
- $("fCat").innerHTML='<option value="">Todas</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("fCat").value=cur;
+ $("fCat").innerHTML='<option value="">Todas</option>'+(S.prods.some(p=>p.preventa)?'<option value="__pv">⏳ Preventa · próxima colección</option>':'')+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("fCat").value=cur;
  stats()}
 function stats(){
  const v=S.prods.reduce((s,p)=>s+(S.sv&&S.sv.has((p.cat||"").trim().toLowerCase())?0:p.fin*(p.stock||0)),0);$("totalAmount").textContent=$$(v);
@@ -136,9 +136,10 @@ function drawHist(){const h=$("hist");if(!S.hist.length){h.classList.remove("on"
 function filtrar(keep){
  const q=$("fSearch").value.trim(),cat=$("fCat").value,mn=parseFloat($("fMin").value)||0,mx=parseFloat($("fMax").value)||Infinity,
   bc=$("fBar").value.trim().toLowerCase(),dt=$("fDate").value,low=$("fLow").checked,ql=norm(q);
- S.filt=S.prods.filter(p=>(!q||fuzzy(p.nombre,q)||norm(p.codigo).includes(ql)||(p.codigo_barras||"").toLowerCase().includes(q.toLowerCase()))&&(!cat||p.cat===cat)&&p.fin>=mn&&p.fin<=mx&&
+ S.filt=S.prods.filter(p=>(!q||fuzzy(p.nombre,q)||norm(p.codigo).includes(ql)||(p.codigo_barras||"").toLowerCase().includes(q.toLowerCase()))&&(!cat||(cat==="__pv"?!!p.preventa:p.cat===cat))&&p.fin>=mn&&p.fin<=mx&&
   (!bc||(p.codigo_barras||"").toLowerCase().includes(bc))&&(!dt||p.dia===dt)&&(!low||p.stock<=0));
- S.filt.sort((a,b)=>((b.stock>0)-(a.stock>0))||String(b.created_at||"").localeCompare(String(a.created_at||""))||a.nombre.localeCompare(b.nombre));
+ if(cat==="__pv")S.filt.sort((a,b)=>String(a.preventa_llega||"9").localeCompare(String(b.preventa_llega||"9"))||a.nombre.localeCompare(b.nombre));
+ else S.filt.sort((a,b)=>((b.stock>0)-(a.stock>0))||String(b.created_at||"").localeCompare(String(a.created_at||""))||a.nombre.localeCompare(b.nombre));
  if(!keep)S.page=1;
  const nf=[cat,mn,mx<Infinity,bc,dt,low].filter(Boolean).length;$("fTog").textContent=nf?"Filtros ("+nf+")":"Filtros";$("fTog").classList.toggle("on",nf>0);
  pintarInv()}
