@@ -97,3 +97,8 @@ dialog.pl-m{width:min(1180px,calc(100vw - 48px))}
  dialog.pl-m .df .btn{min-height:38px;padding:6px 10px;font-size:13.5px}
  .df:has(#pPv){gap:6px}
 }
+
+/* Por atender · Aceptados · Rechazados: siempre los tres en una sola fila */
+#kK{grid-template-columns:repeat(3,1fr);gap:8px}
+#kK>div{min-width:0;padding:10px 8px;text-align:center}
+#kK span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
