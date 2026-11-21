@@ -139,7 +139,7 @@ function filtrar(keep){
  S.filt=S.prods.filter(p=>(!q||fuzzy(p.nombre,q)||norm(p.codigo).includes(ql)||(p.codigo_barras||"").toLowerCase().includes(q.toLowerCase()))&&(!cat||(cat==="__pv"?!!p.preventa:p.cat===cat))&&p.fin>=mn&&p.fin<=mx&&
   (!bc||(p.codigo_barras||"").toLowerCase().includes(bc))&&(!dt||p.dia===dt)&&(!low||p.stock<=0));
  if(cat==="__pv")S.filt.sort((a,b)=>String(a.preventa_llega||"9").localeCompare(String(b.preventa_llega||"9"))||a.nombre.localeCompare(b.nombre));
- else S.filt.sort((a,b)=>((b.stock>0)-(a.stock>0))||String(b.created_at||"").localeCompare(String(a.created_at||""))||a.nombre.localeCompare(b.nombre));
+ else S.filt.sort((a,b)=>((b.stock>0||!!b.preventa)-(a.stock>0||!!a.preventa))||String(b.created_at||"").localeCompare(String(a.created_at||""))||a.nombre.localeCompare(b.nombre));
  if(!keep)S.page=1;
  const nf=[cat,mn,mx<Infinity,bc,dt,low].filter(Boolean).length;$("fTog").textContent=nf?"Filtros ("+nf+")":"Filtros";$("fTog").classList.toggle("on",nf>0);
  pintarInv()}
