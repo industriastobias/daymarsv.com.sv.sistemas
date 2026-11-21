@@ -147,7 +147,7 @@ const sIcon=p=>p.stock<=0?"zero":"";
 const pvTxt=p=>{if(!p.preventa)return"";let f="";try{f=p.preventa_llega?" · llega "+new Date(p.preventa_llega+"T12:00:00").toLocaleDateString("es-SV",{day:"numeric",month:"short"}):""}catch(e){}return `<span class="rsv pvr">⏳ Preventa${esc(f)}</span>`};
 const resTxt=p=>{const r=p.res||0;if(p.preventa)return pvTxt(p);if(r<1)return"";return r>=p.stock?`<a class="rsv" href="pedidos.html">Mira tus pedidos en línea</a>`:`<span class="rsv">Reservado: ${r} (pedidos en línea)</span>`};
 const imgG=u=>`src="${esc(DAY.grande(u))}" onerror="this.onerror=null;this.src='${esc(u)}'"`;
-const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(cls==="ph"?DAY.grande(p.foto_url):p.foto_url)}" ${cls==="ph"?`onerror="this.onerror=null;this.src='${esc(p.foto_url)}'" `:""}alt="" loading="lazy" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
+const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(p.foto_url)}" alt="" loading="lazy" decoding="async" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
 const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>DAY.colorDot(v.vnom)+esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
 const selQ=p=>p.vars?p.vars.reduce((s,v)=>s+(S.sel.get(v.id)||0),0):(S.sel.get(p.id)||0);
 function chk(p){return S.multi?`<label class="mchk"><input type="checkbox" data-a="sel" data-id="${p.id}" ${selQ(p)?"checked":""} ${p.stock<1?"disabled":""}> Vender${selQ(p)?` <b data-qs="${p.id}" class="qb">×${selQ(p)}</b>`:""}</label>`:""}

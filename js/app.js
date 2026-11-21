@@ -1,6 +1,6 @@
 /* DAYMAR-SHOP · funciones compartidas (conexión, sesión y utilidades) */
 (function(){
-try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611211700";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
+try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611211800";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 /* Ninguna consulta puede quedarse colgada para siempre: a los 30 s se corta y la pantalla vuelve a responder (las subidas de archivos quedan fuera) */
 /* Las peticiones de inicio de sesión (/auth/) tampoco se cortan: si se corta una renovación a medias, Supabase invalida la sesión y hay que volver a entrar */
@@ -123,6 +123,34 @@ async function pasarFotosR2(btn){
    act++}
   await say("Listo: "+(L.length-fallas)+" de "+L.length+" archivos copiados a Cloudflare y "+act+" fotos actualizadas."+(fallas?" "+fallas+" no se pudieron copiar y siguen en Supabase.":"")+" Revisa que las fotos se vean bien en el sistema y en la tienda; después podrás borrar las originales de Supabase.",{titulo:"Fotos pasadas"})
  }catch(e){await say("Se detuvo: "+e.message+". Lo que ya se copió no se pierde; puedes volver a intentarlo.")}
+ finally{btn.disabled=false;btn.textContent=t0}}
+/* Fotos más rápidas: crea una miniatura liviana (480 px) de cada foto de producto que no la tenga.
+   Las listas, tarjetas y la tienda usan la miniatura; la foto grande no se toca (se usa al abrir el producto). */
+async function crearMiniaturas(btn){
+ if(!R2.worker){await say("Cloudflare R2 todavía no está conectado.");return}
+ const t0=btn.textContent;btn.disabled=true;btn.textContent="Revisando fotos…";
+ try{
+  const R=[];for(let f=0;;f+=1000){const {data,error}=await db.from("producto_imagenes").select("id,producto_id,url,thumb_url,path,thumb_path").range(f,f+999);if(error)throw new Error(error.message);R.push(...data);if(data.length<1000)break}
+  const L=R.filter(r=>r.url&&(!r.thumb_url||r.thumb_url===r.url));
+  if(!L.length){await say("Todas tus fotos ya tienen miniatura. Las listas y la tienda ya cargan la versión liviana.",{titulo:"Fotos más rápidas"});return}
+  btn.textContent=t0;
+  if(!await ask("Se creará una miniatura liviana para "+L.length+" foto"+(L.length===1?"":"s")+". Las listas, el punto de venta y la tienda cargarán mucho más rápido. Las fotos grandes no se tocan. Puede tardar unos minutos; no cierres la página.",{titulo:"Fotos más rápidas",ok:"Empezar"}))return;
+  const base=R2.publico.replace(/\/$/,"")+"/";
+  const mini=async b=>{const im=await createImageBitmap(b);const s=Math.min(1,480/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
+   const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.imageSmoothingQuality="high";x.drawImage(im,0,0,c.width,c.height);if(im.close)im.close();
+   return await new Promise(ok=>c.toBlob(ok,"image/jpeg",.8))};
+  const ruta=r=>{let p=r.path||(String(r.url).startsWith(base)?decodeURIComponent(String(r.url).slice(base.length).split("?")[0]):null);if(!p)p="mini/"+r.producto_id+"/"+r.id+".jpg";return p.replace(/(_t)?\.(jpe?g|png|webp)$/i,"")+"_t.jpg"};
+  let hechas=0,fallas=0,act=0,i=0;
+  await Promise.all(Array.from({length:3},async()=>{while(i<L.length){const r=L[i++];
+   try{const res=await fetch(r.url,{cache:"no-store"});if(!res.ok)throw new Error("origen "+res.status);
+    const b=await mini(await res.blob());if(!b)throw new Error("sin imagen");
+    const tp=ruta(r),tu=await fotosAlm.subirR2(tp,b);
+    const e1=await db.from("producto_imagenes").update({thumb_url:tu,thumb_path:tp}).eq("id",r.id);if(e1.error)throw new Error(e1.error.message);
+    for(const viejo of [...new Set([r.thumb_url,r.url].filter(Boolean))]){const e2=await db.from("productos").update({foto_url:tu}).eq("id",r.producto_id).eq("foto_url",viejo);if(e2.error)throw new Error(e2.error.message)}
+    act++}catch(e){fallas++}
+   hechas++;btn.textContent="Creando miniaturas… "+hechas+"/"+L.length}}));
+  await say("Listo: "+act+" miniatura"+(act===1?"":"s")+" creada"+(act===1?"":"s")+"."+(fallas?" "+fallas+" no se pudieron crear (puedes volver a intentarlo).":"")+" Recarga las páginas para ver las fotos más rápido.",{titulo:"Fotos más rápidas"})
+ }catch(e){await say("Se detuvo: "+e.message+". Lo que ya se hizo no se pierde; puedes volver a intentarlo.")}
  finally{btn.disabled=false;btn.textContent=t0}}
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $$=n=>"$"+Number(n||0).toLocaleString("es-SV",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -340,7 +368,7 @@ q("#cfFile").onchange=function(){const f=this.files[0];if(!f)return;const t=new 
   e.innerHTML=barra("Base de datos",d.db_bytes,500*MB)+barra("Fotos",d.storage_bytes,1024*MB)+`<p class="cf-m" style="margin:0">${d.productos} productos · ${d.fotos} archivos de foto · ${d.ventas} ventas${d.ventas_completadas==null?"":` (${d.ventas_completadas} completadas · ${d.ventas_anuladas} anuladas · ${d.ventas_pendientes} pendientes)`} · ${d.clientes} clientes. Límites del plan gratis de Supabase.</p>`});
  const bk=q("#cfBk");if(bk){const t=()=>{let u=null;try{u=localStorage.getItem("dms_backup")}catch(e){}q("#cfBkT").textContent=u?"Último respaldo en este dispositivo: "+new Date(u).toLocaleString("es-SV",{dateStyle:"medium",timeStyle:"short"}):"Aún no has descargado un respaldo desde este dispositivo."};t();
   bk.onclick=async()=>{bk.disabled=true;try{await respaldo();t()}finally{bk.disabled=false}}}
- db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3>Fotos</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 10px">Borra las fotos que ya no pertenecen a ningún producto (por ejemplo, de importaciones que se cortaron). Las fotos de tus productos no se tocan.</p><button type="button" class="btn g s" id="cfFo">Liberar espacio de fotos</button><p class="cf-m" style="margin:12px 0 8px">Trae al sistema todos los productos de tu tienda en línea (con su stock y fotos) y borra los que hoy tienes aquí.</p><button type="button" class="btn g s" id="cfImp" style="color:var(--bad)">Importar productos de la tienda</button><p class="cf-m" style="margin:12px 0 8px">Cambia una sola vez el código de barras de todos los productos y colores..</p><button type="button" class="btn g s" id="cfBar" style="color:var(--bad)">Regenerar códigos de barras</button>${R2.worker?`<p class="cf-m" style="margin:12px 0 8px">Cloudflare R2 está conectado: las fotos nuevas se guardan allí. Las anteriores siguen en Supabase hasta que las pases.</p><button type="button" class="btn g s" id="cfR2">Pasar fotos a Cloudflare</button>`:""}</div><h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()};q("#cfFo").onclick=()=>liberarFotos(q("#cfFo"));q("#cfImp").onclick=()=>importarTienda(q("#cfImp"));q("#cfBar").onclick=()=>regenerarBarras(q("#cfBar"));if(q("#cfR2"))q("#cfR2").onclick=()=>pasarFotosR2(q("#cfR2"))}},()=>{});
+ db.rpc("es_principal").then(r=>{if(r&&r.data===true){q("#cfDz").innerHTML=`<h3>Fotos</h3><div class="cf-card"><p class="cf-m" style="margin:0 0 10px">Crea miniaturas livianas de tus fotos para que las listas, el punto de venta y la tienda carguen más rápido. Las fotos grandes no se tocan.</p><button type="button" class="btn s" id="cfMini">Fotos más rápidas</button><p class="cf-m" style="margin:12px 0 8px">Borra las fotos que ya no pertenecen a ningún producto (por ejemplo, de importaciones que se cortaron). Las fotos de tus productos no se tocan.</p><button type="button" class="btn g s" id="cfFo">Liberar espacio de fotos</button><p class="cf-m" style="margin:12px 0 8px">Trae al sistema todos los productos de tu tienda en línea (con su stock y fotos) y borra los que hoy tienes aquí.</p><button type="button" class="btn g s" id="cfImp" style="color:var(--bad)">Importar productos de la tienda</button><p class="cf-m" style="margin:12px 0 8px">Cambia una sola vez el código de barras de todos los productos y colores..</p><button type="button" class="btn g s" id="cfBar" style="color:var(--bad)">Regenerar códigos de barras</button>${R2.worker?`<p class="cf-m" style="margin:12px 0 8px">Cloudflare R2 está conectado: las fotos nuevas se guardan allí. Las anteriores siguen en Supabase hasta que las pases.</p><button type="button" class="btn g s" id="cfR2">Pasar fotos a Cloudflare</button>`:""}</div><h3 style="color:var(--bad)">Zona peligrosa</h3><div class="cf-card cf-bad"><p class="cf-m" style="margin:0 0 10px">Vaciar los datos de prueba para empezar con los reales. No se puede deshacer. Solo el administrador principal.</p><button type="button" class="btn g s" id="cfVac" style="color:var(--bad)">Vaciar datos…</button></div>`;q("#cfVac").onclick=()=>{cerrar();vaciarDatos()};q("#cfFo").onclick=()=>liberarFotos(q("#cfFo"));q("#cfMini").onclick=()=>crearMiniaturas(q("#cfMini"));q("#cfImp").onclick=()=>importarTienda(q("#cfImp"));q("#cfBar").onclick=()=>regenerarBarras(q("#cfBar"));if(q("#cfR2"))q("#cfR2").onclick=()=>pasarFotosR2(q("#cfR2"))}},()=>{});
  q("#cfOut").onclick=salir;
  q("#cfOk").onclick=async()=>{const nom=q("#cfN").value.trim();q("#cfE").textContent="";if(im&&nueva)foto=cv.toDataURL("image/jpeg",.85);
   if(!nom){q("#cfE").textContent="Escribe tu nombre.";return}

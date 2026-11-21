@@ -135,8 +135,8 @@ function recomprimir(o,max,q){
  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(o.src,0,0,c.width,c.height);
  return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
 async function comprimir(file,max,q){return recomprimir(await abrirImg(file),max,q)}
-/* una sola foto por imagen (1000 px): sirve para las tarjetas y para verla en grande */
-const par=async f=>{const o=await abrirImg(f);const m=await recomprimir(o,1000,.82);if(o.src.close)o.src.close();return {main:m,thumb:m}};
+/* cada imagen: foto grande (1000 px, para verla en grande) + miniatura liviana (480 px, para listas, tarjetas y la tienda) */
+const par=async f=>{const o=await abrirImg(f);const m=await recomprimir(o,1000,.82),t=await recomprimir(o,480,.8);if(o.src.close)o.src.close();return {main:m,thumb:t||m}};
 function renderPrevs(){prevUrls.forEach(u=>u.startsWith("blob:")&&URL.revokeObjectURL(u));prevUrls=galeria.map(g=>g.db?(g.thumb_url||g.url):URL.createObjectURL(g.thumb));
  $("prevs").innerHTML=galeria.map((g,i)=>`<figure class="pv${i===0?" first":""}"><img src="${prevUrls[i]}" alt="Imagen ${i+1}">${i===0?'<span class="pvp">Principal</span>':`<button type="button" class="pvs" data-g="${i}" data-k="p" title="Hacer principal" aria-label="Hacer principal">★</button>`}<button type="button" class="pvx" data-g="${i}" data-k="x" title="Quitar esta imagen" aria-label="Quitar esta imagen">×</button><button type="button" class="pvf" data-g="${i}" data-k="f" title="Quitar fondo" aria-label="Quitar fondo">✨</button></figure>`).join("");if(VARS.length)varRender()}
 $("prevs").addEventListener("click",e=>{const b=e.target.closest("button[data-g]");if(!b)return;const i=+b.dataset.g;
@@ -161,8 +161,8 @@ async function quitarFondo(i){const g=galeria[i];if(!g)return;fdIdx=i;fdRec=null
   const rc=await FONDO.recortar(fuente);if(fdIdx!==i||!$("dgFondo").open)return;fdRec=rc;await fdComponer()}
  catch(e){if($("dgFondo").open){$("dgFondo").close();DAY.say("No se pudo quitar el fondo. "+(e.message||""))}}}
 $("fdC").addEventListener("click",async e=>{const b=e.target.closest(".fdc");if(!b)return;fdSel=b.dataset.k;try{localStorage.setItem("dms_fondo",fdSel)}catch(x){}fdPintar();if(fdRec){$("fdOk").disabled=true;await fdComponer()}});
-$("fdOk").onclick=()=>{if(!fdBlob||!galeria[fdIdx])return;const g=galeria[fdIdx];if(g.db)galQuitar.push(g);
- const ng={db:false,main:fdBlob,thumb:fdBlob};VARS.forEach(v=>{if(v.fref===g||(g.db&&v.foto_url&&(v.foto_url===g.url||v.foto_url===g.thumb_url))){v.fref=ng;v.foto_url=null}});galeria[fdIdx]=ng;galSucia=true;renderPrevs();$("dgFondo").close();toast("Listo. Guarda el producto para que se aplique.")};
+$("fdOk").onclick=async()=>{if(!fdBlob||!galeria[fdIdx])return;const g=galeria[fdIdx];let tb=fdBlob;try{const oo=await abrirImg(fdBlob);tb=await recomprimir(oo,480,.8)||fdBlob;if(oo.src&&oo.src.close)oo.src.close()}catch(e){}if(g.db)galQuitar.push(g);
+ const ng={db:false,main:fdBlob,thumb:tb};VARS.forEach(v=>{if(v.fref===g||(g.db&&v.foto_url&&(v.foto_url===g.url||v.foto_url===g.thumb_url))){v.fref=ng;v.foto_url=null}});galeria[fdIdx]=ng;galSucia=true;renderPrevs();$("dgFondo").close();toast("Listo. Guarda el producto para que se aplique.")};
 $("dgFondo").addEventListener("close",()=>{fdIdx=-1;fdRec=null});
 async function addImgs(files,acumular){const fs=[...files||[]].filter(f=>f&&f.type&&f.type.startsWith("image/"));if(!fs.length)return false;
  busy(true,"Preparando imágenes…");try{const n=[];for(const f of fs)n.push(await par(f));n.forEach(x=>galeria.push({db:false,main:x.main,thumb:x.thumb}));galSucia=true;renderPrevs()}catch(e){toast("No se pudo procesar una imagen")}busy(false);return true}
