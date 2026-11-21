@@ -148,7 +148,9 @@ const pvTxt=p=>{if(!p.preventa)return"";let f="";try{f=p.preventa_llega?" · lle
 const resTxt=p=>{const r=p.res||0;if(p.preventa)return pvTxt(p);if(r<1)return"";return r>=p.stock?`<a class="rsv" href="pedidos.html">Mira tus pedidos en línea</a>`:`<span class="rsv">Reservado: ${r} (pedidos en línea)</span>`};
 const imgG=u=>`src="${esc(DAY.grande(u))}" onerror="this.onerror=null;this.src='${esc(u)}'"`;
 const thumb=(p,cls)=>p.foto_url?`<img class="${cls||"im"}" src="${esc(p.foto_url)}" alt="" loading="lazy" decoding="async" data-img="${esc(p.foto_url)}">`:`<div class="ph ${cls==="im"?"s":""}">${inicial(p.nombre)}</div>`;
-const cols=p=>p.vars?`<small class="colv" style="display:block;color:var(--mute)">${p.vars.map(v=>DAY.colorDot(v.vnom)+esc(v.vnom)+" "+v.stock).join(" · ")}</small>`:"";
+/* variantes: miniaturas de sus fotos + «N variantes» (al vender se elige cuál, con su foto) */
+const cols=p=>{if(!p.vars)return"";const L=p.vars.filter(v=>v.vnom!=="Sin color"),n=L.length||p.vars.length,ph=[...new Set((L.length?L:p.vars).map(v=>v.foto_url).filter(Boolean))].slice(0,5);
+ return `<div class="colv" title="${esc(p.vars.map(v=>v.vnom+": "+v.stock).join(" · "))}">${ph.map(u=>`<img src="${esc(u)}" alt="" loading="lazy" decoding="async">`).join("")}<span>${n} variante${n===1?"":"s"}</span></div>`};
 const selQ=p=>p.vars?p.vars.reduce((s,v)=>s+(S.sel.get(v.id)||0),0):(S.sel.get(p.id)||0);
 function chk(p){return S.multi?`<label class="mchk"><input type="checkbox" data-a="sel" data-id="${p.id}" ${selQ(p)?"checked":""} ${p.stock<1?"disabled":""}> Vender${selQ(p)?` <b data-qs="${p.id}" class="qb">×${selQ(p)}</b>`:""}</label>`:""}
 async function togTienda(p){const rid=p.real||p.id,nv=p.publicar_tienda===false;
