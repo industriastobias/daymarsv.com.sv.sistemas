@@ -30,12 +30,12 @@
  .tile span{overflow-wrap:normal;word-break:normal;hyphens:none}
 }
 @media(min-width:800px){.top h1{font-size:30px}}
-/* Tablet (pantalla táctil grande): dos filas por grupo y casillas más altas que llenan la pantalla */
+/* Tablet (pantalla táctil grande): 5 por fila (dos filas por grupo), casillas medianas */
 @media(pointer:coarse) and (min-width:800px){
  @container (min-width:600px){
-  .tiles{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-  .tile{min-height:clamp(78px,calc((100dvh - 410px) / 5),190px);padding:10px 8px;gap:8px;font-size:15px;border-radius:18px}
-  .tile .ic{width:clamp(28px,4dvh,38px);height:clamp(28px,4dvh,38px)}
+  .tiles{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+  .tile{min-height:92px;padding:12px 8px;gap:8px;font-size:13.5px;border-radius:16px}
+  .tile .ic{width:28px;height:28px}
  }
 }
 </style><link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=4"><link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=4"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=4"><link rel="manifest" href="manifest.webmanifest?v=202610311459"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="DAYMARSV"></head><body>
