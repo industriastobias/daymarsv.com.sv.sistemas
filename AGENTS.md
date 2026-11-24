@@ -12,7 +12,7 @@ Léelo completo antes de cambiar algo. Última actualización: 23 de noviembre d
 ## 2. Cómo está hecho
 - Páginas HTML estáticas + JavaScript sin framework (`*.html`, `js/*.js`, `css/*.css`).
 - Base de datos y usuarios: **Supabase** (RLS + funciones RPC). La conexión está en `js/app.js` (`CFG`).
-- **Migraciones**: `migraciones/NNN_nombre.sql`, numeradas en orden (la última es la 102). Un GitHub Action (`.github/workflows/migraciones.yml`) las aplica solas al hacer push. Revisa que el Action termine bien (`gh run list -R industriastobias/daymarsv.com.sv.sistemas -L 2`).
+- **Migraciones**: `migraciones/NNN_nombre.sql`, numeradas en orden (la última es la 103). Un GitHub Action (`.github/workflows/migraciones.yml`) las aplica solas al hacer push. Revisa que el Action termine bien (`gh run list -R industriastobias/daymarsv.com.sv.sistemas -L 2`).
 - **Cloudflare Workers** (carpeta `cloudflare/`): `worker-push.js` (notificaciones push, "daymar-push") y `worker-fotos.js` (fotos en R2, "daymar-fotos").
 - Correos automáticos (facturas, anulaciones, recordatorios, promociones): se envían desde la base de datos con plantillas HTML en las migraciones; todos llevan al pie los íconos de redes (Instagram, TikTok, WhatsApp).
 - `js/app.js` = funciones comunes (sesión, menú `GRUPOS`, íconos `ICON`, ventanas `DAY.ask/say/input`, permisos). `js/comun.js` y `js/almacen.js` = lógica grande de ventas/inventario/facturas.
@@ -27,6 +27,7 @@ Léelo completo antes de cambiar algo. Última actualización: 23 de noviembre d
 
 ## 4. Reglas del dueño (no romperlas)
 - Solo el **administrador principal** puede: editar/borrar en Finanzas, borrar Actividad, borrar facturas, cambiar roles y permisos, cerrar sesiones de otros, hacer el Conteo físico.
+- **Varios principales** (migración 103, pedido del dueño el 24 nov 2026): el **dueño** (cuenta original; `es_dueno()` en la base, `DAY.dueno` en js) puede nombrar otros administradores como **principales** en Usuarios («Nombrar principal» / «Quitar principal», `marcar_principal`, columna `profiles.principal`). Los principales tienen **los mismos poderes que el dueño** (`es_principal()` y `DAY.principal` dan verdadero para ellos). Solo el dueño puede nombrar/quitar principales y cambiar el rol o desactivar a otro principal; nadie puede modificar la cuenta del dueño. Si un principal pasa a vendedor, deja de ser principal. No revisar el correo del dueño en js nuevo: usar `DAY.principal` / `DAY.dueno`.
 - El dueño **nunca** debe mandar por chat su contraseña de Hacienda ni su firma electrónica: esos datos se guardan como secretos del servidor y los pone él mismo.
 - La **factura electrónica** (`dte.html`, `js/dte.js`) es solo una **simulación**: debe seguir diciendo "Simulación · sin validez fiscal" y "Sello de recepción — no enviado" hasta que se conecte de verdad con Hacienda. No quitar esas marcas.
 - No inventar datos ni registros. No borrar información del negocio sin que el dueño lo pida claramente.

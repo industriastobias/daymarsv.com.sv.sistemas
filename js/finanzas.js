@@ -6,7 +6,7 @@
 const {db,esc,$$,ymd,toast,mountSide,requireSession}=DAY;
 const {$,r2,norm,fdate,fetchAll,espera,modal,pedirClave,excel,rango,deb}=UI;
 const me=await requireSession();
-let ESP=false;try{ESP=((await db.auth.getSession()).data.session.user.email||"").toLowerCase()==="aehtobias@gmail.com"}catch(e){}
+let ESP=!!DAY.principal;/* dueño o administradores principales que él nombre */
 if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 mountSide($("side"),"finanzas",me.rol);$("app").classList.remove("hidden");

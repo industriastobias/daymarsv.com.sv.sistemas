@@ -1,6 +1,6 @@
 /* DAYMAR-SHOP · funciones compartidas (conexión, sesión y utilidades) */
 (function(){
-try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611241100";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
+try{if(localStorage.getItem("dms_lang")==="en"){const sc=document.createElement("script");sc.src=(document.currentScript&&document.currentScript.src?document.currentScript.src.replace(/app\.js.*$/,""):"js/")+"idioma.js?v=202611241200";if(document.readyState==="loading")document.write('<script src="'+sc.src+'"><\/script>');else document.head.appendChild(sc)}}catch(e){}
 const CFG={url:"https://itafqiemoulcztmhfqah.supabase.co",key:"sb_publishable_gkdG2OvACj7eGxaa5JSsLw_wO7w0bEB"};
 /* Ninguna consulta puede quedarse colgada para siempre: a los 30 s se corta y la pantalla vuelve a responder (las subidas de archivos quedan fuera) */
 /* Las peticiones de inicio de sesión (/auth/) tampoco se cortan: si se corta una renovación a medias, Supabase invalida la sesión y hay que volver a entrar */
@@ -420,7 +420,7 @@ async function requireSession(){
  {const mk=moduloDePagina();if(mk&&ocultoPara(mk,r.data)){location.replace("menu.html");return null}}
  const vigilar=async()=>{try{const {data:d}=await db.auth.getSession();if(!d.session)return;const p=await db.from("profiles").select("activo,sesion_desde").eq("id",d.session.user.id).single();if(p.data&&(!p.data.activo||sesionCerrada(p.data,d.session)))cerrarPorAdmin()}catch(e){}};
  setInterval(vigilar,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)vigilar()});
- DAY.me=r.data;DAY.email=data.session.user.email;DAY.principal=r.data.rol==="admin"&&String(DAY.email).toLowerCase()==="aehtobias@gmail.com";return r.data}
+ DAY.me=r.data;DAY.email=data.session.user.email;DAY.dueno=r.data.rol==="admin"&&String(DAY.email).toLowerCase()==="aehtobias@gmail.com";DAY.principal=DAY.dueno||(r.data.rol==="admin"&&r.data.principal===true);return r.data}
 /* Puntito de color según el nombre del color (rosado → punto rosado). Si no lo reconoce, no pone nada. */
 const COLORES={rosado:"#f06292",rosa:"#f06292",blanco:"#ffffff",negro:"#1a1a1a",rojo:"#d32f2f",azul:"#1e66d0",celeste:"#5bc0eb",verde:"#2e9d57",amarillo:"#f6d332",naranja:"#f58a1f",anaranjado:"#f58a1f",morado:"#8e44ad",violeta:"#8e44ad",lila:"#b99be0",gris:"#9e9e9e",plateado:"#c0c0c0",plata:"#c0c0c0",dorado:"#d4a62a",oro:"#d4a62a",cafe:"#7b4a2a",marron:"#7b4a2a",beige:"#e8d8b8",crema:"#f3e9d2",turquesa:"#20b2aa",vino:"#7b1e3a",guinda:"#7b1e3a",fucsia:"#e0198b",coral:"#ff7f6a",mostaza:"#d9a21b",nude:"#e3bfa5",salmon:"#fa8f7d",durazno:"#ffb38a",menta:"#98e0c0",transparente:"repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/8px 8px",multicolor:"conic-gradient(red,orange,yellow,green,blue,violet,red)"};
 function mezclar(h,c,p){const n=x=>parseInt(h.slice(x,x+2),16),m=(a,b)=>Math.round(a+(b-a)*p).toString(16).padStart(2,"0");return "#"+m(n(1),c)+m(n(3),c)+m(n(5),c)}

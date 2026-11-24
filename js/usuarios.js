@@ -7,7 +7,8 @@ const me=await requireSession();if(!me)return;
 if(me.rol!=="admin"){location.replace("menu.html");return}
 const PRINCIPAL="aehtobias@gmail.com";
 let EMAIL="";try{EMAIL=(await db.auth.getSession()).data.session.user.email.toLowerCase()}catch(e){}
-const ESP=EMAIL===PRINCIPAL;
+const DUENO=EMAIL===PRINCIPAL;/* solo el dueño nombra o quita principales */
+const ESP=DUENO||(me.rol==="admin"&&me.principal===true);
 mountSide($("side"),"usuarios",me.rol);$("app").classList.remove("hidden");$("bnav").remove();
 document.querySelector("main").style.paddingBottom="30px";
 if(!ESP)$("inv").classList.add("hidden");
@@ -20,9 +21,10 @@ function pintar(){
  $("uKpi").innerHTML=`<div><span>Administradores</span><b>${ad}</b></div><div><span>Vendedores</span><b>${ve}</b></div><div><span>Invitaciones pendientes</span><b>${I.length}</b></div>`;
  $("iList").innerHTML=I.length?I.map(i=>`<div class="rw"><div class="th ph">✉</div><div class="ti"><b>${esc(i.email)}</b><small>${i.rol==="admin"?"Administrador":"Vendedor"}${i.nombre?" · "+esc(i.nombre):""} · invitado ${fdate(i.created_at)}</small></div><span class="bd or">Esperando registro</span>${ESP?`<button class="btn g sm" data-qi="${esc(i.email)}" style="color:var(--bad)">Quitar</button>`:""}</div>`).join(""):`<div class="empty card">No hay invitaciones pendientes.</div>`;
  $("uList").innerHTML=U.map(u=>{const pr=(u.email||"").toLowerCase()===PRINCIPAL;
-  return `<div class="rw">${u.avatar?`<div class="th" style="padding:0;overflow:hidden"><img src="${esc(u.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>`:`<div class="th ph">${esc((u.nombre||"?")[0].toUpperCase())}</div>`}<div class="ti"><b>${esc(u.nombre)}${pr?' <span class="bd ok">Principal</span>':""}</b><small>${esc(u.email||"sin correo")} · desde ${fdate(u.created_at)}</small></div>
+  return `<div class="rw">${u.avatar?`<div class="th" style="padding:0;overflow:hidden"><img src="${esc(u.avatar)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div>`:`<div class="th ph">${esc((u.nombre||"?")[0].toUpperCase())}</div>`}<div class="ti"><b>${esc(u.nombre)}${pr?' <span class="bd ok">Dueño · principal</span>':u.principal&&u.rol==="admin"?' <span class="bd ok">Principal</span>':""}</b><small>${esc(u.email||"sin correo")} · desde ${fdate(u.created_at)}</small></div>
   <span class="bd ${u.rol==="admin"?"pu":"bl2"}">${u.rol==="admin"?"Administrador":"Vendedor"}</span>${u.activo?"":'<span class="bd mu">Desactivado</span>'}
-  ${ESP&&!pr?`${u.rol!=="admin"?`<button class="btn g sm" data-perm="${u.id}">Permisos${Array.isArray(u.modulos_ocultos)&&u.modulos_ocultos.length?" ("+u.modulos_ocultos.length+" ocultos)":""}</button>`:""}<button class="btn g sm" data-rol="${u.id}">Hacer ${u.rol==="admin"?"vendedor":"administrador"}</button><button class="btn g sm" data-ses="${u.id}">Cerrar sesión</button><button class="btn g sm" data-act="${u.id}" ${u.activo?'style="color:var(--bad)"':""}>${u.activo?"Desactivar":"Activar"}</button>`:""}</div>`}).join("")}
+  ${ESP&&!pr?(()=>{const otroPri=u.principal&&u.rol==="admin",puede=DUENO||!otroPri;
+   return `${DUENO&&u.rol==="admin"&&u.activo?`<button class="btn g sm" data-pri="${u.id}">${otroPri?"Quitar principal":"Nombrar principal"}</button>`:""}${puede&&u.rol!=="admin"?`<button class="btn g sm" data-perm="${u.id}">Permisos${Array.isArray(u.modulos_ocultos)&&u.modulos_ocultos.length?" ("+u.modulos_ocultos.length+" ocultos)":""}</button>`:""}${puede?`<button class="btn g sm" data-rol="${u.id}">Hacer ${u.rol==="admin"?"vendedor":"administrador"}</button>`:""}${u.id!==me.id?`<button class="btn g sm" data-ses="${u.id}">Cerrar sesión</button>`:""}${puede&&u.id!==me.id?`<button class="btn g sm" data-act="${u.id}" ${u.activo?'style="color:var(--bad)"':""}>${u.activo?"Desactivar":"Activar"}</button>`:""}`})():""}</div>`}).join("")}
 $("iAdd").onclick=async()=>{const em=$("iEm").value.trim().toLowerCase(),rol=$("iRol").value;
  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){toast("Escribe un correo válido");return}
  const ok=await espera(async()=>{await rpc("invitar_usuario",{p_email:em,p_rol:rol,p_nombre:$("iNom").value.trim()||null});return true});
@@ -31,7 +33,12 @@ $("iList").addEventListener("click",async e=>{const b=e.target.closest("[data-qi
  if(!await confirmar("Se quitará la invitación de <b>"+esc(b.dataset.qi)+"</b>. Ya no podrá crear su cuenta.",{titulo:"Quitar invitación",ok:"Quitar",peligro:true}))return;
  const ok=await espera(async()=>{await rpc("quitar_invitacion",{p_email:b.dataset.qi});return true});if(ok){await cargar();pintar()}});
 $("uList").addEventListener("click",async e=>{
- const r=e.target.closest("[data-rol]"),a=e.target.closest("[data-act]"),c=e.target.closest("[data-ses]"),pm=e.target.closest("[data-perm]");
+ const r=e.target.closest("[data-rol]"),a=e.target.closest("[data-act]"),c=e.target.closest("[data-ses]"),pm=e.target.closest("[data-perm]"),pi=e.target.closest("[data-pri]");
+ if(pi){const u=U.find(x=>x.id===pi.dataset.pri),si=!u.principal;
+  if(!await confirmar(si?`<b>${esc(u.nombre)}</b> tendrá tus mismos poderes: Finanzas, borrar Actividad y facturas, Conteo físico, usuarios, roles, permisos y cerrar sesiones.<p class="pw">Solo tú podrás quitarle el principal. Nadie podrá cambiar tu cuenta.</p>`:`<b>${esc(u.nombre)}</b> seguirá siendo administrador, pero ya no tendrá los poderes del principal.`,{titulo:si?"Nombrar principal":"Quitar principal",ok:si?"Nombrar principal":"Quitar principal",peligro:!si}))return;
+  if(si&&!await pedirClave("Vas a darle a "+u.nombre+" los poderes del administrador principal."))return;
+  const ok=await espera(async()=>{await rpc("marcar_principal",{p_id:u.id,p_si:si});return true});
+  if(ok){toast(si?u.nombre+" ahora es principal. Se aplica cuando recargue el sistema.":"Ya no es principal");await cargar();pintar()}return}
  if(pm){const u=U.find(x=>x.id===pm.dataset.perm),oc=new Set(Array.isArray(u.modulos_ocultos)?u.modulos_ocultos:[]);
   const mods=DAY.GRUPOS.flatMap(g=>g.m.filter(m=>!m.adm&&!m.pri).map(m=>({...m,g:g.t})));
   const d=document.createElement("dialog");d.style.cssText="border:0;border-radius:16px;padding:0;width:min(460px,94vw);max-height:88vh;background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)";
