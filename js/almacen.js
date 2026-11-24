@@ -424,7 +424,7 @@ async function autoFactura(ventaId,cli,opt){opt=opt||{};
 function elegirColor(p,cb){
  const m=modal("Elige el color",`<p style="margin:0 0 8px"><b>${esc(p.nombre)}</b></p><div id="clL">${p.vars.map((v,i)=>`<button type="button" class="sv" data-c="${i}" ${v.stock<1?"disabled":""} style="width:100%;text-align:left;cursor:pointer;display:flex;gap:10px;align-items:center;${v.stock<1?"opacity:.5":""}">${v.foto_url&&v.foto_url!==p.foto_url?`<img src="${esc(v.foto_url)}" alt="" style="width:46px;height:46px;border-radius:10px;object-fit:cover;flex:none">`:""}<div class="ti"><b>${DAY.colorDot(v.vnom)}${esc(v.vnom)}</b><small>${v.stock<1?"Agotado":"Disponibles: "+v.stock}</small></div></button>`).join("")}</div>`,{foot:`<button class="btn g" data-x>Cancelar</button>`});
  m.q("#clL").addEventListener("click",e=>{const b=e.target.closest("[data-c]");if(!b||b.disabled)return;const v=p.vars[+b.dataset.c];m.close();cb(v)})}
-function abrirVenta(p){if(p.vars){elegirColor(p,abrirVenta);return}
+function abrirVenta(p){if(!S.multi&&cajaBloqueada()){pedirCaja();return}if(p.vars){elegirColor(p,abrirVenta);return}
  if(S.multi){addSel(p.id);return}
  snd("beep");let unl=false;
  const m=modal("Vender producto",`
@@ -476,6 +476,7 @@ async function comprimirFoto(file,max,q){
  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(src,0,0,c.width,c.height);
  return new Promise(r=>c.toBlob(r,"image/jpeg",q))}
 function ventaRapida(){
+ if(cajaBloqueada()){pedirCaja();return}
  const m=modal("Venta rápida",`
   <div class="fg"><div class="full"><label>Nombre del producto *</label><input id="fqN" maxlength="120" placeholder="Ej: Pulsera sin registrar"></div>
    <div><label>Precio unitario *</label><div class="ig"><span>$</span><input id="fqP" type="number" min="0" step="0.01" placeholder="0.00"></div></div>
@@ -518,6 +519,7 @@ function modoMulti(on){S.multi=on===undefined?!S.multi:on;if(!S.multi)S.sel.clea
  $("bMulti").classList.toggle("on",S.multi);$("bMulti").setAttribute("aria-pressed",String(S.multi));
  if(S.tab!=="inv")tab("inv");pintarInv()}
 function abrirMulti(){
+ if(cajaBloqueada()){pedirCaja();return}
  const L=lineasMulti();if(!L.length){toast("Marca al menos un producto");return}
  const m=modal("Venta múltiple",`<div class="mlt" id="mlT"></div><div class="mladd"><input id="mlS" type="search" autocomplete="off" placeholder="Agregar otro producto: nombre, código o barras"><div id="mlR" class="mlr hidden"></div></div><div class="ml" id="mlL"></div><div style="text-align:right;margin-top:6px"><button class="btn g sm" id="mlClr" type="button">Vaciar</button></div><div id="mlO" style="margin-top:12px">${optHTML()}</div>`,{big:false,foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="mlGo">Confirmar venta</button>`,onclose:resumenMulti});
  const sub=()=>lineasMulti().reduce((s,l)=>s+(Number.isInteger(l.q)&&l.q>0?cents(l.p.fin)*l.q:0),0);
@@ -1464,13 +1466,18 @@ async function historialCierres(){
 /* ---------- abrir caja (opción «A · caja del día», migración 101) ---------- */
 let CAJA=null;
 async function cargarCaja(){try{const {data,error}=await db.rpc("caja_estado");if(error)throw error;CAJA=data&&typeof data==="object"?data:null}catch(e){CAJA=null}pintarCaja();return CAJA}
+/* Vendedores: deben abrir la caja para vender (administradores solo ven el aviso) */
+function cajaBloqueada(){return me.rol!=="admin"&&!SOLO&&!!CAJA&&CAJA.abierta===false}
+async function pedirCaja(){if(await confirmar("Antes de vender tienes que abrir la caja con el efectivo con el que empiezas.",{titulo:"Abre la caja",ok:"Abrir caja"}))abrirCaja()}
 function pintarCaja(){
- const hoy=ymd(new Date()),el=$("hCaja"),av=$("cajaAv");if(!el||!av)return;
- if(!CAJA||SOLO){el.innerHTML="";av.innerHTML="";av.classList.add("hidden");return}
+ const hoy=ymd(new Date()),el=$("hCaja"),av=$("cajaAv"),mc=$("mCaja");if(!el||!av)return;
+ if(!CAJA||SOLO){el.innerHTML="";av.innerHTML="";av.classList.add("hidden");if(mc)mc.innerHTML="";return}
+ if(mc)mc.innerHTML=CAJA.abierta?`<button data-caja="mov" type="button">Entrada / salida de efectivo</button><button data-caja="cerrar" type="button">Cerrar caja</button><hr>`:`<button data-caja="abrir" type="button">Abrir caja</button><hr>`;
+ const obl=me.rol!=="admin";
  if(!CAJA.abierta){
-  const ban=x=>`<div class="cja-av"><span class="ic" aria-hidden="true">🔒</span><div><b>La caja está cerrada</b><small>Ábrela para empezar a vender.</small></div><button class="btn sm" data-caja="abrir" type="button">Abrir caja</button>${x?`<button class="cja-x" data-caja="x" type="button" title="Ocultar por hoy" aria-label="Ocultar por hoy">×</button>`:""}</div>`;
+  const ban=x=>`<div class="cja-av"><span class="ic" aria-hidden="true">🔒</span><div><b>La caja está cerrada</b><small>${obl?"Abre la caja para poder vender.":"Ábrela para empezar a vender."}</small></div><button class="btn sm" data-caja="abrir" type="button">Abrir caja</button>${x?`<button class="cja-x" data-caja="x" type="button" title="Ocultar por hoy" aria-label="Ocultar por hoy">×</button>`:""}</div>`;
   el.innerHTML=($("hDate").value||hoy)===hoy?ban(false):"";
-  const ocu=LS("dms_caja_x")===hoy;av.innerHTML=ocu?"":ban(true);av.classList.toggle("hidden",ocu);return}
+  const ocu=!obl&&LS("dms_caja_x")===hoy;av.innerHTML=ocu?"":ban(!obl);av.classList.toggle("hidden",ocu);return}
  av.innerHTML="";av.classList.add("hidden");
  const C=CAJA,fila=(t,v,c)=>`<div${c?` class="${c}"`:""}><span>${t}</span><b>${v}</b></div>`,sg=v=>(+v<0?"−":"+")+$$(Math.abs(+v));
  const movs=(C.movimientos||[]).map(m=>fila(`${m.tipo==="salida"?"Salida":"Entrada"} · ${esc(m.motivo)} <small>${ftime(m.hora)}</small>`,(m.tipo==="salida"?"−":"+")+$$(m.monto),"mv")).join("");
