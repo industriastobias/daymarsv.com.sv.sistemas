@@ -768,7 +768,7 @@ async function eliminarVenta(id,after){
   const ok=await espera(async()=>{await rpc("eliminar_venta",{p_venta:id,p_devolver:dev,p_conservar_factura:cons});return true});
   if(ok){m.close();toast(dev?"Venta eliminada y stock devuelto":"Venta eliminada");snd("ok");await cargarProductos();filtrar(true);await after();await avisoAnulacion(fac)}}}
 async function pintarHoy(){
- const d=$("hDate").value||ymd(new Date());$("hDate").value=d;
+ const d=$("hDate").value||ymd(new Date());$("hDate").value=d;cargarCaja();
  const L=await espera(()=>ventasRango(d,d));if(!L)return;S.ventas=L;
  const g={ef:[0,0],tr:[0,0],tj:[0,0],ent:[0,0],cod:[0,0],cob:[0,0]};
  L.forEach(v=>{const m=v.metodo_pago==="Transferencia"?"tr":v.metodo_pago==="Tarjeta"?"tj":"ef";
@@ -1034,6 +1034,7 @@ async function cierreHTML(c,fmt){
  <div class="tt"><div class="g"><span>Total vendido</span><span>${money(c.total_ventas)}</span></div>
   <div><span>Ventas completadas</span><span>${c.n_ventas}</span></div><div><span>Ventas anuladas</span><span>${c.n_anuladas}</span></div>
   ${ADM?`<div><span>Costo de lo vendido</span><span>${money(c.costo_total)}</span></div><div><span>Utilidad bruta</span><span>${money(util)}</span></div>`:""}
+  ${R.caja?`<div><span>Fondo inicial de caja</span><span>${money(R.caja.fondo)}</span></div>${+R.caja.abonos?`<div><span>Abonos en efectivo</span><span>${money(R.caja.abonos)}</span></div>`:""}${+R.caja.entradas?`<div><span>Entradas de efectivo</span><span>${money(R.caja.entradas)}</span></div>`:""}${+R.caja.salidas?`<div><span>Salidas de efectivo</span><span>−${money(R.caja.salidas)}</span></div>`:""}`:""}
   <div><span>Efectivo esperado</span><span>${money(c.esperado_efectivo)}</span></div>
   ${c.efectivo_contado!=null?`<div><span>Efectivo contado</span><span>${money(c.efectivo_contado)}</span></div><div><b>Diferencia</b><b style="color:${+c.diferencia===0?"#2f7d4f":"#b3261e"}">${money(c.diferencia)}</b></div>`:""}</div>
  ${c.nota?`<div class="nt"><b>Nota:</b> ${esc(c.nota)}</div>`:""}</div>`}
@@ -1417,13 +1418,14 @@ async function cerrarPeriodo(d,h){
  L.forEach(v=>{const k=v.tipo==="entrega_pendiente"?"ent":v.tipo==="cod"?"cod":v.tipo==="cobro_pendiente"?"cob":v.metodo_pago==="Transferencia"?"tr":v.metodo_pago==="Tarjeta"?"tj":"ef";g[k][0]+=+v.total;g[k][1]++});
  let dv={n:0,t:0,ef:0};try{const r=await db.from("devoluciones").select("diferencia,metodo,monto_devuelto,monto_nuevo").gte("fecha",d).lte("fecha",h);(r.data||[]).forEach(x=>{dv.n++;dv.t+=+x.monto_nuevo-+x.monto_devuelto;if(x.metodo==="Efectivo")dv.ef+=+x.diferencia})}catch(e){}
  g.ef[0]+=dv.ef;const tot=Object.values(g).reduce((s,x)=>s+x[0],0)-dv.ef+dv.t;
- const m=modal("Cerrar caja · "+rangoTxt(d,h),`<div class="stats"><div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Ventas</span><b>${L.length}</b></div><div><span>Efectivo esperado</span><b>${$$(g.ef[0])}</b></div><div><span>Transferencias</span><b>${$$(g.tr[0])}</b></div><div><span>Tarjeta</span><b>${$$(g.tj[0])}</b></div></div>
-  ${dv.n?`<p class="hint">Incluye ${dv.n} devolución(es) o cambio(s) ${per}: ${dv.t<0?"−":""}${$$(Math.abs(dv.t))} en ventas netas${dv.ef?` y ${dv.ef<0?"salieron":"entraron"} ${$$(Math.abs(dv.ef))} en efectivo`:""}.</p>`:""}<p class="pw">Cuenta el efectivo que hay en caja y escríbelo para ver la diferencia. Cerrar la caja <b>guarda un registro</b> ${un?"del día":"de todo el periodo"}; no borra ventas ni cambia el inventario.</p>
-  <div class="fg"><div><label>Efectivo contado <small>(opcional)</small></label><input name="cc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="${g.ef[0].toFixed(2)}"></div><div><label>Nota <small>(opcional)</small></label><input name="cn" maxlength="200"></div></div><div class="err2" id="ccE"></div>`,
+ await cargarCaja();const cj=CAJA&&CAJA.abierta&&CAJA.fecha>=d&&CAJA.fecha<=h?CAJA:null,ext=cj?r2(+cj.fondo+ +cj.abonos_ef+ +cj.entradas- +cj.salidas):0;
+ const m=modal("Cerrar caja · "+rangoTxt(d,h),`<div class="stats"><div><span>Total vendido</span><b>${$$(tot)}</b></div><div><span>Ventas</span><b>${L.length}</b></div><div><span>Efectivo esperado</span><b>${$$(g.ef[0]+ext)}</b></div><div><span>Transferencias</span><b>${$$(g.tr[0])}</b></div><div><span>Tarjeta</span><b>${$$(g.tj[0])}</b></div></div>
+  ${dv.n?`<p class="hint">Incluye ${dv.n} devolución(es) o cambio(s) ${per}: ${dv.t<0?"−":""}${$$(Math.abs(dv.t))} en ventas netas${dv.ef?` y ${dv.ef<0?"salieron":"entraron"} ${$$(Math.abs(dv.ef))} en efectivo`:""}.</p>`:""}${cj?`<p class="hint">Incluye la caja abierta: fondo inicial ${$$(cj.fondo)}${+cj.abonos_ef?`, abonos en efectivo ${$$(cj.abonos_ef)}`:""}${+cj.entradas?`, entradas ${$$(cj.entradas)}`:""}${+cj.salidas?`, salidas −${$$(cj.salidas)}`:""}.</p>`:""}<p class="pw">Cuenta el efectivo que hay en caja y escríbelo para ver la diferencia. Cerrar la caja <b>guarda un registro</b> ${un?"del día":"de todo el periodo"}; no borra ventas ni cambia el inventario.</p>
+  <div class="fg"><div><label>Efectivo contado <small>(opcional)</small></label><input name="cc" type="number" min="0" step="0.01" inputmode="decimal" placeholder="${(g.ef[0]+ext).toFixed(2)}"></div><div><label>Nota <small>(opcional)</small></label><input name="cn" maxlength="200"></div></div><div class="err2" id="ccE"></div>`,
   {foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="ccOk">Guardar cierre</button>`});
  m.q("#ccOk").onclick=async()=>{const v=m.q("[name=cc]").value.trim();if(v!==""&&!(Number(v)>=0)){m.q("#ccE").textContent="Efectivo no válido.";return}
   const id=await espera(()=>rpc("cerrar_caja",{p_fecha:d,p_hasta:un?null:h,p_contado:v===""?null:Number(v),p_nota:m.q("[name=cn]").value}),"Guardando cierre…");if(!id)return;
-  m.close();toast("Cierre de caja guardado");snd("ok");await verCierre(id,true);if(ADM)liberarFotos()}}
+  m.close();toast("Cierre de caja guardado");snd("ok");await cargarCaja();if(S.tab==="hoy")pintarHoy();await verCierre(id,true);if(ADM)liberarFotos()}}
 /* Tras el cierre: quita las fotos grandes de productos agotados y deja una sola miniatura para reconocerlos */
 async function liberarFotos(){
  try{const ids=S.prods.filter(p=>p.stock<=0).map(p=>p.id);if(!ids.length)return;
@@ -1447,7 +1449,7 @@ async function correoCierre(c,auto){
  const cf=await ensureCfg(),neg=cf.nombre||"DAYMARSV",R=c.resumen||{},util=+c.total_ventas-+c.costo_total;
  const N={ef:"Efectivo",tr:"Transferencia",tj:"Tarjeta",ent:"Pend. de entrega (completadas)",cod:"Contra entrega (completadas)",cob:"Pend. de cobro (completadas)",dev:"Devoluciones y cambios (neto)"};
  const rows=Object.keys(N).filter(k=>k!=="dev"||R.dev).map(k=>`<tr><td style="padding:6px;border-bottom:1px solid #eee">${N[k]}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:center">${(R[k]||{}).n||0}</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right">${money((R[k]||{}).total||0)}</td></tr>`).join("");
- const h=caja(neg,"Cierre de caja · "+rangoTxt(c.fecha,c.fecha_hasta),`<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #222">Concepto</th><th style="padding:6px;border-bottom:2px solid #222">Ventas</th><th style="text-align:right;padding:6px;border-bottom:2px solid #222">Total</th></tr>${rows}</table><table style="width:100%;font-size:14px;margin-top:10px">${filaK("Total vendido",money(c.total_ventas),1)}${filaK("Ventas completadas",c.n_ventas)}${filaK("Ventas anuladas",c.n_anuladas)}${filaK("Costo de lo vendido",money(c.costo_total))}${filaK("Utilidad bruta",money(util))}${filaK("Efectivo esperado",money(c.esperado_efectivo))}${c.efectivo_contado!=null?filaK("Efectivo contado",money(c.efectivo_contado))+filaK("Diferencia",money(c.diferencia),1):""}</table>${c.nota?`<p style="font-size:13px;color:#444"><b>Nota:</b> ${esc(c.nota)}</p>`:""}<p style="text-align:center;font-size:12px;color:#777;margin-top:16px">Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)}${c.profiles?" por "+esc(c.profiles.nombre):""}</p>`);
+ const h=caja(neg,"Cierre de caja · "+rangoTxt(c.fecha,c.fecha_hasta),`<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th style="text-align:left;padding:6px;border-bottom:2px solid #222">Concepto</th><th style="padding:6px;border-bottom:2px solid #222">Ventas</th><th style="text-align:right;padding:6px;border-bottom:2px solid #222">Total</th></tr>${rows}</table><table style="width:100%;font-size:14px;margin-top:10px">${filaK("Total vendido",money(c.total_ventas),1)}${filaK("Ventas completadas",c.n_ventas)}${filaK("Ventas anuladas",c.n_anuladas)}${filaK("Costo de lo vendido",money(c.costo_total))}${filaK("Utilidad bruta",money(util))}${R.caja?filaK("Fondo inicial de caja",money(R.caja.fondo))+(+R.caja.abonos?filaK("Abonos en efectivo",money(R.caja.abonos)):"")+(+R.caja.entradas?filaK("Entradas de efectivo",money(R.caja.entradas)):"")+(+R.caja.salidas?filaK("Salidas de efectivo","−"+money(R.caja.salidas)):""):""}${filaK("Efectivo esperado",money(c.esperado_efectivo))}${c.efectivo_contado!=null?filaK("Efectivo contado",money(c.efectivo_contado))+filaK("Diferencia",money(c.diferencia),1):""}</table>${c.nota?`<p style="font-size:13px;color:#444"><b>Nota:</b> ${esc(c.nota)}</p>`:""}<p style="text-align:center;font-size:12px;color:#777;margin-top:16px">Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)}${c.profiles?" por "+esc(c.profiles.nombre):""}</p>`);
  try{await rpc("enviar_correo_simple",{p_para:para,p_asunto:"Cierre de caja "+rangoTxt(c.fecha,c.fecha_hasta)+" – "+neg,p_html:h,p_copia:false,p_tipo:"cierre",p_ref:rangoTxt(c.fecha,c.fecha_hasta)});toast("Cierre enviado a "+para)}catch(e){if(!auto)toast(e.message)}}
 async function verCierre(id,auto){
  const c=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("*,profiles(nombre)").eq("id",id).single();if(error)throw new Error(error.message);return data});
@@ -1459,6 +1461,61 @@ async function historialCierres(){
  const L=await espera(async()=>{const {data,error}=await db.from("cierres_caja").select("id,fecha,fecha_hasta,total_ventas,n_ventas,diferencia,created_at").order("created_at",{ascending:false}).limit(60);if(error)throw new Error(error.message);return data});if(!L)return;
  const m=modal("Cierres de caja anteriores",L.length?L.map(c=>`<div class="sv" data-cc="${c.id}" style="cursor:pointer"><div class="ti"><b>${rangoTxt(c.fecha,c.fecha_hasta)}</b><small>Cerrado ${fdate(c.created_at)} ${ftime(c.created_at)} · ${c.n_ventas} ventas</small></div><div class="am2"><b>${$$(c.total_ventas)}</b>${c.diferencia!=null?`<small style="color:${+c.diferencia===0?"var(--ok)":"var(--bad)"}">dif. ${$$(c.diferencia)}</small>`:""}</div></div>`).join(""):`<div class="empty">Todavía no hay cierres guardados.</div>`,{});
  m.el.addEventListener("click",e=>{const r=e.target.closest("[data-cc]");if(r){m.close();verCierre(r.dataset.cc)}})}
+/* ---------- abrir caja (opción «A · caja del día», migración 101) ---------- */
+let CAJA=null;
+async function cargarCaja(){try{const {data,error}=await db.rpc("caja_estado");if(error)throw error;CAJA=data&&typeof data==="object"?data:null}catch(e){CAJA=null}pintarCaja();return CAJA}
+function pintarCaja(){
+ const hoy=ymd(new Date()),el=$("hCaja"),av=$("cajaAv");if(!el||!av)return;
+ if(!CAJA||SOLO){el.innerHTML="";av.innerHTML="";av.classList.add("hidden");return}
+ if(!CAJA.abierta){
+  const ban=x=>`<div class="cja-av"><span class="ic" aria-hidden="true">🔒</span><div><b>La caja está cerrada</b><small>Ábrela para empezar a vender.</small></div><button class="btn sm" data-caja="abrir" type="button">Abrir caja</button>${x?`<button class="cja-x" data-caja="x" type="button" title="Ocultar por hoy" aria-label="Ocultar por hoy">×</button>`:""}</div>`;
+  el.innerHTML=($("hDate").value||hoy)===hoy?ban(false):"";
+  const ocu=LS("dms_caja_x")===hoy;av.innerHTML=ocu?"":ban(true);av.classList.toggle("hidden",ocu);return}
+ av.innerHTML="";av.classList.add("hidden");
+ const C=CAJA,fila=(t,v,c)=>`<div${c?` class="${c}"`:""}><span>${t}</span><b>${v}</b></div>`,sg=v=>(+v<0?"−":"+")+$$(Math.abs(+v));
+ const movs=(C.movimientos||[]).map(m=>fila(`${m.tipo==="salida"?"Salida":"Entrada"} · ${esc(m.motivo)} <small>${ftime(m.hora)}</small>`,(m.tipo==="salida"?"−":"+")+$$(m.monto),"mv")).join("");
+ el.innerHTML=`<div class="cja card">
+  <div class="cja-st"><i class="cja-dot" aria-hidden="true"></i><b>Caja abierta</b><span>desde ${C.fecha!==hoy?fdate(C.fecha)+" ":""}${ftime(C.abierta_en)}${C.abierta_por?" · "+esc(C.abierta_por):""}</span></div>
+  ${C.fecha!==hoy?`<p class="cja-vieja">Esta caja se abrió otro día y no se cerró. Ciérrala para empezar la de hoy.</p>`:""}
+  <div class="cja-rows">${fila("Fondo inicial",$$(C.fondo))}${fila("Ventas en efectivo","+"+$$(C.ventas_ef))}${+C.devoluciones_ef?fila("Devoluciones en efectivo",sg(C.devoluciones_ef)):""}${+C.abonos_ef?fila("Abonos en efectivo","+"+$$(C.abonos_ef)):""}${movs}</div>
+  <div class="cja-big"><small>Efectivo que debe haber</small><b>${$$(C.esperado)}</b></div>
+  ${C.nota?`<p class="cja-nota">${esc(C.nota)}</p>`:""}
+  <div class="cja-bt"><button class="btn g" data-caja="mov" type="button">Entrada / salida</button><button class="btn" data-caja="cerrar" type="button">Cerrar caja</button></div></div>`}
+function abrirCaja(){
+ const ult=CAJA&&CAJA.ultimo_fondo!=null?+CAJA.ultimo_fondo:null,ahora=new Date();
+ const ops=[[0,"$0"]];if(ult!=null&&ult>0)ops.push([ult,"Igual que la última vez · "+$$(ult)]);[20,50,100].forEach(v=>{if(v!==ult)ops.push([v,"$"+v])});
+ const fl=ahora.toLocaleDateString("es-SV",{weekday:"long",day:"numeric",month:"long"});
+ const m=modal("Abrir caja",`<p class="pw" style="margin-top:0">${fl.charAt(0).toUpperCase()+fl.slice(1)} · ${ftime(ahora)}</p>
+  <label for="caF">¿Con cuánto efectivo empiezas?</label><input id="caF" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" value="${ult!=null?ult.toFixed(2):""}" class="cja-amt">
+  <div class="cja-ch" id="caCh">${ops.map(([v,t])=>`<button type="button" data-v="${v}"${ult!=null&&v===ult?' class="on"':""}>${t}</button>`).join("")}</div>
+  <label for="caN">Nota <small>(opcional)</small></label><input id="caN" maxlength="200" placeholder="Ej. cambio en monedas">
+  <div class="err2" id="caE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="caOk">Abrir caja</button>`});
+ const F=m.q("#caF"),ch=m.q("#caCh");
+ const marca=()=>ch.querySelectorAll("button").forEach(b=>b.classList.toggle("on",F.value!==""&&+b.dataset.v===+F.value));
+ ch.addEventListener("click",e=>{const b=e.target.closest("[data-v]");if(!b)return;F.value=(+b.dataset.v).toFixed(2);marca()});F.addEventListener("input",marca);
+ setTimeout(()=>{try{F.focus();F.select()}catch(e){}},80);
+ m.q("#caOk").onclick=async()=>{const v=F.value.trim()===""?0:Number(F.value);
+  if(!(v>=0)||v>100000){m.q("#caE").textContent="Escribe un efectivo inicial válido.";return}
+  const id=await espera(()=>rpc("abrir_caja",{p_fondo:r2(v),p_nota:m.q("#caN").value.trim()||null}),"Abriendo caja…");if(!id)return;
+  m.close();toast("Caja abierta");snd("ok");await cargarCaja()}}
+function movCaja(){
+ const MOT={salida:["Pago de envío","Compra de empaques","Gasto del local","Retiro del dueño"],entrada:["Cambio","Dinero agregado"]};
+ const m=modal("Entrada o salida de efectivo",`<div class="cpk" id="cmT"><button type="button" data-t="salida" class="on">Salida</button><button type="button" data-t="entrada">Entrada</button></div>
+  <label for="cmM" style="margin-top:12px">Monto</label><input id="cmM" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" class="cja-amt">
+  <label for="cmR">Motivo</label><input id="cmR" maxlength="120" placeholder="¿Para qué fue?"><div class="cja-ch" id="cmC"></div>
+  <div class="err2" id="cmE"></div>`,{foot:`<button class="btn g" data-x>Cancelar</button><button class="btn" id="cmOk">Guardar</button>`});
+ let t="salida";const pc=()=>{m.q("#cmC").innerHTML=MOT[t].map(x=>`<button type="button" data-m="${x}">${x}</button>`).join("")};pc();
+ m.q("#cmT").addEventListener("click",e=>{const b=e.target.closest("[data-t]");if(!b)return;t=b.dataset.t;m.q("#cmT").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));pc()});
+ m.q("#cmC").addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(b)m.q("#cmR").value=b.dataset.m});
+ setTimeout(()=>{try{m.q("#cmM").focus()}catch(e){}},80);
+ m.q("#cmOk").onclick=async()=>{const v=Number(m.q("#cmM").value),r=m.q("#cmR").value.trim();
+  if(!(v>0)||v>100000){m.q("#cmE").textContent="Escribe un monto válido.";return}
+  if(!r){m.q("#cmE").textContent="Escribe el motivo.";return}
+  const id=await espera(()=>rpc("caja_movimiento",{p_tipo:t,p_monto:r2(v),p_motivo:r}),"Guardando…");if(!id)return;
+  m.close();toast(t==="salida"?"Salida anotada":"Entrada anotada");snd("ok");await cargarCaja()}}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-caja]");if(!b)return;const k=b.dataset.caja;
+ if(k==="abrir")abrirCaja();else if(k==="mov")movCaja();else if(k==="cerrar"&&CAJA&&CAJA.abierta)cerrarPeriodo(CAJA.fecha,CAJA.fecha);
+ else if(k==="x"){LS("dms_caja_x",ymd(new Date()));pintarCaja()}});
 $("hClose").onclick=cerrarCaja;$("hHist").onclick=historialCierres;
 
 
@@ -1571,7 +1628,7 @@ drawHist();
 await db.rpc("aplicar_programados");
 await espera(async()=>{await Promise.all([cargarProductos(),cargarPend()])},"Cargando inventario…");
 try{const c=JSON.parse(sessionStorage.getItem("dms_cart")||"[]"),ok=c.filter(([id,q])=>S.byId.has(id)&&q>0&&q<=S.byId.get(id).stock);if(ok.length){S.sel=new Map(ok);S.multi=true;$("bMulti").classList.add("on");$("bMulti").setAttribute("aria-pressed","true");toast("Recuperé tu venta múltiple en curso")}}catch(e){}
-{const h0=(location.hash||"").slice(1);if(!SOLO&&h0==="pend")location.replace("pendientes.html");else tab(SOLO?"pend":["hoy","ven","fac"].includes(h0)?h0:"inv")}filtrar();
+{const h0=(location.hash||"").slice(1);if(!SOLO&&h0==="pend")location.replace("pendientes.html");else tab(SOLO?"pend":["hoy","ven","fac"].includes(h0)?h0:"inv")}filtrar();cargarCaja();
 await (async()=>{let pv=null;try{pv=JSON.parse(sessionStorage.getItem("dms_pedido_pv")||"null");sessionStorage.removeItem("dms_pedido_pv")}catch(e){}
  if(!pv||SOLO||!pv.items||!pv.items.length)return;
  const sel=new Map(),aviso=[];
