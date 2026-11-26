@@ -28,7 +28,9 @@ function pintar(){
  $("uKpi").innerHTML=`<div><span>Administradores</span><b>${ad}</b></div><div><span>Vendedores</span><b>${ve}</b></div><div><span>Invitaciones pendientes</span><b>${I.length}</b></div>`;
  $("iWrap").classList.toggle("hidden",!I.length);
  $("iList").innerHTML=I.map(i=>`<div class="rw"><div class="th ph">✉</div><div class="ti"><b>${esc(i.email)}</b><small>${i.rol==="admin"?"Administrador":"Vendedor"}${i.nombre?" · "+esc(i.nombre):""} · invitado ${fdate(i.created_at)}</small></div><span class="bd or">Esperando registro</span>${ESP?`<button class="btn g sm" data-qi="${esc(i.email)}" style="color:var(--bad)">Quitar</button>`:""}</div>`).join("");
- $("uList").innerHTML=U.map(u=>{const pr=esDueno(u),ok=puede(u),yo=u.id===me.id;
+ /* el dueño primero, luego las cuentas activas y al final las desactivadas (cada grupo por fecha de alta) */
+ const orden=[...U].sort((a,b)=>(esDueno(b)-esDueno(a))||((b.activo?1:0)-(a.activo?1:0)));
+ $("uList").innerHTML=orden.map(u=>{const pr=esDueno(u),ok=puede(u),yo=u.id===me.id;
   const bdg=pr?'<span class="bd ok">Dueño</span>':otroPri(u)?'<span class="bd ok">Principal</span>':"";
   const rol=`<span class="bd ${u.rol==="admin"?"pu":"bl2"}">${u.rol==="admin"?"Administrador":"Vendedor"}</span>`;
   const est=u.activo?"":' <span class="bd mu">Desactivada</span>';
