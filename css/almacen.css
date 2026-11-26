@@ -375,3 +375,12 @@ input.cja-amt{font:700 22px "Bricolage Grotesque",sans-serif;padding:10px 12px}
 .cja-ch button{border:1px solid var(--line);background:none;color:var(--ink);border-radius:99px;padding:6px 12px;font:500 13px "DM Sans",sans-serif;cursor:pointer;min-height:34px}
 .cja-ch button.on{border-color:var(--wine);color:var(--wine);background:color-mix(in srgb,var(--wine) 12%,transparent)}
 @media(min-width:800px){.cja{max-width:560px}.cja-av{max-width:680px}}
+
+/* Cabeceras con botones de texto (Reservas, Cotización, Correos, Kardex, Fotos, etc.): en celular los botones
+   toman el ancho de su texto y bajan de fila si no caben; nunca se corta una palabra a la mitad */
+@media(max-width:799px){
+ .hact:not(:has(.icb,.tot)){display:flex!important;flex-wrap:wrap;align-items:stretch;gap:8px!important;width:100%;grid-template-columns:none!important}
+ .hact:not(:has(.icb,.tot))>.btn,.hact:not(:has(.icb,.tot))>a.btn,.hact:not(:has(.icb,.tot))>.more>.btn{flex:1 1 auto;width:auto;min-width:0;white-space:nowrap;padding:8px 14px!important;font-size:14px!important;line-height:1.2;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+ .hact:not(:has(.icb,.tot))>.more{flex:0 0 auto}
+}
+.btn,.hact .btn{overflow-wrap:normal;word-break:normal;hyphens:none}
