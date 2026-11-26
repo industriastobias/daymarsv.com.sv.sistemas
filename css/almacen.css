@@ -385,3 +385,4 @@ input.cja-amt{font:700 22px "Bricolage Grotesque",sans-serif;padding:10px 12px}
 }
 .btn,.hact .btn{overflow-wrap:normal;word-break:normal;hyphens:none}
 @media(max-width:389px){.hact:not(:has(.icb,.tot))>.btn,.hact:not(:has(.icb,.tot))>a.btn,.hact:not(:has(.icb,.tot))>.more>.btn{padding:8px 7px!important;font-size:12.5px!important}}
+@media(max-width:389px){#fcCtl .btn{font-size:11px;padding:6px 3px}}
