@@ -182,9 +182,8 @@ function pintarInv(){
 
 /* ---------- detalle del producto ---------- */
 async function detalle(p){
- const cost=p.precio_costo||0,gan=cost?p.fin-cost:null,mg=cost&&p.fin?gan/p.fin*100:null;
  const filas=[["Categoría",p.cat||"N/A"],["Stock",p.stock+" unid."+(p.stock_minimo?` (mínimo ${p.stock_minimo})`:"")],["Precio",$$(p.precio_venta)],["Descuento",(p.descuento_pct||0)+"%"],["Precio final",$$(p.fin)]]
-  .concat(ADM?[["Costo",cost?$$(cost):"-"],["Ganancia por unidad",gan===null?"-":$$(gan)],["Margen",mg===null?"-":mg.toFixed(1)+"%"]]:[])
+  /* Costo, ganancia y margen no se muestran en el Punto de venta (pedido del dueño); siguen en Compra → Inventario */
   .concat([["Valor del stock (precio final)",$$(p.fin*p.stock)],["Fecha",fdate(p.dia)],["Código de barras",p.codigo_barras||"N/A"]]);
  const m=modal(esc(p.nombre),`<div class="dgal"><div><img class="main" id="dgM" src="${esc(p.foto_url||"")}" alt=""><div class="th" id="dgT"></div></div>
   <div><small style="color:var(--mute)">SKU: ${esc(p.codigo||"")}</small><table class="dt">${filas.map(f=>`<tr><td>${esc(f[0])}</td><td>${esc(f[1])}</td></tr>`).join("")}</table>
